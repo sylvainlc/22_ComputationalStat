@@ -1,0 +1,254 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+
+% Style
+
+
+\newtheorem{theorem}{Theorem}
+
+
+\begin{document}
+
+\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e \\
+ 2022-2023
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{Inf\'erence variationnelle}
+\end{center}
+\hrulefill
+
+\medskip
+
+
+\section{Warm-up}
+Soit $(Z,X)$ un couple de variables al\'eatoires sur $\rset^d\times \rset^m$. On note $(z,x)\mapsto p(z,x)$ la densit\'e jointe de la loi de $(X,Z)$ par rapport \`a la mesure de Lebesgue. On consid\`ere \'egalement une famille $\mathcal{Q}$ de densit\'es par rapport \`a la mesure de Lebesgue sur $\rset^d$. On introduit alors la ELBO (Evidence Lower Bound) de la fa\c con suivante: pour tout $q\in\mathcal{Q}$,
+$$
+\mathcal{L}(q) = \mathbb{E}_q\left[\log\frac{p(Z,X)}{q(Z)}\right] = \int \log\frac{p(z,X)}{q(z)}q(z) \mathrm{d} z\,.
+$$
+\begin{enumerate}
+\item Montrer que $\mathrm{KL}(q\|p(\cdot|X)) = \log p(X) - \mathcal{L}(q) $.
+
+\vspace{.2cm}
+
+{\em
+Nous remarquons que 
+\begin{align*}
+\log p(X) =\mathbb{E}_q\left[\log p(X)\right] = \int \log p(X) q(z) \mathrm{d} z &= \int \log \frac{p(z,X)}{p(z|X)} q(z) \mathrm{d} z\\
+&  = \int \log \frac{p(z,X)q(z)}{p(z|X)q(z)} q(z) \mathrm{d} z\\
+&= \mathrm{KL}(q\|p(\cdot|X)) + \mathcal{L}(q)  \,.
+\end{align*}
+}
+\item En d\'eduire que $\mathcal{L}(q) \leq \log p(X)$.
+
+\vspace{.2cm}
+
+{\em
+Il suffit de remarquer, gr\^ace \`a l'in\'egalit\'e de Jensen, qu'une divergence de Kullback-Leibler est toujours positive. Dans notre cas :
+$$
+-\mathrm{KL}(q\|p(\cdot|X))  =  \int \log \frac{p(z|X)}{q(z)} q(z) \mathrm{d} z \leq  \log \int \frac{p(z|X)}{q(z)} q(z) \mathrm{d} z \leq 0\,.
+$$
+}
+\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es sur $\rset$. Fixons $1\leq j_0 \leq d$. Montrez que 
+$$
+q_{j_0}^* = \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q) 
+$$
+est la densit\'e proportionnelle \`a $z_j \mapsto \exp\{\mathbb{E}_{-j_0}[\log p (z_{j_0},Z_{-j_0},X)]\}$, o\`u $Z_{-j_0} = (Z_j)_{j\neq j_0}$ et $\mathbb{E}_{-j_0}$ est l'esp\'erance lorsque la densit\'e de $Z_{-j_0}$ est $\prod_{j=1,j\neq j_0}^dq_j$.
+
+\vspace{.2cm}
+
+{\em
+Par d\'efinition,
+$$
+\mathcal{L}(q)  = \int \log\frac{p(z,X)}{q(z)}q(z) \mathrm{d} z = \mathbb{E}_{q_j}\left[\mathbb{E}_{-j}\left[\log p(Z_j,Z_{-j},X)\right]\right] - \sum_{j=1}^d\mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]
+$$
+La densit\'e $q_{j_0}^*$ est donc solution de 
+$$
+\mathrm{Argmax}_{q_{j_0}} \left\{\mathbb{E}_{q_{j_0}}\left[\mathbb{E}_{-j_0}\left[\log p(Z_{j_0},Z_{-j_0},X)\right]\right] - \mathbb{E}_{q_{j_0}}\left[\log q_{j_0}(Z_{j_0})\right]\right\}
+$$ 
+D\'efinissons alors la densit\'e $\tilde q_{j_0}:z\mapsto c_{j_0}\exp\{\mathbb{E}_{-j_0}[\log p (z_{j_0},Z_{-j_0},X)]\}$ o\`u $c_{j_0}$ est la constante de normalisation permettant d'obtenir une densit\'e. On obtient alors,
+$$
+\mathrm{Argmax}_{q_{j_0}} \left\{\mathbb{E}_{q_{j_0}}\left[\log \tilde q_{j_0}(Z_{j_0})\right] - \mathbb{E}_{q_{j_0}}\left[\log q_{j_0}(Z_{j_0})\right]\right\} = - \mathrm{KL}(q_{j_0}\|\tilde q_{j_0})  \,,
+$$ 
+ce qui permet de conclure que $q_{j_0}^* = \tilde q_{j_0}$.
+}
+
+
+\end{enumerate}
+
+\section{Inf\'erence variationnelle : mod\`ele gaussien}
+Soient $\alpha_0$ et $\beta_0$ deux re\'els strictement positifs et $\mu_0$ un r\'eel. On consid\`ere les variables al\'eatoires suivantes : $\sigma^2 \sim\mathcal{IG}(\alpha_0,\beta_0)$, $\mu\sim\mathcal{N}(\mu_0,\sigma^2)$ et $X = (X_i)_{1\leq i\leq n}\sim\otimes_{i=1}^n\mathcal{N}(\mu,\sigma^2)$ o\`u $\mathcal{IG}$ est la loi inverse gamma.
+\begin{enumerate}
+\item \'Ecrire la densit\'e jointe des variables $Z=(\mu,\sigma^2)$ et $X$.
+
+\vspace{.2cm}
+
+{\em
+Pour tout $x,\mu,\sigma^2$, la logdensit\'e jointe de $z=(\mu,\sigma^2)$ et $x$ est donn\'ee par :
+\begin{align*}
+\log p (z,x) &= \log p(\sigma^2) + \log p(\mu|\sigma^2) + \log p(x|\mu,\sigma^2)\\
+&= -\frac{1}{2}\log(2\pi \sigma^2) - \frac{(\mu-\mu_0)^2}{2\sigma^2} \\
+&\hspace{1cm} + \alpha_0\log \beta_0 - \log \Gamma(\alpha_0) - (\alpha_0+1)\log(\sigma^{2}) - \frac{\beta_0}{\sigma^2}\\
+&\hspace{2cm} -\frac{n}{2}\log(2\pi \sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n(x_i-\mu)^2\,.
+\end{align*}
+}
+
+\item On consid\`ere une famille variationnelle o\`u $q:(\mu,\sigma^2)\mapsto q_\mu(\mu)q_{\sigma^2}(\sigma^2)$ et \'ecrire la ELBO associ\'ee.
+
+\vspace{.2cm}
+
+{\em
+La ELBO s'\'ecrit
+\begin{align*}
+\mathcal{L}(q) &= \mathbb{E}_q\left[\log\frac{p(Z,X)}{q(Z)}\right]\\
+&= \mathbb{E}_q\left[\log p(\sigma^2) + \log p(\mu|\sigma^2) + \log p(x|\mu,\sigma^2)\right] - \mathbb{E}_{q_\mu}\left[q_{\mu}(\mu)\right] - \mathbb{E}_{q_{\sigma^2}}\left[q_{\sigma^2}(\sigma^2)\right]\,.
+\end{align*}
+}
+\item \'Ecire la mise \`a jour de $q_\mu$ dans une \'etape de l'algorithme CAVI. 
+
+\vspace{.2cm}
+
+{\em
+On sait que la mise \`a jour s'\'ecrit, \`a une constante additive pr\`es,
+$$
+\log q^*_\mu(\mu) = \mathbb{E}_{q_{\sigma^2}}\left[- \frac{(\mu-\mu_0)^2}{2\sigma^2} - \frac{1}{2\sigma^2}\sum_{i=1}^n(x_i-\mu)^2\right]\,.
+$$
+Ainsi, \`a une constante additive pr\`es,
+$$
+\log q^*_\mu(\mu) = -\mathbb{E}_{q_{\sigma^2}}\left[\frac{n+1}{2\sigma^2}\left(\mu - \frac{\mu_0 + n\bar x_n}{n+1}\right)^2\right]\,.
+$$
+o\`u $\bar x_n = \sum_{i=1}^n x_i/n$. Ainsi, %Puisque si $\sigma^2 \sim \mathcal{IG}(\alpha_0,\beta_0)$, $\sigma^{-2}\sim \mathcal{G}(\alpha_0,1/\beta_0)$, 
+$$
+\log q^*_\mu(\mu) = -\frac{1}{2}(n+1)\mathbb{E}_{q_{\sigma^2}}[1/\sigma^2]\left(\mu - \frac{\mu_0 + n\bar x_n}{n+1}\right)^2\,.
+$$
+On en d\'eduit que $q^*_\mu$ est la densit\'e de la loi gaussienne de moyenne $(\mu_0 + n\bar x_n)/(n+1)$  et dont l'inverse de la variance est $(n+1)\mathbb{E}_{q_{\sigma^2}}[1/\sigma^2]$ (qui est calculable lorsque $q_{\sigma^2}$ est une loi inverse gamma).
+}
+\item \'Ecire la mise \`a jour de $_{\sigma^2}$ dans une \'etape de l'algorithme CAVI. 
+
+\vspace{.2cm}
+
+{\em
+On sait que la mise \`a jour s'\'ecrit, \`a une constante additive pr\`es,
+\begin{multline*}
+\log q^*_{\sigma^2}(\sigma^2) =  -\frac{1}{2}\log(2\pi \sigma^2) - (\alpha_0+1)\log(\sigma^{2})  -\frac{n}{2}\log(2\pi \sigma^2)\\
++\mathbb{E}_{q_{\mu}}\left[- \frac{(\mu-\mu_0)^2}{2\sigma^2}  - \frac{1}{2\sigma^2}\sum_{i=1}^n(x_i-\mu)^2\right]\,.
+\end{multline*}
+Ainsi, \`a une constante additive pr\`es,
+$$
+\log q^*_{\sigma^2}(\sigma^2) = -\left(\frac{1}{2} + \alpha_0+1+\frac{n}{2}\right)\log\sigma^2 -\frac{\mathbb{E}_{q_{\mu}}\left[(\mu-\mu_0)^2 + \sum_{i=1}^n(x_i-\mu)^2\right]}{2\sigma^2}\,.
+$$
+On reconna\^it une loi inverse gamma de param\`etres 
+\begin{align*}
+\alpha &= 1/2 + \alpha_0+1+n/2\\
+\beta &= \mathbb{E}_{q_{\mu}}\left[(\mu-\mu_0)^2 + \sum_{i=1}^n(x_i-\mu)^2\right]/2\,.
+\end{align*}
+}
+\end{enumerate}
+
+\section{Inf\'erence variationelle pour les mod\`eles exponentiels}
+On consid\`ere un couple de variables al\'eatoires $(Z,X)\in\mathbb{R}^d\times \mathbb{R}^m$. On note $(z,x) \mapsto p(z,x)$ la densit\'e jointe de ce couple par rapport \`a la mesure de Lebesgue. Nous souhaitons utiliser dans cet exercice une approche variationnelle pour estimer la loi a posteriori $p(z|x)$. Pour cela on se donne une famille de densit\'es sur $\mathbb{R}^d$:
+$$
+\mathcal{Q} = \left\{(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)\eqsp;\eqsp q_j\; \mathrm{est\,une\,densit\acute e\,sur\,\mathbb{R}}\right\}\eqsp.
+$$
+\begin{enumerate}
+\item Rappeler l'algorithme CAVI (Coordinate Ascent Variational Inference) pour estimer it\'erativement $q^*$.
+
+\vspace{.2cm}
+
+{\em
+Fixons $1\leq j_0 \leq d$. On sait que pour toutes densit\'es $(q_j)_{1\leq j \leq d}$, en notant $\mathcal{L}$ la ELBO,
+$$
+q_{j_0}^* = \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q) 
+$$
+est la densit\'e proportionnelle \`a $z_j \mapsto \exp\{\mathbb{E}_{-j_0}[\log p (z_{j_0},Z_{-j_0},X)]\}$, o\`u $Z_{-j_0} = (Z_j)_{j\neq j_0}$ et $\mathbb{E}_{-j_0}$ est l'esp\'erance lorsque la densit\'e de $Z_{-j_0}$ est $\prod_{j=1,j\neq j_0}^dq_j$. L'algorithme CAVI fonctionne donc de la fa\c con suivante.
+\begin{enumerate}
+\item Initialiser toutes les densit\'es $(q_j)_{1\leq j \leq d}$ aux valeurs $(q^{(0)}_j)_{1\leq j \leq d}$ .
+\item Jusqu'\`a convergence, r\'ep\'eter pour $p\geq 0$:
+\begin{enumerate}
+\item Choisir al\'eatoirement $1\leq j_0 \leq d$.
+\item Pour tout $j\neq j_0$, $q^{(p+1)}_j = q^{(p)}_j$.
+\item Poser $q^{(p+1)}_{j_0} = \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q)$ o\`u $q:(z_1,\ldots,z_d)\mapsto q_{j_0}(z_{j_0})\prod_{j=1,j\neq j_0}^{d}q^{(p+1)}_j(z_j)$. 
+\end{enumerate}
+\end{enumerate}
+}
+\item Supposons que le mod\`ele soit tel que pour tout $j\in\mathbb{R}$, 
+$$
+p(z_j|z_{-j},x) = h(z_j)\mathrm{exp}(\eta(z_{-j})^Ts(z_j) - a(z_{-j}))\eqsp,
+$$ 
+o\`u $z_{-j} = (z_u)_{1\leqslant u\leqslant d, u \neq j}$ et o\`u $\eta$, $s$ et $a$ sont des fonctions connues (la d\'ependance en $x$ de ces fonctions est omise par simplicit\'e). Montrer que si les densit\'es $(q_u)_{1\leqslant u\leqslant d, u \neq j}$ sont fix\'ees alors la mise \`a jour de l'algorithme CAVI de la $j$-\`eme densit\'e est  (\`a une constante multiplicative pr\`es),
+$$
+q^*_j(z_j) \mapsto h(z_j) \mathrm{exp}\left\{\mathbb{E}_{-j}[\eta(Z_{-j})^Ts(Z_j)]\right\}\eqsp,
+$$
+o\`u $\mathbb{E}_{-j}$ est l'esp\'erance sous la loi de densit\'e $\prod_{u=1, u\neq j}^d q_u(z_u)$.
+
+\vspace{.2cm}
+
+{\em
+Il suffit d'\'ecrire, pour $1\leq j\leq d$, la fonction $z_j \mapsto \exp\{\mathbb{E}_{-j}[\log p (z_{j},Z_{-j},X)]\}$ en utilisant la forme exponentielle de l'\'enonc\'e et de supprimer les termes multiplicatifs ne d\'ependants pas de $z_j$.
+}
+\item La convergence de l'algorithme CAVI  d\'epend-elle de l'initialisation des densit\'e $(q_u)_{1\leqslant u\leqslant d}$ ?
+
+\vspace{.2cm}
+
+{\em
+Oui. La convergence de l'algorithme d\'epend de l'initialisation de l'algorithme. C'est bien s\^ur un point tr\`es imlportant en pratique (il en est de m\^eme pour l'algorithme Expectation Maximization).
+}
+\end{enumerate}
+\end{document}
