@@ -14,3 +14,4 @@ The course covers the basics of computational statistics.
 - [1 - Maximum likelihood (Gamma distribution, Newton-Raphson update)](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/6_stats_correction.pdf)
 - [2 - Mixture models](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/7_mixtures_correction.pdf)
 - [3 - Variational inference](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/8_VI_correction.pdf)
+- [5 - Gibbs sampling](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/10_EM_Gibbs_correction.pdf)
