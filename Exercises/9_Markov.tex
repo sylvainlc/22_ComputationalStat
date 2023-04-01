@@ -92,10 +92,14 @@ $$
 $$
 \omega_{k-1,k}^{\theta}(i,j) = \mathbb{P}_{\theta}\left(X_{k-1}=i,X_k=j|Y_{0:n}\right)\,,
 $$
+pour $1\leq k \leq n$ et
+$$
+\tilde \omega_{k}^{\theta}(i) = \mathbb{P}_{\theta}\left(X_k=i|Y_{0:n}\right)\,,
+$$
 pour $0\leq k \leq n$.
 \item \`A l'it\'eration $p\geq 0$, on dispose de l'estimation $\hat\theta^{(p)}$. \'Ecrire l'estimateur $\hat\theta^{(p+1)}$ en maximisant $\theta\mapsto Q(\theta,\hat\theta^{p})$, donner la valeur de $\theta^{(p+1)}$ en fonction des $\omega_{k-1,k}^{\theta^{(p)}}(i,j)$, $1\leq k \leq n$, $1\leq i, j \leq r$.
 \item Dans le cas o\`u on souhaite \'egalement apprendre la loi initiale de la cha\^ine de Markov, i.e. si l'on note $\nu_i = \mathbb{P}(X_0=i)$, $1\leq i \leq r$ et que $\theta = \{\mu_1,\ldots,\mu_r,v_1,\ldots,v_r,\nu_1,\ldots,\nu_r\}$, donner les \'equations de mise \`a jour de $\nu$. 
-\item En admettant que l'on peut intervetir les calculs de gradients et les esp\'erances, calculer le gradient de la logvraisemblance des observations : $\theta\mapsto\nabla_\theta \log p_\theta(Y_{0:n})$.
+\item Calculer le gradient de la logvraisemblance des observations : $\theta\mapsto\nabla_\theta \log p_\theta(Y_{0:n})$.
 \item En d\'eduire un algorithme de mise \`a jour des param\`etres de type "descente de gradient".
 \item {\bf Bonus:} Calcul des $\omega_{k-1,k}^{\theta}(i,j)$, $1\leq k \leq n$, $1\leq i, j \leq r$.
 \begin{enumerate}
