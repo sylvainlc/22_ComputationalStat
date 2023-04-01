@@ -106,7 +106,7 @@ $$
 -\mathrm{KL}(q\|p(\cdot|X))  =  \int \log \frac{p(z|X)}{q(z)} q(z) \mathrm{d} z \leq  \log \int \frac{p(z|X)}{q(z)} q(z) \mathrm{d} z \leq 0\,.
 $$
 }
-\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es sur $\rset$. Fixons $1\leq j_0 \leq d$. Montrez que 
+\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es sur $\rset$. Fixons $1\leq j_0 \leq d$ et tous les $q_j$, $j\neq j_0$. Montrez que 
 $$
 q_{j_0}^* = \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q) 
 $$
@@ -117,7 +117,7 @@ est la densit\'e proportionnelle \`a $z_j \mapsto \exp\{\mathbb{E}_{-j_0}[\log p
 {\em
 Par d\'efinition,
 $$
-\mathcal{L}(q)  = \int \log\frac{p(z,X)}{q(z)}q(z) \mathrm{d} z = \mathbb{E}_{q_j}\left[\mathbb{E}_{-j}\left[\log p(Z_j,Z_{-j},X)\right]\right] - \sum_{j=1}^d\mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]
+\mathcal{L}(q)  = \int \log\frac{p(z,X)}{q(z)}q(z) \mathrm{d} z = \mathbb{E}_{q_{j_0}}\left[\mathbb{E}_{-j_0}\left[\log p(Z_{j_0},Z_{-j_0},X)\right]\right] - \sum_{j=1}^d\mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]
 $$
 La densit\'e $q_{j_0}^*$ est donc solution de 
 $$
@@ -125,7 +125,7 @@ $$
 $$ 
 D\'efinissons alors la densit\'e $\tilde q_{j_0}:z\mapsto c_{j_0}\exp\{\mathbb{E}_{-j_0}[\log p (z_{j_0},Z_{-j_0},X)]\}$ o\`u $c_{j_0}$ est la constante de normalisation permettant d'obtenir une densit\'e. On obtient alors,
 $$
-\mathrm{Argmax}_{q_{j_0}} \left\{\mathbb{E}_{q_{j_0}}\left[\log \tilde q_{j_0}(Z_{j_0})\right] - \mathbb{E}_{q_{j_0}}\left[\log q_{j_0}(Z_{j_0})\right]\right\} = - \mathrm{KL}(q_{j_0}\|\tilde q_{j_0})  \,,
+\mathrm{Argmax}_{q_{j_0}} \left\{\mathbb{E}_{q_{j_0}}\left[\log \tilde q_{j_0}(Z_{j_0})\right] - \mathbb{E}_{q_{j_0}}\left[\log q_{j_0}(Z_{j_0})\right]\right\} = \mathrm{Argmin}_{q_{j_0}} \mathrm{KL}(q_{j_0}\|\tilde q_{j_0})  \,,
 $$ 
 ce qui permet de conclure que $q_{j_0}^* = \tilde q_{j_0}$.
 }
@@ -150,7 +150,7 @@ Pour tout $x,\mu,\sigma^2$, la logdensit\'e jointe de $z=(\mu,\sigma^2)$ et $x$ 
 \end{align*}
 }
 
-\item On consid\`ere une famille variationnelle o\`u $q:(\mu,\sigma^2)\mapsto q_\mu(\mu)q_{\sigma^2}(\sigma^2)$ et \'ecrire la ELBO associ\'ee.
+\item On consid\`ere une famille variationnelle o\`u $q:(\mu,\sigma^2)\mapsto q_\mu(\mu)q_{\sigma^2}(\sigma^2)$. \'Ecrire la ELBO associ\'ee.
 
 \vspace{.2cm}
 
@@ -248,7 +248,7 @@ Il suffit d'\'ecrire, pour $1\leq j\leq d$, la fonction $z_j \mapsto \exp\{\math
 \vspace{.2cm}
 
 {\em
-Oui. La convergence de l'algorithme d\'epend de l'initialisation de l'algorithme. C'est bien s\^ur un point tr\`es imlportant en pratique (il en est de m\^eme pour l'algorithme Expectation Maximization).
+Oui. La convergence de l'algorithme d\'epend de l'initialisation de l'algorithme. C'est bien s\^ur un point tr\`es important en pratique (il en est de m\^eme pour l'algorithme Expectation Maximization).
 }
 \end{enumerate}
 \end{document}

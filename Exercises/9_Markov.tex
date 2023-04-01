@@ -1,0 +1,127 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+
+% Style
+
+
+\newtheorem{theorem}{Theorem}
+
+
+\begin{document}
+
+\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e \\
+ 2022-2023
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{Expectation Maximization pour les cha\^ines de Markov cach\'ees discr\`etes}
+\end{center}
+\hrulefill
+
+\medskip
+
+
+%\section{Expectation Maximization pour les HMM}
+Soit $(X_k)_{0\leq k\leq n}$ une cha\^ine de Markov discr\`ete \`a valeurs dans $\{1,\ldots,r\}$, de matrice de transition $Q$ et de loi initiale $\nu$. On consid\`ere que cette cha\^ine est uniquement observ\'ee au travers des variables $(Y_k)_{0\leq k\leq n}$, ind\'ependantes conditionnellement \`a $(X_k)_{0\leq k\leq n}$ et telles que pour tout $0\leq \ell\leq n$, la loi de $Y_\ell$ sachant $(X_k)_{0\leq k\leq n}$ est une gaussienne de moyenne $\mu_{X_\ell}$ et de variance $v_{X_\ell}$.
+Le param\`etre inconnu est ici $\theta= \{\mu_1,\ldots,\mu_r,v_1,\ldots,v_r\}$.
+
+\begin{enumerate}
+\item \'Ecrire la logvraisemblance jointe de $(X_{0:n},Y_{0:n})$: $\theta \mapsto \log p_\theta (X_{0:n},Y_{0:n})$.
+\item \'Ecrire la quantit\'e interm\'ediaire de l'EM $Q(\theta,\theta')$ pour tout $\theta$, $\theta'$ :
+$$
+Q(\theta,\theta') = \mathbb{E}_{\theta'}\left[\log p_\theta (X_{0:n},Y_{0:n})\middle |Y_{0:n}\right]\,.
+$$
+\item \'Ecrire cette quantit\'e en faisant appara\^itre les probabilit\'es
+$$
+\omega_{k-1,k}^{\theta}(i,j) = \mathbb{P}_{\theta}\left(X_{k-1}=i,X_k=j|Y_{0:n}\right)\,,
+$$
+pour $0\leq k \leq n$.
+\item \`A l'it\'eration $p\geq 0$, on dispose de l'estimation $\hat\theta^{(p)}$. \'Ecrire l'estimateur $\hat\theta^{(p+1)}$ en maximisant $\theta\mapsto Q(\theta,\hat\theta^{p})$, donner la valeur de $\theta^{(p+1)}$ en fonction des $\omega_{k-1,k}^{\theta^{(p)}}(i,j)$, $1\leq k \leq n$, $1\leq i, j \leq r$.
+\item Dans le cas o\`u on souhaite \'egalement apprendre la loi initiale de la cha\^ine de Markov, i.e. si l'on note $\nu_i = \mathbb{P}(X_0=i)$, $1\leq i \leq r$ et que $\theta = \{\mu_1,\ldots,\mu_r,v_1,\ldots,v_r,\nu_1,\ldots,\nu_r\}$, donner les \'equations de mise \`a jour de $\nu$. 
+\item En admettant que l'on peut intervetir les calculs de gradients et les esp\'erances, calculer le gradient de la logvraisemblance des observations : $\theta\mapsto\nabla_\theta \log p_\theta(Y_{0:n})$.
+\item En d\'eduire un algorithme de mise \`a jour des param\`etres de type "descente de gradient".
+\item {\bf Bonus:} Calcul des $\omega_{k-1,k}^{\theta}(i,j)$, $1\leq k \leq n$, $1\leq i, j \leq r$.
+\begin{enumerate}
+\item Montrer que l'on peut calculer r\'ecursivement $ \mathbb{P}_{\theta}\left(X_k=i|Y_{0:k}\right)$, $0\leq k \leq n$, $1\leq i, j \leq r$.
+\item Montrer que l'on peut calculer r\'ecursivement, de $k=n$ \`a $k = 0$, $ \mathbb{P}_{\theta}\left(X_k=i|Y_{0:n}\right)$, $0\leq k \leq n$, $1\leq i\leq r$.
+\item Conclure.
+\end{enumerate}
+\end{enumerate}
+
+
+%\section{Inf\'erence variationelle pour les mod\`eles exponentiels}
+%On consid\`ere un couple de variables al\'eatoires $(Z,X)\in\mathbb{R}^d\times \mathbb{R}^m$. On note $(z,x) \mapsto p(z,x)$ la densit\'e jointe de ce couple par rapport \`a la mesure de Lebesgue. Nous souhaitons utiliser dans cet exercice une approche variationnelle pour estimer la loi a posteriori $p(z|x)$. Pour cela on se donne une famille de densit\'es sur $\mathbb{R}^d$:
+%$$
+%\mathcal{Q} = \left\{(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)\eqsp;\eqsp q_j\; \mathrm{est\,une\,densit\acute e\,sur\,\mathbb{R}}\right\}\eqsp.
+%$$
+%\begin{enumerate}
+%\item Rappeler l'algorithme CAVI (Coordinate Ascent Variational Inference) pour estimer it\'erativement $q^*$.
+%\item Supposons que le mod\`ele soit tel que pour tout $j\in\mathbb{R}$, 
+%$$
+%p(z_j|z_{-j},x) = h(z_j)\mathrm{exp}(\eta(z_{-j})^Ts(z_j) - a(z_{-j}))\eqsp,
+%$$ 
+%o\`u $z_{-j} = (z_u)_{1\leqslant u\leqslant d, u \neq j}$ et o\`u $\eta$, $s$ et $a$ sont des fonctions connues (la d\'ependance en $x$ de ces fonctions est omise par simplicit\'e). Montrer que si les densit\'es $(q_u)_{1\leqslant u\leqslant d, u \neq j}$ sont fix\'ees alors la mise \`a jour de l'algorithme CAVI de la $j$-\`eme densit\'e est  (\`a une constante multiplicative pr\`es),
+%$$
+%q^*_j(z_j) \mapsto h(z_j) \mathrm{exp}\left\{\mathbb{E}_{-j}[\eta(Z_{-j})^Ts(Z_j)]\right\}\eqsp,
+%$$
+%o\`u $\mathbb{E}_{-j}$ est l'esp\'erance sous la loi de densit\'e $\prod_{u=1, u\neq j}^d q_u(z_u)$.
+%\item La convergence de l'algorithme CAVI  d\'epend-elle de l'initialisation des densit\'e $(q_u)_{1\leqslant u\leqslant d}$ ?
+%\end{enumerate}
+\end{document}

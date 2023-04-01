@@ -1,0 +1,223 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+
+% Style
+
+
+\newtheorem{theorem}{Theorem}
+
+
+\begin{document}
+
+\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e 
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{Inf\'erence variationnelle}
+\end{center}
+\hrulefill
+
+\medskip
+
+\section*{ELBO}
+Dans ce chapitre, on consid\`ere un mod\`ele \`a donn\'ees latentes (non observ\'ees). Soit $(Z,X)$ un couple de variables al\'eatoires dans $\mathbb{R}^d\times \mathbb{R}^m$. On suppose que la loi du couple a une densit\'e not\'ee $(z,x)\mapsto p(z,x)$ par rapport \`a une mesure de r\'ef\'erence (cette dernir\`ere peut d\'ependre d'un param\`etre $\theta$, ce que nous ignorons dans ces notes). Dans ce contexte, on \'ecrit en g\'en\'eral,
+$$
+(z,x)\mapsto p(z,x) = p(z)p(x|z)\,,
+$$
+o\`u $z\mapsto p(z)$ est une densit\'e a priori pour $Z$ et $x \mapsto p(x|z)$ est une densit\'e pour la loi de $X$ sachant $Z$. Dans ce cadre, nous n'avons en g\'en\'eral pas acc\`es \`a la densit\'e de la loi de $Z$ sachant $X$, car celle-ci s'\'ecrit :
+$$
+z\mapsto p(z|x) = \frac{p(z)p(x|z)}{p(x)}\,, 
+$$
+o\`u $p(x) = \int p(z)p(x|z) \mathrm{d} z$ est une int\'egrale que l'on ne sait en g\'en\'eral pas calculer.
+
+\medskip
+
+Dans le cadre de l'inf\'erence variationnelle, on propose une famille de densit\'es candidates pour approcher $z\mapsto p(z|x)$. On introduit alors $\mathcal{D} = \{q_\phi\}_{\phi\in\Phi}$ o\`u $\Phi$ est un espace de param\`etres o\`u les densit\'es $q_\phi$ sont choisies telles que :
+\begin{itemize}
+\item pour tout $\phi$, $q_\phi$ est simple \`a \'evaluer ;
+\item pour tout $\phi$, $q_\phi$ est simple \`a simuler.
+\end{itemize}
+
+\medskip
+
+On remarque alors que pour tout $x$ et tout $\phi$,
+\begin{align*}
+\mathrm{KL}\left(q_\phi\|p(\cdot|x)\right) = \int q_\phi(z) \log \frac{q_\phi(z)}{p(z|x)} \mathrm{d}z&= \mathbb{E}_{q_\phi}[\log q_\phi(Z)] - \mathbb{E}_{q_\phi}[\log p(Z|x)]\,,\\
+ &= \mathbb{E}_{q_\phi}[\log q_\phi(Z)] - \mathbb{E}_{q_\phi}[\log p(Z,x)]+\log p(x)\,,\\
+&= -\mathrm{ELBO}(q_\phi)+\log p(x)\,.
+\end{align*}
+En appliquant l'in\'egalit\'e de Jensen on remarque que $\mathrm{KL}\left(q_\phi\|p(\cdot|x)\right) \geq 0$ et donc que 
+$$
+\mathrm{ELBO}(q_\phi)\leq \log p(x)\,.
+$$
+Cette in\'egalit\'e justifie le nom Evidence Lower Bound de la quantit\'e ELBO. Dans le cadre de l'inf\'erence variationnelle, on souhaite alors approcher  $p(\cdot|x)$ par $q_{\phi_*}$ o\`u :
+$$
+\phi_* \in \mathrm{argmax}_{\phi\in\Phi}\;\mathrm{ELBO}(q_\phi)\,.
+$$
+
+\section*{Coordinate ascent variational inference}
+L'approche la plus r\'epandue pour r\'esoudre le probl\`eme pr\'ec\'edent est tout d'abord de choisir une approche "mean field" i.e. de choisir $\mathcal{D}$ de la forme 
+$$
+\mathcal{D} = \left\{z\mapsto q(z) = \prod_{j=1}^dq_j(z_j)\;;\; q_j \,\mbox{est\, une\, densit\'e} \right\}\,.
+$$
+Dans ce cas, on peut \'ecrire, pour tout $q\in \mathcal{D}$, et pour tout $j\in\{1,\ldots,d\}$,
+\begin{align*}
+\mathrm{ELBO}(q) &= \mathbb{E}_{q}\left[\log \frac{p(Z_1,\ldots,Z_d,x)}{\prod_{j=1}^dq_j(Z_j)}\right]\,,\\
+&= \mathbb{E}_{q_j}\left[\mathbb{E}_{q_{-j}}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]  + \mathrm{cste}
+\end{align*}
+o\`u $\mathrm{cste}$ est un terme ne d\'ependant pas de $q_j$,  $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$ et $q_{-j}(z_{-j}) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell})$. Si l'on fixe les densit\'es $q_\ell$, $\ell\neq j$ et que l'on maximise la quantit\'e pr\'ec\'edente sur $q_j$, on obtient comme solution la densit\'e proportionnelle \`a
+$$
+z_j\mapsto \exp\left(\mathbb{E}_{q_{-j}}\left[\log p(z_j | Z_{-j},x)\right]\right)\,.
+$$
+L'algorithme CAVI propose donc de mettre \`a jour les $q_j$, $1\leq j \leq d$ jusqu'\`a atteindre un crit\`ere d'arr\^et.
+
+
+\section*{Exemple : m\'elange de lois gaussiennes}
+On consid\`ere un m\'elange de $K$ gaussiennes de moyennes $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ et de variance 1. Les variables $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ sont (i.i.d.) de loi  gaussienne de moyenne 0 et de variance $\sigma^2$. Le poids de la composante $k$ est not\'e $\omega_k$. Conditionnellement \`a $\mu$, les observations $(X_i)_{1\leqslant i\leqslant n}$ sont i.i.d. et la densit\'e de probabilit\'e de $X_1$ est:
+$$
+x\mapsto p(x|\mu) = \sum_{k=1}^K \omega_k \varphi_{\mu_k,1}(x)\,,
+$$
+o\`u $\varphi_{\mu_k,\eta^2}$ est la densit\'e gaussienne de moyenne $\mu_k$ et de variance $\eta^2$. La vraisemblance jointe est alors :
+$$
+p(x_1,\cdots,x_n) = \int p(x_1,\cdots,x_n|\mu) p(\mu) \mathrm{d} \mu = \int \prod_{i=1}^n p(x_i|\mu) p(\mu) \mathrm{d} \mu = \int \prod_{i=1}^n \left(\sum_{k=1}^K \omega_k \varphi_{\mu_k,1}(x_i)\right) p(\mu) \mathrm{d} \mu
+$$
+Notre objectif est d'approcher $p(\mu,c|x)$ o\`u $c = (c_1,\cdots,c_n)$ sont les composantes des observations.  L'approximation `mean-field` consid\'er\'ee s'\'ecrit:
+$$
+q(\mu,c) = \prod_{k=1}^K \varphi_{m_k,s_k}(\mu_k)\prod_{i=1}^n \mathrm{Cat}_{\phi_i}(c_i)\,, 
+$$
+ce qui signifie que sous $q$:
+\begin{itemize}
+\item $\mu$ et $c$ sont ind\'ependantes.
+\item $(\mu_{k})_{1\leqslant k \leqslant K}$ sont des gaussiennes ind\'ependantes de moyennes $(m_{k})_{1\leqslant k \leqslant K}$ et variances $(s_{k})_{1\leqslant k \leqslant K}$.
+\item $(c_{i})_{1\leqslant i \leqslant n}$ sont ind\'ependantes de distribution multinomiales de param\`etres $(\phi_i)_{1\leqslant i \leqslant n}$: $q(c_i=k) = \phi_i(k)$ pour $1\leqslant k \leqslant K$. 
+\end{itemize}
+Notons $\mathcal{D}$ cette famille de distributions o\`u les moyennes $(m_{k})_{1\leqslant k \leqslant K}\in \mathbb{R}^K$, les variances $(s_{k})_{1\leqslant k \leqslant K}\in (\mathbb{R}_+^*)^K$ et les  $(\phi_i)_{1\leqslant i \leqslant n}\in \mathcal{S}_K^n$ o\`u $\mathcal{S}_K$ est le simplexe de dimension $K$. 
+
+L'objectif est de trouver le
+"meilleur candidat" dans $\mathcal{D}$ pour approcher $p(\mu,c|x)$, i.e. celui qui minimise la distance de Kullback suivante :
+$$
+q^* = \mathrm{Argmin}_{q\in\mathcal{D}}\; \mathrm{KL}\left(q(\mu,c)\|p(\mu,c|x)\right)\,.
+$$
+Notons que :
+\begin{align*}
+\mathrm{KL}\left(q(\mu,c)\|p(\mu,c|x)\right) &= \mathbb{E}_q[\log q(\mu,c)] - \mathbb{E}_q[\log p(\mu,c|x)]\,,\\
+ &= \mathbb{E}_q[\log q(\mu,c)] - \mathbb{E}_q[\log p(\mu,c,x)]+\log p(x)\,,\\
+&= -\mathrm{ELBO}(q)+\log p(x)\,,
+\end{align*}
+o\`u l'Evidence Lower Bound est
+$$
+\mathrm{ELBO}(q) = -\mathbb{E}_q[\log q(\mu,c)] + \mathbb{E}_q[\log p(\mu,c,x)] \,.
+$$
+Ainsi, minimiser la divergence de Kullback revient \`a maximiser la ELBO, avec $\log p(x)\geqslant \mathrm{ELBO}(q)$. La complexit\'e de $\mathcal{D}$ d\'etermine la complexit\'e du probl\`eme d'optimisation. L'algorithme CAVI calcule it\'erativement pour $1\leqslant k \leqslant K$,
+$$
+q(\mu_k) \propto \mathrm{exp}\left(\mathbb{E}_{\tilde q_{\mu_k}}[\log \tilde p_k(\mu_k|x)]\right)
+$$
+et pour tout  $1\leqslant i \leqslant n$,
+$$
+q(c_i) \propto \mathrm{exp}\left(\mathbb{E}_{\tilde q_{c_i}}[\log \tilde p_i(c_i|x)]\right)\,,
+$$
+o\`u
+\begin{itemize}
+\item $\tilde p_i(c_i|x)$ est la distribution conditionnelle de $c_i$ sachant les observations et les autres param\`etres et $\tilde p_k(\mu_k|x)$ est la loi conditionnelle de $\mu_k$ sachant les observations et les autres param\`etres.
+\item $\mathbb{E}_{\tilde q_z}$ est l'esp\'erance sous la loi variationnelle de toutes les variables sauf $z$.
+\end{itemize}
+Soit $\tilde p_i(c_i|x)$ la distribution conditionnelle de $c_i$ sachant les observations et les autres param\`etres.
+$$
+\tilde p_i(c_i|x) \propto p(c_i)p(x_i|c_i,\mu) \propto p(c_i)\prod_{k=1}^K \left(\varphi_{\mu_k,1}(x_i)\right)^{1_{c_i=k}}\,. 
+$$
+Ainsi,
+$$
+\mathbb{E}_{\tilde q_{c_i}}[\log \tilde p_i(c_i|x)] = \log p(c_i) + \sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[\log \varphi_{\mu_k,1}(x_i)]
+$$
+et
+\begin{align*}
+\mathrm{exp}\left(\mathbb{E}_{\tilde q_{c_i}}[\log \tilde p_i(c_i|x)]\right) &\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
+&\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[-(x_i-\mu_k)^2/2]\right)\,\\
+&\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[-(x_i-\mu_k)^2/2]\right)\,.
+\end{align*}
+La mise \`a jour s'\'ecrit alors :
+$$
+\varphi_i(k) \propto p(c_i=k) \mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\,.
+$$
+Puisque $\tilde p_k(\mu_k|x)$ est la loi conditionnelle de $\mu_k$ sachant les observations et les autres param\`etres,
+$$
+\tilde p_k(\mu_k|x) \propto p(\mu_k)\prod_{i=1}^np(x_i|c_i,\mu) \,. 
+$$
+Ainsi,
+$$
+\mathbb{E}_{\tilde q_{\mu_k}}[\log \tilde p_k(\mu_k|x)] = \log p(\mu_k) + \sum_{i=1}^n \mathbb{E}_{\tilde q_{\mu_k}}[\log p(x_i|\mu,c_i)]
+$$
+et
+\begin{align*}
+\mathrm{exp}\left(\mathbb{E}_{\tilde q_{\mu_k}}[\log \tilde p_i(c_i|x)]\right) &\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n\sum_{k=1}^K  \mathbb{E}_{\tilde q_{\mu_k}}[1_{c_i=k}\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
+&\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n \phi_i(k) \mathbb{E}_{\tilde q_{\mu_k}}[\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
+&\propto \mathrm{exp}\left(-\frac{\mu_k^2}{2\sigma^2}-\frac{1}{2}\sum_{i=1}^n \phi_i(k)(x_i-\mu_k)^2\right)\,,\\
+&\propto \mathrm{exp}\left(-\frac{\mu_k^2}{2\sigma^2}+\sum_{i=1}^n \phi_i(k)x_i\mu_k - \frac{1}{2}\sum_{i=1}^n \phi_i(k)\mu^2_k\right)\,.
+\end{align*}
+La mise \`a jour s'\'ecrit :
+$$
+\mu_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
+$$
+
+
+
+
+
+\end{document}

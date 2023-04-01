@@ -86,7 +86,7 @@ $$
 \begin{enumerate}
 \item Montrer que $\mathrm{KL}(q\|p(\cdot|X)) = \log p(X) - \mathcal{L}(q) $.
 \item En d\'eduire que $\mathcal{L}(q) \leq \log p(X)$.
-\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es sur $\rset$. Fixons $1\leq j_0 \leq d$. Montrez que 
+\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es sur $\rset$. Fixons $1\leq j_0 \leq d$ et tous les $q_j$, $j\neq j_0$. Montrez que 
 $$
 q_{j_0}^* = \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q) 
 $$
@@ -99,9 +99,9 @@ est la densit\'e proportionnelle \`a $z_j \mapsto \exp\{\mathbb{E}_{-j_0}[\log p
 Soient $\alpha_0$ et $\beta_0$ deux re\'els strictement positifs et $\mu_0$ un r\'eel. On consid\`ere les variables al\'eatoires suivantes : $\sigma^2 \sim\mathcal{IG}(\alpha_0,\beta_0)$, $\mu\sim\mathcal{N}(\mu_0,\sigma^2)$ et $X = (X_i)_{1\leq i\leq n}\sim\otimes_{i=1}^n\mathcal{N}(\mu,\sigma^2)$ o\`u $\mathcal{IG}$ est la loi inverse gamma.
 \begin{enumerate}
 \item \'Ecrire la densit\'e jointe des variables $Z=(\mu,\sigma^2)$ et $X$.
-\item On consid\`ere une famille variationnelle o\`u $q:(\mu,\sigma^2)\mapsto q_\mu(\mu)q_{\sigma^2}(\sigma^2)$ et \'ecrire la ELBO associ\'ee.
+\item On consid\`ere une famille variationnelle o\`u $q:(\mu,\sigma^2)\mapsto q_\mu(\mu)q_{\sigma^2}(\sigma^2)$. \'Ecrire la ELBO associ\'ee.
 \item \'Ecire la mise \`a jour de $q_\mu$ dans une \'etape de l'algorithme CAVI. 
-\item \'Ecire la mise \`a jour de $_{\sigma^2}$ dans une \'etape de l'algorithme CAVI. 
+\item \'Ecire la mise \`a jour de $q_{\sigma^2}$ dans une \'etape de l'algorithme CAVI. 
 \end{enumerate}
 
 \section{Inf\'erence variationelle pour les mod\`eles exponentiels}
