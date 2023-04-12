@@ -15,4 +15,4 @@ The course covers the basics of computational statistics.
 - [2 - Mixture models](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/7_mixtures_correction.pdf)
 - [3 - Variational inference](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/8_VI_correction.pdf)
 - [4 - EM pour les HMM discrets](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/9_Markov_correction.pdf)
-- [5 - Gibbs sampling](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/10_EM_Gibbs_correction.pdf)
+- [5 - Gibbs sampling](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/10_Gibbs_correction.pdf)
