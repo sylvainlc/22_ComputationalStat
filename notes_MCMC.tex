@@ -1,0 +1,318 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+\usepackage{xargs}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\usepackage{algorithm2e}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+\newcommand{\nset}{\mathbb{N}}
+% Style
+\newcommandx{\dens}[3][1=,2=]%
+{
+\operatorname{p}_{#1}^{#2}(#3)
+}
+
+\newtheorem{theorem}{Theorem}
+
+
+\newcommand{\Yset}{\mathsf{Y}}
+\newcommand{\Ysigma}{\mathcal{Y}}
+\def\Xset{\mathsf{X}}%
+\def\Xsigma{\mathcal{X}}%
+\def\1{\mathbf{1}}%
+\def\as{\PP-\mbox{a.s.}}%
+\def\eqdef{:=}%
+\def\eqlaw{\stackrel{\mathcal{L}}{=}}%
+\def\funcset#1{\mathsf{F_{#1}}}%
+\def\indi#1{\1_{#1}}%
+\def\indiacc#1{\indi{\left\{  #1\right\}  }}%
+\def\lfuncset#1{\mathsf{L_{#1}}}%
+\def\mcbb{\mathcal{B}}%
+\def\meas#1{\mathsf{M}_{#1}}%
+\def\mh#1{P_{\langle#1\rangle}^{MH}}%
+\def\nset{\mathbb{N}}%
+\def\mc#1{\mathcal{#1}}%
+\def\mcf{\mathcal{F}}%
+\def\mcg{\mathcal{G}}%
+\def\PP{\mathbb{P}}%
+\def\rmd{\mathrm{d}}%
+\def\rset{\mathbb{R}}%
+
+\def\lrb#1{\left[#1\right]}%
+
+\def\lrcb#1{\left\{  #1\right\}  }%
+\def\seq#1#2{\lrcb{#1\,:\,#2}}%
+\def\set#1#2{\lrcb{#1\,:\,#2}}%
+
+
+\begin{document}
+
+\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e 
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{Markov chain Monte Carlo}
+\end{center}
+\hrulefill
+
+\medskip
+
+We assume that the random variables $(X,Y)$ have an unknown distribution and we usually propose a parametric family of joint probability distributions $(x,y)\mapsto p_\theta(x,y)$, $\theta\in\Theta$, with respect to a dominating measure $\lambda$, in order to estimate this unknown distribution. 
+
+In machine/statistical learning most of the problems we aim to solve require then to sample random variables from a complex distribution. Depending on the context, this distribution can be given for instance by a marginal density $p_\theta(y) = \int p_\theta(x,y) \lambda(\rmd x)$ or by a conditional/posterior distribution $p_\theta(x|y) = p_\theta(x)p_\theta(y|x)/\int p_\theta(x,y) \lambda(\rmd x)$.
+
+ %In this section, we introduce different algorithms, depending on the framework, to solve machine learning tasks based on sampling random variables.  In particular, we detail Markov Chain Monte Carlo (MCMC) methods, which allow to construct a process $(X_k)_{k\in\nset}$ that targets an unknown distribution $\pi$. Sometimes $(X_k)_{k\in\nset}$ is itself a Markov chain with invariant probatility measure $\pi$, sometimes, $(X_k)_{k\in\nset}$ is the first component process of an extended Markov chain that targets an extended distribution where the marginal distribution on the first component is $\pi$.
+
+\paragraph{Example: Bayesian inference. }
+
+In  Bayesian inference, prior belief  is combined with
+data to obtain posterior distributions on which statistical inference is based.
+%Although we focus primarily on  likelihood based inference in this text,
+%it is also worthwhile to consider Bayesian  inference  for some problems.
+Except for some simple cases, Bayesian inference can be computationally
+intensive and may rely on  computational techniques.
+
+The basic idea in Bayesian analysis is that a parameter vector $ \theta \in \Theta$ is unknown, so it is endowed with a \emph{prior} distribution with probability density
+$\pi_0( \theta)$.  We also
+introduce a model or likelihood, $\dens[][]{ y_{1:n} \mid \theta}$, that is
+a probability density function for the data $Y=y_{1:n}$ which depends on the parameter vector.
+Inference about $ \theta$ is then based on the \emph{posterior}
+distribution, which is obtained via Bayes's theorem,
+$$
+\theta \mapsto \pi(\theta) =\frac{\pi_0( \theta) \dens[][]{ y_{1:n} \mid \theta}}{\int \pi_0( \theta) \dens[][]{ y_{1:n} \mid \theta} \lambda(\rmd \theta)} \propto \pi_0( \theta) \dens[][]{ y_{1:n} \mid \theta}.
+$$
+  In some simple cases, the prior  and
+the likelihood are \emph{conjugate}  distributions that may be combined easily.
+For example, in $n$ fixed repeated (i.i.d.) Bernoulli experiments with probability of success $\theta$,
+a \emph{Beta-Binomial} conjugate pair is taken.  In this case the prior is
+Beta($a,b$):
+$\pi_0(\theta) \propto \theta^{a} (1-\theta)^{b}\mathds{1}_{(0,1)}(\theta)$; the values $a,b > -1$  are called
+hyperparameters. The likelihood in this example is
+Binomial$(n,\theta)$:
+$\dens[][]{ y \mid \theta} \propto \theta^y (1-\theta)^{n-y}$, from which
+we easily deduce that the
+posterior is also Beta,
+$\pi ( \theta ) \propto \theta^{y+a}(1-\theta)^{n+b-y }\mathds{1}_{(0,1)}(\theta)
+$, and from which inference may easily be achieved.
+
+In more complex experiments, the posterior distribution is often difficult to obtain by direct calculation,
+so alternatives have to be deployed to obtain samples approximately distributed as the posterior distribution. %Note that in \eqref{eq:target:bayes}, the numerator is usually known and explicit while, due to the integral, the denominator is a multiplicative unknown constant.  
+
+
+
+%\begin{example}
+%In Bayesian deep learning, uncertainty quantification may be obtained by analyzing the posterior distribution of the weights, as in \cite{blundell2015weight}. In this setting, using an input $x\in \rset^p$, the observations $Y$, conditionally on the parameter $\theta$, has a Gaussian distribution with mean $m_\theta(x)$ and covariance $\Sigma_\theta(x)$. The quantities  $m_\theta(x)$ and  $\Sigma_\theta(x)$ are outputs of a neural network (for instance a Multi-layer Perceptron) with input $x$ and parameters $\theta$. The prior distribution of $\theta$ is Gaussian with independent entries with mean $\mu \in\rset$ and varriance $\sigma^2>0$. Since $m_\theta(x)$ and  $\Sigma_\theta(x)$ contain many nonlinearities the posterior distribution $\pi$ of $\theta$, i.e. the distribution of $\theta$ given $Y$ and the input $x$, is unknown.
+
+
+\section*{Definitions}
+\paragraph{Notations. } Let $(\Xset,\Xsigma)$ be a measurable space, i.e.  $\Xsigma$ is a $\sigma$-algebra on $\Xset$, and consider the following notations.
+\begin{itemize}
+\item $\meas +(\Xset)$ is the set of non-negative measures on $(\Xset,\Xsigma)$.
+\item $\meas 1(\Xset)$ is the set of probability measures on $(\Xset,\Xsigma)$.
+\item $\funcset{}(\Xset)$ is the set of real-valued measurable functions
+$f$ on $\Xset$ and $\funcset{}_{+}(\Xset)$ the set of non-negative measurable
+functions on $\Xset$.
+\item If $k\leq\ell$,  $u_{k:\ell}$ means $(u_{k},\ldots,u_{\ell})$ and $u_{k:\infty}$ means $(u_{k+\ell})_{\ell\in\nset}$.
+\end{itemize}
+
+\paragraph{Markov kernel. }
+We say that $P:\Xset\times\Xsigma\to\rset^{+}$
+is a Markov kernel, if for all $(x,A)\in\Xset\times\Xsigma$,
+\begin{itemize}
+\item $\Xset\ni y\mapsto P(y,A)$ is $\Xsigma/\mcbb(\rset^{+})$ measurable,
+\item $\Xsigma\ni B\mapsto P(x,B)$ is a probability measure on $(\Xset,\Xsigma)$.
+\end{itemize}
+
+For all $(x,A)\in\Xset\times\Xsigma$, as a function
+of the first component only, $P(\cdot,A)$ is measurable and as a
+function of the second component only, $P(x,\cdot)$ is a probability
+measure. In particular, $P(x,\Xset)=1$ for all $x\in\Xset$. Since
+$P(x,\cdot)$ is a measure, we also use the infinitesimal notation:
+$P(x,\rmd y)$. For example, 
+$$
+P(x,A)=\int_{\Xset}\indi A(y)P(x,\rmd y)=\int_{A}P(x,\rmd y)\eqsp.
+$$
+%In almost all the course, a Markov kernel $P$ allows to move a point $x$ from a measurable space $(\Xset,\Xsigma)$ to another point on the same measurable space, that is, $P$ is defined on $\Xset\times \Xsigma$ but we can more generally define a Markov kernel from a measurable space $(\Xset,\Xsigma)$ to another measurable space $(\Yset,\Ysigma)$. In such case, $P$ will be a  Markov kernel on $\Xset \times \Ysigma$. 
+For all $\mu\in\meas +(\Xset)$, all Markov kernels $P$, $Q$ on
+$\Xset\times\Xsigma$, and all measurable non-negative or bounded
+functions $h$ on $\Xset$, we use the following convention and
+notation.
+\begin{itemize}
+\item $\mu P$ is the (positive) measure: $\Xsigma\ni A\mapsto\mu P(A)=\int\mu(\rmd x)P(x,A)$,
+\item $PQ$ is the Markov kernel: $(x,A)\mapsto\int_{\Xset}P(x,\rmd y)Q(y,A)$,
+\item $Ph$ is the measurable function $x\mapsto\int_{\Xset}P(x,\rmd y)h(y)$.
+\end{itemize}
+It is easy to check that if $\mu$ is a probability measure, then
+$\mu P$ is also a probability measure (since $\mu P(\Xset)=\int_{\Xset}\mu(\rmd x)P(x,\Xset)=\int_{\Xset}\mu(\rmd x)=1$).
+With this notation, using Fubini's theorem,
+\begin{align*}
+\mu(P(Qh)) & =(\mu P)(Qh)=(\mu(PQ))h\\
+ & =\mu((PQ)h)=\int_{\Xset^{3}}\mu(\rmd x)P(x,\rmd y)Q(y,\rmd z)h(z).
+\end{align*}
+%Therefore, all these parenthesis can be discarded and we can write
+%$\mu PQh$ without any ambiguity. 
+%To sum up, measures act on the left side of a Markov kernel whereas
+%functions acts on the right side. To make sure you have mastered all
+%the notation, check your understanding with the following equalities
+%$\delta_{x}P(A)=P(x,A)=P\indi A(x)$.
+
+To finish up with notation, we now define the iterates of a Markov
+kernel $P$, which will come in very handy thereafter: for a given
+Markov kernel $P$ on $\Xset\times\Xsigma$, define $P^{0}=I$ where
+$I$ is the identity kernel: $(x,A)\mapsto\indi A(x)$, and set for
+$k\geq0$, $P^{k+1}=P^{k}P$.
+
+
+\paragraph{Markov chain. }
+Let$\seq{X_{k}}{k\in\nset}$
+be a sequence of random variables on the same probability space $(\Omega,\mcg,\PP)$
+and taking values on $\Xset$, we say that $\seq{X_{k}}{k\in\nset}$
+is a Markov chain with Markov kernel $P$ and initial distribution
+$\nu\in\meas 1(\Xset)$ if and only if
+\begin{enumerate}
+\item  for all $(k,A)\in\nset\times\Xsigma$,  $\PP(X_{k+1}\in A|X_{0:k})=P(X_{k},A)$,
+$\PP$-a.s.
+\item $\PP(X_{0}\in A)=\nu(A)$.
+\end{enumerate}
+
+Note that in the definition we consider $\PP(X_{k+1}\in A|X_{0:k})$,
+that is, the conditional probability is with respect to the sigma-field
+$\sigma(X_{0:k})$. We can actually replace $\sigma(X_{0:k})$ by
+$\mcf_{k}$ as soon as we know that $(X_{k})_{k\geq0}$ is $(\mcf_{k})_{k\geq0}$-adapted.
+
+\paragraph{Invariant probability measure. }
+We say that $\pi\in\meas 1(\Xset)$ is an invariant probability measure
+for the Markov kernel $P$ on $\Xset\times\Xsigma$ if $\pi P=\pi$.
+
+If $(X_{k})$ is a Markov chain with Markov kernel $P$
+and assuming that $X_{0}\sim\pi$, then for all $k\geq1$, we have
+$X_{k}\sim\pi$ since applying $P^{k}$ on
+both sides of $\pi P=\pi$ shows that $\pi P^{k+1}=\pi P^{k}$ and
+therefore, for all $k\in\nset$, $\pi P^{k}=\pi$. %This result on
+%the (marginal) distribution of $X_{k}$ may be extended to $n$-tuples.
+
+\section*{Metropolis-Hastings algorithm}
+In this section, we are given a probability measure $\pi\in\meas 1(\Xset)$
+and the idea now is to construct a Markov chain $\seq{X_{k}}{k\in\nset}$
+admitting $\pi$ as invariant probability measure, in which case we
+say that $\pi$ is a target distribution. In other words, we try to
+find a Markov kernel $P$ on $\Xset\times\Xsigma$ such that $P$
+is $\pi$-invariant. 
+
+For simplicity we now assume that $\pi$ has a density with respect
+to some dominating $\sigma$-finite measure $\lambda$ and by abuse
+of notation, we also denote by $\pi$ this density,  and we assume that this density
+$\pi$ is \textbf{positive}.
+
+Moreover, let $Q$ be Markov kernel on $\Xset\times\Xsigma$ such
+that $Q(x,\rmd y)=q(x,y)\lambda(\rmd y)$, that is, for any $x\in\Xset$,
+$Q(x,\cdot)$ is also dominated by $\lambda$ and denoting by $q(x,\cdot)$
+this density, we assume for simplicity that $q(x,y)$ is \textbf{positive}
+for all $x,y\in\Xset$. 
+
+Define 
+$$
+\alpha: (x,y)\mapsto\mathrm{min}\left(\frac{\pi(y)q(y,x)}{\pi(x)q(x,y)},1\right)\,.
+$$
+Then, with this choice of acceptance rate, the Markov chain produced by the Metropolis-Hastings algorithm is $\pi$-reversible.
+
+\begin{algorithm}
+\caption{\label{alg:mh}The Metropolis-Hastings Algorithm}
+
+%\SetAlgoLined
+\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+%\Input{n}
+\Output{$X_0,\ldots,X_n$}
+\BlankLine
+At $k=0$, draw $X_{0}$ according to some arbitrary distribution\\
+\For{$k\leftarrow 0$ \KwTo $n-1$}
+{
+$\bullet$ Draw independently $Y_{k+1}\sim Q(X_{k},\cdot)$ and $U_{k+1}\sim\mathrm{Unif}(0,1)$\\
+$\bullet$ Set $X_{k+1}=\begin{cases} Y_{k+1} & \mbox{if }U_{k+1}\leq\alpha(X_{k},Y_{k+1})\,,\\ X_{k} & \mbox{otherwise}. \end{cases}$
+}
+\end{algorithm}
+ In words, $Q$ allows to propose a candidate for the next value of
+the Markov chain $(X_{k})_{k\in\nset}$ and this candidate is accepted or
+refused according to a probability given by the function $\alpha$.
+
+\paragraph{The random walk MH sampler. }
+If $\Xset=\rset^{p}$ and if
+the proposal kernel is $Q(x,\rmd y)=q(y-x)\lambda(\rmd y)$ where
+$q$ is a symmetric density with respect to $\lambda$ on $\Xset$, (by symmetric,
+we mean that $q(u)=q(-u)$ for all $u\in\Xset$) then at each time
+step in the MH algorithm, we draw a candidate $Y_{k+1}\sim q\left(y\ -X_{k}\right)\lambda(\rmd y)$.
+In such a case, the acceptance probability is $\alpha(x,y)=\min\left(\pi(y)/\pi(x),1\right)$
+and the associated algorithm is called the \emph{(symmetric)} \emph{Random
+Walk Metropolis-Hasting.}\textbf{ }Another way of writing the proposal
+update is $Y_{k+1}=X_{k}+\eta_{k}$ where $\eta_{k}\sim q(\cdot)$.
+
+\section*{Gibbs sampler}
+The Gibbs sampler is a specific version of Metropolis-Hastings algorithm  in cases where the state $\xset = \rset^d$ and where for all $x\in\rset^d$, $x$ can be decomposed into $x = (x^{(1)},\ldots,x^{(q)})$ so that for all $1\leq j \leq d$, {\bf we know how to sample from $\pi(\cdot |x^{(-j)})$ where $x^{(-j)} = (x^{(\ell)})_{\ell \neq j}$}. It is easy to write the proposal distribution associated with the Gibbs sampler and to show that the acceptance rate is 1.
+
+\begin{algorithm}
+\caption{One iteration of the Gibbs sampler}
+%\SetAlgoLined
+\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+%\Input{n}
+\Input{$X_{k} = (X_k^{(1)},\ldots,X_k^{(q)})$}
+\Output{$X_{k+1}$}
+\BlankLine
+Sample uniformly $J$ in $\{1,\ldots,q\}$.\\
+Sample $X_{k+1}^{(J)} \sim \pi(\cdot |X_k^{(-J)})$.\\
+For all $1\leq j\leq q$, $j\neq J$, set $X_{k+1}^{(-j)}=X_k^{(-j)}$.
+\end{algorithm}
+\end{document}

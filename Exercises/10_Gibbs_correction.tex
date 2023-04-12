@@ -1,0 +1,226 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+
+% Style
+
+
+\newtheorem{theorem}{Theorem}
+
+
+\begin{document}
+
+\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e \\
+ 2022-2023
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{\'Echantillonneur de Gibbs}
+\end{center}
+\hrulefill
+
+\medskip
+
+
+\section*{Warm-up}
+Soit $(X,Y)$ un couple de variables de loi gaussienne centr\'ee de matrice de covariance 
+$$
+\Sigma = \begin{pmatrix}
+1 & \rho\\ \rho & 1
+\end{pmatrix}\,,
+$$
+o\`u $\rho \in(0,1)$. 
+\'Ecrire un \'echantillonneur de Gibbs permettant de simuler approximativement la loi de $(X,Y)$.
+
+\vspace{.2cm}
+
+{\em
+Introduisons le vecteur $Z = X-\rho Y$. Alors, 
+$$
+\mathrm{Cov}(Z,Y) = \mathrm{Cov}(X,Y) - \rho\mathrm{Cov}(Y,Y) = 0_,.
+$$
+Ainsi, puisque le vecteur $(Y,Z)$ est gaussien, $Y$ et $Z$ sont ind\'ependantes. On \'ecrit ensuite 
+$$
+\mathbb{E}[X|Y] = \mathbb{E}[Z+\rho Y|Y] = \mathbb{E}[Z] +\rho Y = \rho Y\,.
+$$
+et
+$$
+\mathbb{V}[X|Y] = \mathbb{E}[(X- \mathbb{E}[X|Y])^2|Y] =\mathbb{E}[(X- \rho Y)^2|Y] = \mathbb{E}[Z^2|Y] = \mathbb{V}[Z] = 1-\rho^2\,.
+$$
+La loi conditionnelle de $X$ sachant $Y$, not\'ee $\pi_{X|Y}(\cdot |Y)$, est donc une gaussienne de moyenne $\rho Y$ et de variance $1-\rho^2$. On obtient un r\'esultat similaire pour la loi de $Y$ sachant $X$, not\'ee $\pi_{Y|X}(\cdot |X)$, par sym\'etrie. Ainsi une it\'eration d'un \'echantillonneur de Gibbs  lorsque l'\'etat courant est $(X_k,Y_k)$ serait :
+\begin{itemize}
+\item Simuler $X_{k+1} \sim \pi_{X|Y}(\cdot |Y_k)$.
+\item Simuler $Y_{k+1} \sim \pi_{Y|X}(\cdot |X_{k+1})$.
+\end{itemize}
+}
+
+\section*{\'Echantillonneur pour un m\'elange gaussien}
+Soit $K\geq 2$ et $n\geq 1$. On consid\`ere le vecteur al\'eatoire $(\theta,X,Z)$ o\`u $X = (X_1,\ldots,X_n)$ et $Z = (Z_1,\ldots,Z_n)$ ayant la loi suivante.
+\begin{itemize}
+\item On simule $p = (p_1,\ldots,p_K)$ un vecteur ayant la loi de densit\'e proportionnelle \`a (loi de Dirichlet) $p \mapsto \prod_{k=1}^Kp_k^{\gamma_k-1}$. %$\frac{\Gamma\left(\sum_{k=1}^K\gamma_k\right)}{\prod_{k=1}^K\Gamma(\gamma_k)}$
+\item On simule $s^2_{1:K}$, mutuellement ind\'ependantes, et telles que pour tout $1\leq k \leq K$, $s^2_k$ a une loi inverse-gamma de param\`etres, $\lambda_k/2$ et $\beta_k/2$, i.e. de densit\'e proportionnelle \`a $u\mapsto u^{-\lambda_k/2-1}\exp(-\beta_k/(2u))$ sur $\mathbb{R}_+^*$.
+\item Pour tout $1\leq k \leq K$, la loi conditionnelle de $m_k$ sachant $s_k^2$ est gaussienne de moyenne $\alpha_k$ et de variance $s_k^2/\lambda_k$.
+\item Conditionnellement \`a $\theta = (p_{1},\ldots, p_K, m_{1}, \ldots, m_K, s^2_{1},\ldots, s^2_K)$, les $(Z_i,X_i)_{1\leq i \leq n}$ sont ind\'ependantes et telles que :
+\begin{itemize}
+\item pour tout $1\leq k \leq K$, $\mathbb{P}(Z_i = k|\theta) = p_k$ ;
+\item conditionnellement \`a $\theta$ et $Z_i$, $X_i$ suit une loi gaussienne de moyenne $m_{Z_i}$ et de variance $s^2_{Z_i}$.
+\end{itemize}
+\end{itemize}
+La densit\'e jointe peut alors s'\'ecrire :
+$$
+\pi: (\theta,x,z) \mapsto \pi(p) \left\{\prod_{k=1}^K\pi(s_k^2)\pi(m_k|s_k^2)\right\}\left\{\prod_{i=1}^n\pi(z_i|\theta)\pi(x_i|z_i,\theta)\right\}\,,
+$$
+o\`u $\pi(w_1|w_2)$ est une notation g\'en\'erique pour la densit\'e de la loi conditionnelle de la variable $W_1$ sachant $W_2$.
+\begin{enumerate}
+\item Montrer que la loi a posteriori de $\theta$ s'\'ecrit :
+$$
+\pi(\theta|x) \propto \pi(\theta)\prod_{i=1}^n\left(\sum_{k=1}^Kp_k \varphi_{m_k,s_k^2}(x_i)\right)\,,
+$$
+o\`u $\varphi_{m_k,s_k^2}$ est la densit\'e gaussienne de moyenne $m_k$ et de variance $s_k^2$.
+
+\vspace{.2cm}
+
+{\em
+Pour \'ecrire cette loi conditionnelle, il suffit d'\'ecrire que la densit\'e conditionnelle est proportionnelle `a la densit\'e jointe et ensuite de ne conserver que les quantit\'es qui d\'ependent de $\theta$. On obtient alors,
+\begin{align*}
+\pi(\theta|x)\propto \pi(\theta,x) &\propto \pi(\theta) \pi(x|\theta)\,,\\
+&\propto \pi(\theta) \prod_{i=1}^n\pi(x_i|\theta)\,,\\
+&\propto \pi(\theta) \prod_{i=1}^n\left(\sum_{k=1}^Kp_k\varphi_{m_k,s_k^2}(x_i)\right)\,.
+\end{align*}
+}
+\item \'Ecrire la densit\'e de la loi conditionnelle de $Z$ sachant $(X,\theta)$.
+
+\vspace{.2cm}
+
+{\em
+En proc\'edant comme \`a la question pr\'ec\'edente, on obtient
+\begin{align*}
+\pi(z|\theta,x)\propto \pi(\theta,z,x) &\propto \pi(z|\theta) \pi(x|z,\theta)\,,\\
+&\propto \prod_{i=1}^n\pi(z_i|\theta)\pi(x_i|z_i\theta)\,,\\
+&\propto \prod_{i=1}^n\left(\sum_{k=1}^K\mathds{1}_{z_i=k}p_k\varphi_{m_k,s_k^2}\right)\,.
+\end{align*}
+}
+\item \'Ecrire la densit\'e de la loi conditionnelle de $\theta$ sachant $(Z,X)$.
+
+\vspace{.2cm}
+
+{\em
+La densit\'e de la loi conditionnelle de $\theta$ sachant $(Z,X)$ s'\'ecrit
+\begin{align*}
+\pi(\theta|z,x)\propto \pi(\theta,z,x) &\propto \pi(\theta)\pi(z|\theta) \pi(x|z,\theta)\propto \pi(p|z)\pi(m,s^2|x,z)\,.
+\end{align*}
+On peut ensuite calculer chacune de ces deux densit\'es. Tout d'abord,
+\begin{align*}
+\pi(p|z)\propto \pi(\theta,z,x) &\propto \pi(p)\pi(z|p) \,,\\
+&\propto \prod_{k=1}^Kp_k^{\gamma_k-1} \prod_{i=1}^n p_{z_i} \propto \prod_{k=1}^Kp_k^{\gamma_k+n_k-1}\,,
+\end{align*}
+o\`u $n_k$ est le nombre de $z_i$ \'egaux \`a $k$. Ainsi, $\pi(p|z)$ est la densit\'e de la loi de Dirichlet de param\`etres $(\gamma_1+n_1,\ldots,\gamma_K+n_K)$. D'autre part, 
+\begin{align*}
+\pi(m,s^2|x,z)&\propto \pi(s^2) \pi(m|s^2)\pi(z|m,s^2)\pi(x|z,m,s^2) \,,\\
+&\propto \left\{\prod_{i=1}^n s_{z_i}^{-1}\exp\left(-\frac{(x_i-m_{z_i})^2}{2s_{z_i}^2}\right)\right\} \left\{\prod_{k=1}^K (s^2_k)^{-\lambda_k/2-1}\exp(-\beta_k/(2s_k^2))\right\}\\
+&\hspace{4cm}\times \prod_{k=1}^K  s_{k}^{-1}\exp\left(-\frac{\lambda_k(m_k-\alpha_{k})^2}{2s_{k}^2}\right)\,,\\
+&\propto\prod_{k=1}^K  (s_{k}^2)^{-n_k/2-\lambda_k/2-3/2}\exp(-\beta_k/(2s_k^2))\\
+&\hspace{4cm}\times\prod_{k=1}^K \exp\left(\frac{-1}{2s_k^2}\left(\lambda_k(m_k-\alpha_k)^2 + \sum_{i=1}^n\mathds{1}_{z_i=k}(x_i-m_k)^2\right)\right)\,.
+\end{align*}
+On remarque alors que
+\begin{align*}
+\lambda_k(m_k-\alpha_k)^2 + \sum_{i=1}^n\mathds{1}_{z_i=k}(x_i-m_k)^2 &\\
+&\hspace{-5cm}= (n_k+\lambda_k)m_k^2 -2m_k\left(\sum_{i=1}^n\mathds{1}_{z_i=k}x_i+\lambda_k\alpha_k\right) + \lambda_k\alpha_k^2 +\sum_{i=1}^n\mathds{1}_{z_i=k}x^2_i\,,\\
+&\hspace{-5cm}= (n_k+\lambda_k)\left(m_k-\frac{\sum_{i=1}^n\mathds{1}_{z_i=k}x_i+\lambda_k\alpha_k}{n_k+\lambda_k}\right)^2 - \frac{\left(\sum_{i=1}^n\mathds{1}_{z_i=k}x_i+\lambda_k\alpha_k\right)^2}{n_k+\lambda_k} + \lambda_k\alpha_k^2 +\sum_{i=1}^n\mathds{1}_{z_i=k}x^2_i\,,\\
+&\hspace{-5cm}= (n_k+\lambda_k)\left(m_k-\tau_k\right)^2 - \frac{\left(\sum_{i=1}^n\mathds{1}_{z_i=k}x_i+\lambda_k\alpha_k\right)^2}{n_k+\lambda_k} + \lambda_k\alpha_k^2 +\sum_{i=1}^n\mathds{1}_{z_i=k}x^2_i\,,
+\end{align*}
+o\`u $\tau_k = (\sum_{i=1}^n\mathds{1}_{z_i=k}x_i+\lambda_k\alpha_k)/(n_k+\lambda_k)$. Ainsi,
+\begin{align*}
+\pi(m,s^2|x,z)&\propto\prod_{k=1}^K  (s_{k}^2)^{-n_k/2-\lambda_k/2-3/2}\exp\left(-\frac{\rho_k}{2s_k^2}\right)\\
+&\hspace{4cm}\times\prod_{k=1}^K \exp\left(\frac{-(n_k+\lambda_k)}{2s_k^2}\left(m_k-\tau_k)^2\right)\right)\,,
+\end{align*}
+o\`u 
+$$
+\rho_k = \beta_k+ \lambda_k\alpha_k^2 +\sum_{i=1}^n\mathds{1}_{z_i=k}x^2_i - \frac{\left(\sum_{i=1}^n\mathds{1}_{z_i=k}x_i+\lambda_k\alpha_k\right)^2}{n_k+\lambda_k}\,.
+$$
+Finalement, sous $\pi(m,s^2|x,z)$, les $s_k^2$ sont ind\'ependants de loi $\mathcal{IG}((n_k+\lambda_k)/2;\rho_k/2)$ et les $m_k$ sont ind\'ependants conditionnellement aux $s_k^2$ et de loi $\mathcal{N}(\tau_k;s_k^2/(n_k+\lambda_k))$, $1\leq k\leq K$.
+}
+\item \'Ecrire le pseudo-code de l'\'echantillonneur de Gibbs.
+
+\vspace{.2cm}
+
+{\em
+Il suffit, \`a chaque it\'eration, de simuler la variable s\'electionn\'ee conditionnellement aux autres en utilisant les questions pr\'ec\'edentes.
+}
+\end{enumerate}
+
+%\section{Inf\'erence variationelle pour les mod\`eles exponentiels}
+%On consid\`ere un couple de variables al\'eatoires $(Z,X)\in\mathbb{R}^d\times \mathbb{R}^m$. On note $(z,x) \mapsto p(z,x)$ la densit\'e jointe de ce couple par rapport \`a la mesure de Lebesgue. Nous souhaitons utiliser dans cet exercice une approche variationnelle pour estimer la loi a posteriori $p(z|x)$. Pour cela on se donne une famille de densit\'es sur $\mathbb{R}^d$:
+%$$
+%\mathcal{Q} = \left\{(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)\eqsp;\eqsp q_j\; \mathrm{est\,une\,densit\acute e\,sur\,\mathbb{R}}\right\}\eqsp.
+%$$
+%\begin{enumerate}
+%\item Rappeler l'algorithme CAVI (Coordinate Ascent Variational Inference) pour estimer it\'erativement $q^*$.
+%\item Supposons que le mod\`ele soit tel que pour tout $j\in\mathbb{R}$, 
+%$$
+%p(z_j|z_{-j},x) = h(z_j)\mathrm{exp}(\eta(z_{-j})^Ts(z_j) - a(z_{-j}))\eqsp,
+%$$ 
+%o\`u $z_{-j} = (z_u)_{1\leqslant u\leqslant d, u \neq j}$ et o\`u $\eta$, $s$ et $a$ sont des fonctions connues (la d\'ependance en $x$ de ces fonctions est omise par simplicit\'e). Montrer que si les densit\'es $(q_u)_{1\leqslant u\leqslant d, u \neq j}$ sont fix\'ees alors la mise \`a jour de l'algorithme CAVI de la $j$-\`eme densit\'e est  (\`a une constante multiplicative pr\`es),
+%$$
+%q^*_j(z_j) \mapsto h(z_j) \mathrm{exp}\left\{\mathbb{E}_{-j}[\eta(Z_{-j})^Ts(Z_j)]\right\}\eqsp,
+%$$
+%o\`u $\mathbb{E}_{-j}$ est l'esp\'erance sous la loi de densit\'e $\prod_{u=1, u\neq j}^d q_u(z_u)$.
+%\item La convergence de l'algorithme CAVI  d\'epend-elle de l'initialisation des densit\'e $(q_u)_{1\leqslant u\leqslant d}$ ?
+%\end{enumerate}
+\end{document}
