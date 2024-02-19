@@ -1,0 +1,8 @@
+jupyter
+jupyterlab
+numpy
+matplotlib
+scipy
+autograd
+pandas
+tqdm
