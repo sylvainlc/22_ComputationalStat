@@ -6,3 +6,5 @@ scipy
 autograd
 pandas
 tqdm
+seaborn
+sklearn
