@@ -1,0 +1,239 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+
+% Style
+
+
+\newtheorem{theorem}{Theorem}
+
+
+\begin{document}
+
+%\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e \\
+
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{Maximum de vraisemblance et m\'ethode des moments}
+\end{center}
+\hrulefill
+
+\medskip
+
+\section*{Warm-up}
+
+Soit $(X_1,\ldots,X_n)$ des variables al\'atoires i.i.d. r\'eelles d'esp\'erance $\mu$ et de variance $\sigma^2$, on suppose que $X_1$ a un moment d'ordre 4 fini. On note
+\begin{equation*}
+\bar X_n = \frac{1}{n}\sum_{i=1}^n X_i\,, \quad s^2_n = \frac{1}{n}\sum_{i=1}^n (X_i-\bar X_n)^2\,, \quad T_n = \sqrt{n-1}\frac{\bar X_n - \mu}{s_n}\,.
+\end{equation*}
+\begin{enumerate}
+\item Calculer $\mathbb{E}[\bar X_n]$, $\mathbb{V}[\bar X_n]$ et $\mathbb{E}[(\bar X_n-\mu)^2]$.
+
+%\vspace{.2cm}
+%
+%{\em 
+%En utilisant le fait que les variables $(X_1,\ldots,X_n)$  sont i.i.d. on obtient
+%\begin{align*}
+%\mathbb{E}[\bar X_n] &= \mathbb{E}[X_1] = \mu  \,.\\
+%\mathbb{V}[\bar X_n] &= \frac{1}{n^2}n \mathbb{V}[X_1]  =  \frac{\sigma^2}{n} \,.\\
+%\mathbb{E}[(\bar X_n-\mu)^2] &= \mathbb{E}[(\bar X_n-\mathbb{E}[\bar X_n])^2] = \mathbb{V}[\bar X_n]  =   \frac{\sigma^2}{n} \,.
+%\end{align*}
+%}
+
+\item Montrer que $(\bar X_n)_{n\geq 0}$ converge en probabilit\'e vers $\mu$ et que $(\sqrt{n}(\bar X_n-\mu))_{n\geq 0}$  converge en loi vers $Z$ o\`u $ Z\sim \mathcal{N}(0,\sigma^2)$.
+
+%\vspace{.2cm}
+%
+%{\em Il suffit d'appliquer la loi des grands nombres et le th\'eor\`eme central limite.}
+
+\item Calculer $\mathbb{E}[s^2_n]$ et montrer que $(s^2_n)_{n\geq 0}$ converge en probabilit\'e vers $\sigma^2$.
+
+%\vspace{.2cm}
+%
+%{\em 
+%Par d\'efinition,
+%\begin{align*}
+%\mathbb{E}[s^2_n] = \mathbb{E}\left[\frac{1}{n}\sum_{i=1}^n (X_i-\bar X_n)^2\right] &=  \mathbb{E}[X_1^2] + \mathbb{E}[\bar X_n ^2] -2 \mathbb{E}[\bar X_n ^2] \\
+%&=\mathbb{E}[X_1^2] - \mathbb{E}[\bar X_n ^2] \\
+%&= \sigma^2 + \mu^2 - \left(\frac{\sigma^2}{n} + \mu^2\right)\\
+%&= \frac{n-1}{n}\sigma^2\,.
+%\end{align*}
+%On en d\'eduit que $n s_n^2/(n-1)$ est un estimateur sans biais de $\sigma^2$. On peut \'egalement montrer ais\'ement que $s_n^2$ converge en probabilit\'e vers $\sigma^2$.
+%}
+
+\item D\'eterminer la limite en loi de $(T_n)_{n\geq 0}$.
+
+%\vspace{.2cm}
+%
+%{\em 
+%Par d\'efinition,
+%\begin{align*}
+%T_n = \sqrt{n-1}\frac{\bar X_n - \mu}{s_n}=\frac{\sqrt{n-1}\sigma}{\sqrt{n}s_n}\sqrt{n}\frac{\bar X_n - \mu}{\sigma}\,.
+%\end{align*}
+%En utilisant les questions pr\'ec\'edentes et en appliquant le lemme de Slutsky, on en d\'eduit que  $(T_n)_{n\geq 0}$ converge en loi vers $Z$ o\`u $Z\sim \mathcal{N}(0,1)$.
+%}
+
+\item  Nous supposons dans la suite que les $(X_i)_{1\leq i\leq n}$ sont gaussiennes. Quelle est la loi de $\bar X_n$ ? Montrer que $\bar X_n$ et $s_n^2$ sont ind\'ependantes.
+
+%\vspace{.2cm}
+%
+%{\em Dans ce cas, $\bar X_n$ est une combinaison lin\'eaire de variables al\'eatoires gaussiennes ind\'ependantes. On en d\'eduit que $\bar X_n\sim \mathcal{N}(\mu, \sigma^2/n)$. Pour la seconde question, notons que 
+%$s_n^2 = \|Y\|_2^2/n$ o\`u $Y$ est le vecteur de $\mathbb{R}^n$ dont la i-\`eme composante est $X_i-\bar X_n$, pour $1\leq i\leq n$. Pour obtenir le r\'esultat, il suffit donc de montrer que $Y$ et $\bar X_n$ sont ind\'ependantes. Pour cela il suffit de remarquer que le vecteur $(\bar X_n, Y)^\top$ est un vecteur gaussien (comme transformation lin\'eaire d'un vecteur gaussien). Ainsi, $\bar X_n$ et $Y$ sont ind\'ependantes si et seulement si pour tout $1\leq i \leq n $, $\mathrm{Cov}(\bar X_n, Y_i) = 0$. Or, pour tout $1\leq i \leq n $,
+%$$
+%\mathrm{Cov}(\bar X_n, Y_i) =\mathrm{Cov}(\bar X_n, X_i - \bar X_n) =  \mathrm{Cov}(\bar X_n, X_i)  - \mathbb{V}[\bar X_n] = \frac{1}{n}\sum_{j=1}^n\mathrm{Cov}(X_j, X_i) - \frac{\sigma^2}{n} = 0\,,
+%$$
+%ce qui permet de conclure.
+%
+%Ce r\'esultat peut \'egalement \^etre obtenu directement par application du th\'eor\`eme de Cochran.}
+
+%\item 
+%
+%\vspace{.2cm}
+%
+%{\em }
+%
+%\item 
+%
+%\vspace{.2cm}
+%
+%{\em }
+%
+%\item 
+%
+%\vspace{.2cm}
+%
+%{\em }
+\end{enumerate}
+
+\section*{Loi Gamma}
+Soit $a>0$ et $b>0$. La densit\'e de la loi Gamma de param\`etres $a$ et $b$ est d\'efinie sur $\mathbb{R}_+^*$ par :
+$$
+f_{a,b}: x\mapsto \frac{b^a}{\Gamma(a)}x^{a-1}\mathrm{e}^{-b x}\,,
+$$
+o\`u $\Gamma$ est la fonction gamma. Soit $(X_i)_{1\leq i \leq n}$ des variables i.i.d. de loi Gamma de param\`etres $a$ et $b$.
+
+\begin{enumerate}
+\item Calculer $\mathbb{E}[X_1^k]$ pour $k\geq 1$. Notons $m_1(a,b) = \mathbb{E}[X_1]$ et $m_1(a,b) = \mathbb{E}[X^2_1]$.
+%
+%\vspace{.2cm}
+%
+%{\em Pour tout $k\geq 1$,
+%\begin{align*}
+%\mathbb{E}[X_1^k] &= \int_0^\infty x^k \frac{b^a}{\Gamma(a)}x^{a-1}\mathrm{e}^{-b x} \mathrm{d} x\,,\\
+%&= \frac{b^a}{\Gamma(a)}\int_0^\infty x^{k+a-1}\mathrm{e}^{-b x} \mathrm{d} x\,,\\
+%&= \frac{b^{a-1}}{\Gamma(a)}\int_0^\infty \left(\frac{y}{b}\right)^{k+a-1}\mathrm{e}^{-y} \mathrm{d} y\,,\\
+%&= \frac{1}{b^k\Gamma(a)}\int_0^\infty y^{k+a-1}\mathrm{e}^{-y} \mathrm{d} y\,,\\
+%&= \frac{\Gamma(a+k)}{b^k\Gamma(a)}\,,\\
+%&= \frac{\prod_{j=0}^{k-1}(a+j)}{b^k}\,.
+%\end{align*}}
+
+ \item Calculer un estimateur de $a$ et $b$ par la m\'ethode des moments en r\'esolvant le syst\`eme
+\begin{align*}
+\frac{1}{n}\sum_{i=1}^nX_i &= m_1(a,b) \,,\\
+\frac{1}{n}\sum_{i=1}^nX^2_i &= m_2(a,b) \,.
+\end{align*}
+
+%\vspace{.2cm}
+%
+%{\em D'apr\`es la question pr\'ec\'edente, le syst\`eme devient :
+%\begin{align*}
+%\frac{1}{n}\sum_{i=1}^nX_i &= \frac{a}{b}\,,\\
+%\frac{1}{n}\sum_{i=1}^nX^2_i &= \frac{a(a+1)}{b^2} \,.
+%\end{align*}
+%En utilisant les notations de l'exercice pr\'ec\'edent, nous obtenons les estimateurs 
+%$$
+%\widehat{a}_n = \frac{\bar X_n^2}{s_n^2}\quad\mathrm{et}\quad \widehat{b}_n = \frac{\bar X_n}{s_n^2}\,.
+%$$
+%}
+
+\item Calculer la logvraisemblance $\ell : (a,b) \mapsto \log p_\theta (X_1,\ldots,X_n)$ o\`u $\theta = (a,b)$ et o\`u $p_\theta$ est la densit\'e jointe des variables $(X_i)_{1\leq i \leq n}$.
+
+%\vspace{.2cm}
+%
+%{\em Pour tout $a>0$ et $b>0$, puisque les $(X_i)_{1\leq i \leq n}$ sont i.i.d. de loi gamma de param\`etres $a$ et $b$, 
+%$$
+%\ell(a,b) = an \log b- n \log \Gamma(a) + (a-1)\sum_{i=1}^n \log(X_i) -b \sum_{i=1}^n X_i\,.
+%$$}
+
+\item Calculer le gradient et la matrice hessienne de $\ell$ et en d\'eduire un algorithme it\'eratif pour estimer $\theta$ par la m\'ethode de  Newton-Raphson.
+
+%\vspace{.2cm}
+%
+%{\em D'apr\`es la question pr\'ec\'edente, pour tout $a>0$ et $b>0$,
+%\begin{align*}
+%\frac{\partial}{\partial a}\ell(a,b) &= n \log b- n \frac{\Gamma'(a)}{\Gamma(a)} + \sum_{i=1}^n \log(X_i)\,,\\
+%\frac{\partial}{\partial b}\ell(a,b) &= \frac{an}{b} - \sum_{i=1}^n X_i\,.
+%\end{align*}
+%Le gradient de $\ell$ est donc
+%$$
+%\nabla\ell(a,b) = \begin{pmatrix}n \log b- n \frac{\Gamma'(a)}{\Gamma(a)} + \sum_{i=1}^n \log(X_i) \\ \frac{an}{b} - \sum_{i=1}^n X_i\end{pmatrix}\,.
+%$$
+%Et la matrice hessienne de $\ell$ est
+%$$
+%H(a,b) =\begin{pmatrix} - n \frac{\Gamma''(a)\Gamma(a) - (\Gamma'(a))^2}{\Gamma(a)^2}& \frac{n}{b}\\ \frac{n}{b}& -\frac{an}{b^2} \end{pmatrix}\,.
+%$$}
+%
+%Nous pouvons approcher l'estimateur du maximum de vraisemblance en proposant une m\'ethode it\'erative en initialisant l'estimateur $\theta_0 = (a_0,b_0)^\top$ al\'eatoirement puis en d\'efinissant pour tout $k\geq 0$,
+%$$
+%\theta_{k+1} = \theta_k - H(\theta_k)^{-1}\nabla\ell(\theta_k)\,.
+%$$
+%L'algorithme est en g\'en\'eral arr\^et\'e apr\`es un nombre maximum d'it\'erations ou si $\|\theta_{k+1} - \theta_k\|_2<\varepsilon$ pour un seuil $\varepsilon$ fix\'e.
+\end{enumerate}
+\end{document}
