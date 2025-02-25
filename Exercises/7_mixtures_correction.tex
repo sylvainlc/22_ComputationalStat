@@ -77,27 +77,54 @@
 
 \medskip
 
+Consid\'erons un m\'elange de $K$ lois de Poisson. Pour $1\leq k \leq K$, nous noterons $\lambda_k>0$ le param\`etre de la k-\`eme composante et $\pi_k\in(0,1)$ son poids. Notons $\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)$ et 
+$$
+\Theta = \left\{\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)\,;\, \forall k \in\{1,\ldots,K\}\,,\, \pi_k\in(0,1)\,,\,\lambda_k>0\,,\, \sum_{k=1}^K\pi_k = 1\right\}\,.
+$$
 \begin{enumerate}
-\item Consid\'erons $\{V_k\}_{1\leq k\leq K}$ ind\'ependantes et telles que $V_k\sim \mathcal{P}(\lambda_k)$ pour $1\leq k\leq K$ et $Z$ une variable al\'eatoire de loi multinomiale de param\`etres $\{\pi_1, \ldots,\pi_K\}$ ind\'ependante des $\{V_k\}_{1\leq k\leq K}$. Il suffit alors de poser $X = V_Z = \sum_{k=1}^K \mathds{1}_{Z=k}V_k$.
-\item Par d\'efinition, pour tout $j\geq 0$,
+\item Soit $\theta\in\Theta$, expliquer comment construire une variable al\'eatoire $X$ suivant un m\'elange de lois de Poisson param\'etr\'e par $\theta$.
+
+\vspace{.2cm}
+
+{\em Consid\'erons $\{V_k\}_{1\leq k\leq K}$ ind\'ependantes et telles que $V_k\sim \mathcal{P}(\lambda_k)$ pour $1\leq k\leq K$ et $Z$ une variable al\'eatoire de loi multinomiale de param\`etres $\{\pi_1, \ldots,\pi_K\}$ ind\'ependante des $\{V_k\}_{1\leq k\leq K}$. Il suffit alors de poser $X = V_Z = \sum_{k=1}^K \mathds{1}_{Z=k}V_k$.}
+
+\item Notons $\mathbb{P}_\theta$ la loi de $X$. Pour tout $j\geq 0$, calculer $\mathbb{P}_\theta(X=j)$.
+
+\vspace{.2cm}
+
+{\em Par d\'efinition, pour tout $j\geq 0$,
 \begin{align*}
 \mathbb{P}_\theta\left(X=j\right) &= \sum_{k=1}^K \mathbb{P}_\theta\left(X=j \middle |Z = k\right)\mathbb{P}_\theta\left(Z = k\right)\,,\\
 &=  \sum_{k=1}^K \mathrm{e}^{-\lambda_k}\frac{\lambda_k^j}{j!}\pi_k\,.
-\end{align*}
-\item \'Ecrivons la logvraisemblance:
+\end{align*}}
+\item Soit $\theta\in\Theta$ et $(x_1,\ldots,x_n)\in\mathbb{N}^n$. Calculer $\log \mathbb{P}_\theta(X_{1:n}=x_{1:n}) $ o\`u les $(X_i)_{1\leq i \leq n}$ sont i.i.d de m\^eme loi que $X$.
+
+\vspace{.2cm}
+
+{\em \'Ecrivons la logvraisemblance:
 \begin{align*}
 \log \mathbb{P}_\theta\left(X_{1:n}=x_{1:n}\right) &= \sum_{i=1}^n\log \mathbb{P}_\theta\left(X_{i}=x_{i}\right)\,,\\
 &=\sum_{i=1}^n\log \left(\sum_{k=1}^K \mathrm{e}^{-\lambda_k}\frac{\lambda_k^{x_i}}{x_i!}\pi_k\right)\,,\\
 &=\sum_{i=1}^n\left\{-\log  x_i! + \log \left(\sum_{k=1}^K \mathrm{e}^{-\lambda_k}\lambda_k^{x_i} \pi_k\right)\right\}\,.
 \end{align*}
-On remarque ensuite ais\'ement que l'\'equation $\nabla_\theta \log \mathbb{P}_\theta\left(X_{1:n}=x_{1:n}\right)  = 0$ n'admet pas de solution explicite.
-\item
+On remarque ensuite ais\'ement que l'\'equation $\nabla_\theta \log \mathbb{P}_\theta\left(X_{1:n}=x_{1:n}\right)  = 0$ n'admet pas de solution explicite.}
+\item Puisque nous ne pouvons pas maximiser la logvraisemblance explicitement, nous allons utiliser l'algorithme Expectation Maximization.
+
 \begin{enumerate}
-\item Pour tout $\theta$ et tout $k\in\{1,\ldots,K\}$, $j\geq 0$,
+\item Pour tout $\theta\in\Theta$ et tout $k\in\{1,\ldots,K\}$, calculer $\mathbb{P}_\theta(Z=k|X=j)$.
+
+\vspace{.2cm}
+
+{\em
+Pour tout $\theta$ et tout $k\in\{1,\ldots,K\}$, $j\geq 0$,
 $$
 \mathbb{P}_\theta\left(Z=k\middle|X=j\right) = \frac{\mathbb{P}_\theta\left(Z=k;X=j\right)}{\mathbb{P}_\theta\left(X=j\right)} = \frac{\pi_k \mathrm{e}^{-\lambda_k}\lambda_k^{j}/j!}{\sum_{\ell}^K\pi_\ell \mathrm{e}^{-\lambda_\ell}\lambda_\ell^{j}/j!}\,.
-$$
-\item La logvraisemblance compl\`ete des donn\'ees est :
+$$}
+\item Calculer la logvraisemblance compl\`ete des donn\'ees.
+
+\vspace{.2cm}
+
+{\em La logvraisemblance compl\`ete des donn\'ees est :
 $$
 \mathcal{L}(x,z;\theta) = \sum_{k=1}^K \mathds{1}_{z=k}\left\{\log \pi_k + \log \left(\mathrm{e}^{-\lambda_k}\frac{\lambda_k^{x}}{x!}\right)\right\}\,.
 $$
@@ -105,8 +132,12 @@ Puisque les donn\'ees sont ind\'ependantes, on obtient,
 \begin{align*}
 \mathcal{L}(x,z;\theta) &= \sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{z_i=k}\left\{\log \pi_k + \log \left(\mathrm{e}^{-\lambda_k}\frac{\lambda_k^{x_i}}{x_i!}\right)\right\}\,,\\
 &=\sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{z_i=k}\left\{\log \pi_k - \lambda_k+ x_i\log \left(\lambda_k\right) - \log x_i!\right\}\,.
-\end{align*}
-\item Pour tout $\theta, \theta'$,
+\end{align*}}
+\item  Calculer la quantit\'e interm\'ediaire de l'algorithme EM.
+
+\vspace{.2cm}
+
+{\em Pour tout $\theta, \theta'$,
 \begin{align*}
 Q(\theta;\theta') &= \mathbb{E}_{\theta'}\left[\mathcal{L}(X_{1:n},Z_{1:n};\theta)\middle|X_{1:n}\right] \,,\\
 &= \sum_{i=1}^n\sum_{k=1}^K \mathbb{E}_{\theta'}\left[\mathds{1}_{Z_i=k}\middle|X_{1:n}\right]\left\{\log \pi_k - \lambda_k+ X_i\log \left(\lambda_k\right) - \log X_i!\right\}\,,\\
@@ -119,8 +150,12 @@ $$
 et 
 $$
 Q(\theta;\theta^{(p)}) = \sum_{i=1}^n\sum_{k=1}^K \omega_{i,k}^{(p)}(X_i) \left\{\log \pi_k - \lambda_k+ X_i\log \left(\lambda_k\right) - \log X_i!\right\}\,.
-$$
-\item Il est ais\'e de montrer que la fonction $\theta \mapsto Q(\theta;\theta^{(p)}) $ admet un maximum unique, obtenu en r\'esolvant l'\'equation $\nabla_\theta Q(\theta;\theta^{(p)}) = 0$. Pour tout $1\leq k \leq K$,
+$$}
+\item En d\'eduire la mise \`a jour d'une it\'eration de l'algorithme EM.
+
+\vspace{.2cm}
+
+{\em Il est ais\'e de montrer que la fonction $\theta \mapsto Q(\theta;\theta^{(p)}) $ admet un maximum unique, obtenu en r\'esolvant l'\'equation $\nabla_\theta Q(\theta;\theta^{(p)}) = 0$. Pour tout $1\leq k \leq K$,
 $$
 \partial_{\lambda_k}Q(\theta;\theta^{(p)}) = \sum_{i=1}^n\omega_{i,k}^{(p)}(X_i) \left\{ - 1+ \frac{X_i}{\lambda_k}\right\}\,.
 $$
@@ -135,9 +170,17 @@ $$
 et on en d\'eduit que $k\mapsto\sum_{i=1}^n\omega_{i,k}^{(p)}(X_i)/\pi_k$ est constante. En utilisant par ailleurs que  $\sum_{k=1}^{K}\pi_k = 1$ et $\sum_{k=1}^{K}\omega_{i,k}^{(p)}(X_i)= 1$, on a
 $$
 \pi_k^{(p+1)} = \frac{1}{n}\sum_{i=1}^n\omega_{i,k}^{(p)}(X_i)\,.
-$$
-\item Pour mettre en place l'algorithme EM, il suffit d'initialiser l'algorithme avec une valeur $\theta^{(0)}$ puis \`a chaque it\'eration $p\geq 0$ d'effectuer l'\'etape E (i.e. calculer $\omega_{i,k}^{(p)}$ pour $1\leq i \leq n$ et $1\leq k \leq K$) et de calculer $\theta^{(p+1)}$ en appliquant les mises \`a jour de la question pr\'ec\'edente.
-\item La seule garantie que nous avons est que la vraisemblance des observations augmente \`a chaque it\'eration. En pratique, l'algorithme converge vers un maximum local, et il faut donc analyser les diff\'erents points de convergence obtenus si on initialise l'algorithme de diff\'erentes fa\c cons. 
+$$} 
+\item D\'etailler le fonctionnement complet de l'algorithme EM
+
+\vspace{.2cm}
+
+{\em Pour mettre en place l'algorithme EM, il suffit d'initialiser l'algorithme avec une valeur $\theta^{(0)}$ puis \`a chaque it\'eration $p\geq 0$ d'effectuer l'\'etape E (i.e. calculer $\omega_{i,k}^{(p)}$ pour $1\leq i \leq n$ et $1\leq k \leq K$) et de calculer $\theta^{(p+1)}$ en appliquant les mises \`a jour de la question pr\'ec\'edente.}
+\item Cet algorithme converge t'il vers le maximum de vraisemblance ?
+
+\vspace{.2cm}
+
+{\em La seule garantie que nous avons est que la vraisemblance des observations augmente \`a chaque it\'eration. On peut montrer sous certaines hypoth\`eses que  l'algorithme converge vers un maximum local de la logvraisemblance, et il faut donc analyser les diff\'erents points de convergence obtenus si on initialise l'algorithme de diff\'erentes fa\c cons. }
 \end{enumerate}
 \end{enumerate}
 \end{document}
