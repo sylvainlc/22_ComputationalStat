@@ -3,6 +3,11 @@
 
 The course covers the basics of computational statistics.
 
+### Lecture notes 
+- Introduction (M-estimation, Z-estimation, maximum likelihood)
+- Latent data models and Expectation Maximization algorithm
+- Variational inference and Coordinate Ascent Variational Inference (CAVI)
+- Basics on Makov chains and Metropolis-Hastings algorithm
 
 ### Labs
 - [1 - Maximum likelihood (Gamma distribution, Newton-Raphson update)](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/1_Gamma_distribution.ipynb)
