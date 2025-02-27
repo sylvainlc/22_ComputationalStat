@@ -3,7 +3,7 @@
 
 The course covers the basics of computational statistics.
 
-### Lecture notes 
+### [Lecture notes](https://github.com/sylvainlc/22_ComputationalStat/blob/main/notes.pdf)
 - Introduction (M-estimation, Z-estimation, maximum likelihood)
 - Latent data models and Expectation Maximization algorithm
 - Variational inference and Coordinate Ascent Variational Inference (CAVI)
