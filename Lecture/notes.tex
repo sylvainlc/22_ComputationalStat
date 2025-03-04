@@ -412,7 +412,7 @@ If $\Theta$ is compact in $\mathbb{R}^d$, $M_{\theta_*}$ is continuous, and for 
 
 %\subsection*{Z-estimation}
 \subsection{Exponential models}
-Let $(X_1,\ldots,X_n)$ be i.i.d. random variables with density $p_{\theta_*}$ with respect to a reference measure $\mu$ on $(\mathbb{R}^d,\mathcal{B}(\mathbb{R}^d))$. The family $\{p_\theta\}_{\theta\in\Theta}$ is said to be in the exponential family if the rexist $\eta:\theta\to \mathbb{R}^d$, $T:\Xset\to\mathbb{R}^d$, $h:\Xset\to\mathbb{R}_+$, $B:\Theta\to\mathbb{R}$ such that for all $x\in\Xset$,
+Let $(X_1,\ldots,X_n)$ be i.i.d. random variables with density $p_{\theta_*}$ with respect to a reference measure $\mu$ on $(\mathbb{R}^d,\mathcal{B}(\mathbb{R}^d))$. The family $\{p_\theta\}_{\theta\in\Theta}$ is said to be in the exponential family if there exist $\eta:\theta\to \mathbb{R}^d$, $T:\Xset\to\mathbb{R}^d$, $h:\Xset\to\mathbb{R}_+$, $B:\Theta\to\mathbb{R}$ such that for all $x\in\Xset$,
 $$
 p_\theta(x) = h(x)\exp\left(\langle \eta(\theta);T(x)\rangle - B(\theta)\right)\eqsp.
 $$
@@ -439,7 +439,7 @@ $$
 \chapter{Expectation Maximization algorithm}
 
 \section{Introduction}
-Let $(\Uset,\Usigma)$ be a measurable space and $\lambda$ be a measure on $(\Zset,\Zsigma)$. Consider also a family $\{f_\theta\}_{\theta\in\Theta}$ of $\lambda$-integrable and positive functions. Define
+Let $(\Zset,\Zsigma)$ be a measurable space and $\lambda$ be a measure on $(\Zset,\Zsigma)$. Consider also a family $\{f_\theta\}_{\theta\in\Theta}$ of $\lambda$-integrable and positive functions. Define
 $$
 L(\theta) = \int f_\theta(z)\lambda(\rmd z)\eqsp.
 $$
