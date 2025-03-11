@@ -78,7 +78,7 @@
 
 
 \section{Warm-up}
-Soit $(Z,X)$ un couple de variables al\'eatoires sur $\rset^d\times \rset^m$. On note $(z,x)\mapsto p(z,x)$ la densit\'e jointe de la loi de $(X,Z)$ par rapport \`a la mesure de Lebesgue. On consid\`ere \'egalement une famille $\mathcal{Q}$ de densit\'es par rapport \`a la mesure de Lebesgue sur $\rset^d$. On introduit alors la ELBO (Evidence Lower Bound) de la fa\c con suivante: pour tout $q\in\mathcal{Q}$,
+Soit $(Z,X)$ un couple de variables al\'eatoires sur $\rset^d\times \rset^m$. On note $(z,x)\mapsto p(z,x)$ la densit\'e jointe de la loi de $(Z,X)$ par rapport \`a la mesure de Lebesgue. On consid\`ere \'egalement une famille $\mathcal{Q}$ de densit\'es par rapport \`a la mesure de Lebesgue sur $\rset^d$. On introduit alors la ELBO (Evidence Lower Bound) de la fa\c con suivante: pour tout $q\in\mathcal{Q}$,
 $$
 \mathcal{L}(q) = \mathbb{E}_q\left[\log\frac{p(Z,X)}{q(Z)}\right] = \int \log\frac{p(z,X)}{q(z)}q(z) \mathrm{d} z\,.
 $$
@@ -105,9 +105,9 @@ $$
 -\mathrm{KL}(q\|p(\cdot|X))  =  \int \log \frac{p(z|X)}{q(z)} q(z) \mathrm{d} z \leq  \log \int \frac{p(z|X)}{q(z)} q(z) \mathrm{d} z \leq 0\,.
 $$
 }
-\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es sur $\rset$. Fixons $1\leq j_0 \leq d$ et tous les $q_j$, $j\neq j_0$. Montrez que 
+\item Supposons que $q$ soit de la forme $q:(z_1,\ldots,z_d)\mapsto \prod_{j=1}^dq_j(z_j)$ o\`u les $\{q_j\}_{1\leq j\leq d}$ sont des densit\'es par rapport \`a la mesure de Lebesgue sur $\rset$. Fixons $1\leq j_0 \leq d$ et tous les $q_j$, $j\neq j_0$. Montrez que 
 $$
-q_{j_0}^* = \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q) 
+q_{j_0}^* \in \mathrm{Argmax}_{q_{j_0}} \mathcal{L}(q) 
 $$
 est la densit\'e proportionnelle \`a $z_j \mapsto \exp\{\mathbb{E}_{-j_0}[\log p (z_{j_0},Z_{-j_0},X)]\}$, o\`u $Z_{-j_0} = (Z_j)_{j\neq j_0}$ et $\mathbb{E}_{-j_0}$ est l'esp\'erance lorsque la densit\'e de $Z_{-j_0}$ est $\prod_{j=1,j\neq j_0}^dq_j$.
 
@@ -126,7 +126,7 @@ D\'efinissons alors la densit\'e $\tilde q_{j_0}:z\mapsto c_{j_0}\exp\{\mathbb{E
 $$
 \mathrm{Argmax}_{q_{j_0}} \left\{\mathbb{E}_{q_{j_0}}\left[\log \tilde q_{j_0}(Z_{j_0})\right] - \mathbb{E}_{q_{j_0}}\left[\log q_{j_0}(Z_{j_0})\right]\right\} = \mathrm{Argmin}_{q_{j_0}} \mathrm{KL}(q_{j_0}\|\tilde q_{j_0})  \,,
 $$ 
-ce qui permet de conclure que $q_{j_0}^* = \tilde q_{j_0}$.
+ce qui permet de conclure.
 }
 
 
@@ -157,7 +157,7 @@ Pour tout $x,\mu,\sigma^2$, la logdensit\'e jointe de $z=(\mu,\sigma^2)$ et $x$ 
 La ELBO s'\'ecrit
 \begin{align*}
 \mathcal{L}(q) &= \mathbb{E}_q\left[\log\frac{p(Z,X)}{q(Z)}\right]\\
-&= \mathbb{E}_q\left[\log p(\sigma^2) + \log p(\mu|\sigma^2) + \log p(x|\mu,\sigma^2)\right] - \mathbb{E}_{q_\mu}\left[q_{\mu}(\mu)\right] - \mathbb{E}_{q_{\sigma^2}}\left[q_{\sigma^2}(\sigma^2)\right]\,.
+&= \mathbb{E}_q\left[\log p(\sigma^2) + \log p(\mu|\sigma^2) + \log p(x|\mu,\sigma^2)\right] - \mathbb{E}_{q_\mu}\left[\log q_{\mu}(\mu)\right] - \mathbb{E}_{q_{\sigma^2}}\left[\log q_{\sigma^2}(\sigma^2)\right]\,.
 \end{align*}
 }
 \item \'Ecire la mise \`a jour de $q_\mu$ dans une \'etape de l'algorithme CAVI. 
@@ -171,7 +171,7 @@ $$
 $$
 Ainsi, \`a une constante additive pr\`es,
 $$
-\log q^*_\mu(\mu) = -\mathbb{E}_{q_{\sigma^2}}\left[\frac{n+1}{2\sigma^2}\left(\mu - \frac{\mu_0 + n\bar x_n}{n+1}\right)^2\right]\,.
+\log q^*_\mu(\mu) = -\mathbb{E}_{q_{\sigma^2}}\left[\frac{n+1}{2\sigma^2}\left(\mu - \frac{\mu_0 + n\bar x_n}{n+1}\right)^2\right]\,,
 $$
 o\`u $\bar x_n = \sum_{i=1}^n x_i/n$. Ainsi, %Puisque si $\sigma^2 \sim \mathcal{IG}(\alpha_0,\beta_0)$, $\sigma^{-2}\sim \mathcal{G}(\alpha_0,1/\beta_0)$, 
 $$
@@ -179,7 +179,7 @@ $$
 $$
 On en d\'eduit que $q^*_\mu$ est la densit\'e de la loi gaussienne de moyenne $(\mu_0 + n\bar x_n)/(n+1)$  et dont l'inverse de la variance est $(n+1)\mathbb{E}_{q_{\sigma^2}}[1/\sigma^2]$ (qui est calculable lorsque $q_{\sigma^2}$ est une loi inverse gamma).
 }
-\item \'Ecire la mise \`a jour de $_{\sigma^2}$ dans une \'etape de l'algorithme CAVI. 
+\item \'Ecire la mise \`a jour de $q_{\sigma^2}$ dans une \'etape de l'algorithme CAVI. 
 
 \vspace{.2cm}
 
