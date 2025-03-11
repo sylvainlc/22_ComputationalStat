@@ -118,7 +118,7 @@ On remarque ensuite ais\'ement que l'\'equation $\nabla_\theta \log \mathbb{P}_\
 {\em
 Pour tout $\theta$ et tout $k\in\{1,\ldots,K\}$, $j\geq 0$,
 $$
-\mathbb{P}_\theta\left(Z=k\middle|X=j\right) = \frac{\mathbb{P}_\theta\left(Z=k;X=j\right)}{\mathbb{P}_\theta\left(X=j\right)} = \frac{\pi_k \mathrm{e}^{-\lambda_k}\lambda_k^{j}/j!}{\sum_{\ell}^K\pi_\ell \mathrm{e}^{-\lambda_\ell}\lambda_\ell^{j}/j!}\,.
+\mathbb{P}_\theta\left(Z=k\middle|X=j\right) = \frac{\mathbb{P}_\theta\left(Z=k;X=j\right)}{\mathbb{P}_\theta\left(X=j\right)} = \frac{\pi_k \mathrm{e}^{-\lambda_k}\lambda_k^{j}}{\sum_{\ell}^K\pi_\ell \mathrm{e}^{-\lambda_\ell}\lambda_\ell^{j}}\,.
 $$}
 \item Calculer la logvraisemblance compl\`ete des donn\'ees.
 
@@ -130,7 +130,7 @@ $$
 $$
 Puisque les donn\'ees sont ind\'ependantes, on obtient,
 \begin{align*}
-\mathcal{L}(x,z;\theta) &= \sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{z_i=k}\left\{\log \pi_k + \log \left(\mathrm{e}^{-\lambda_k}\frac{\lambda_k^{x_i}}{x_i!}\right)\right\}\,,\\
+\mathcal{L}(x_{1:n},z_{1:n};\theta) &= \sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{z_i=k}\left\{\log \pi_k + \log \left(\mathrm{e}^{-\lambda_k}\frac{\lambda_k^{x_i}}{x_i!}\right)\right\}\,,\\
 &=\sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{z_i=k}\left\{\log \pi_k - \lambda_k+ x_i\log \left(\lambda_k\right) - \log x_i!\right\}\,.
 \end{align*}}
 \item  Calculer la quantit\'e interm\'ediaire de l'algorithme EM.
@@ -141,11 +141,11 @@ Puisque les donn\'ees sont ind\'ependantes, on obtient,
 \begin{align*}
 Q(\theta;\theta') &= \mathbb{E}_{\theta'}\left[\mathcal{L}(X_{1:n},Z_{1:n};\theta)\middle|X_{1:n}\right] \,,\\
 &= \sum_{i=1}^n\sum_{k=1}^K \mathbb{E}_{\theta'}\left[\mathds{1}_{Z_i=k}\middle|X_{1:n}\right]\left\{\log \pi_k - \lambda_k+ X_i\log \left(\lambda_k\right) - \log X_i!\right\}\,,\\
-&= \sum_{i=1}^n\sum_{k=1}^K \mathbb{P}_{\theta'}\left(Z_i=k\middle|X_{i}\right)\left\{\log \pi_k - \lambda_k+ X_i\log \left(\lambda_k\right) - \log X_i!\right\}
+&= \sum_{i=1}^n\sum_{k=1}^K \mathbb{P}_{\theta'}\left(Z_i=k\middle|X_{i}\right)\left\{\log \pi_k - \lambda_k+ X_i\log \left(\lambda_k\right) - \log X_i!\right\}\,.
 \end{align*}
 \`A l'it\'eration $p\geq 0$ de l'algorithme, si nous disposons d'un estimateur courant $\theta^{(p)}$, nous calculons
 $$
-\omega_{i,k}^{(p)}(X_i) = \mathbb{P}_{\theta^{(p)}}\left(Z_i=k\middle|X_{i}\right) = \frac{\pi^{(p)}_k \mathrm{e}^{-\lambda^{(p)}_k}(\lambda^{(p)}_k)^{j}/j!}{\sum_{\ell}^K\pi^{(p)}_\ell \mathrm{e}^{-\lambda^{(p)}_\ell}(\lambda^{(p)}_\ell)^{j}/j!}
+\omega_{i,k}^{(p)}(X_i) = \mathbb{P}_{\theta^{(p)}}\left(Z_i=k\middle|X_{i}\right) = \frac{\pi^{(p)}_k \mathrm{e}^{-\lambda^{(p)}_k}(\lambda^{(p)}_k)^{X_i}}{\sum_{\ell}^K\pi^{(p)}_\ell \mathrm{e}^{-\lambda^{(p)}_\ell}(\lambda^{(p)}_\ell)^{X_i}}
 $$
 et 
 $$
