@@ -629,12 +629,13 @@ The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore 
 
         Set $q^{(k)}_\ell = q^{(k-1)}_\ell$ for all $1\leq \ell \leq d$, $\ell \neq j$ and $q^{(k)}_{-j} = \prod_{1\leq \ell \leq d, \ell\neq j} q^{(k)}_{\ell}$;
 
-        Set $$q^{(k)}_j(z_j) \propto \exp\left(\mathbb{E}_{q_{-j}^{(k)}}\left[\log p(z_j | Z_{-j},x)\right]\right)$$;
+        Set $$q^{(k)}_j(z_j) \propto \exp\left(\mathbb{E}_{q_{-j}^{(k)}}\left[\log p(z_j | Z_{-j},x)\right]\right)$$
+;
 }
 \end{algorithm}
 
 \section*{Application to a mixture of Gaussian distributions}
-Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1\leq i \leq K\}$ the group $X_i$ belongs to, this variable is not observed. The weight of component  $k$ is written $\omega_k$, i.e. conditionally on $\mu$, $c= (c_i)_{1\leq i\leq n}$ are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$ (in particular, $c$ is independent of $\mu$).  
+Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group $X_i$ belongs to, this variable is not observed. The weight of component  $k$ is written $\omega_k$, i.e. conditionally on $\mu$, $c= (c_i)_{1\leq i\leq n}$ are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, in particular, $c$ is independent of $\mu$.  
 
 Conditionally on  $\mu$ and $c$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are independent and $X_i$ has a Gaussian distribution with mean $\mu_{c_i}$ and variance $1$. Marginalizing on $c$, conditionally on  $\mu$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are i.i.d. and the conditional probability density of $X_1$ is:
 $$
