@@ -1,7 +1,7 @@
 \documentclass[english,graybox,envcountchap,envcountsame,sectrefs,shortlabels]{svmono}
 \usepackage{ifthen}
 \newboolean{corrige}
-%\setboolean{corrige}{true}  % <------------------ Le choix de société
+
 
 
 \usepackage[T1]{fontenc}
@@ -249,6 +249,8 @@
 
 \maketitle
 
+\tableofcontents
+
 \chapter{M-estimation Z-estimation, maximum likelihood}
 
 \section{Method of moments}
@@ -411,7 +413,7 @@ If $\Theta$ is compact in $\mathbb{R}^d$, $M_{\theta_*}$ is continuous, and for 
 \end{remark}
 
 %\subsection*{Z-estimation}
-\subsection{Exponential models}
+\subsection*{Exponential models}
 Let $(X_1,\ldots,X_n)$ be i.i.d. random variables with density $p_{\theta_*}$ with respect to a reference measure $\mu$ on $(\mathbb{R}^d,\mathcal{B}(\mathbb{R}^d))$. The family $\{p_\theta\}_{\theta\in\Theta}$ is said to be in the exponential family if there exist $\eta:\theta\to \mathbb{R}^d$, $T:\Xset\to\mathbb{R}^d$, $h:\Xset\to\mathbb{R}_+$, $B:\Theta\to\mathbb{R}$ such that for all $x\in\Xset$,
 $$
 p_\theta(x) = h(x)\exp\left(\langle \eta(\theta);T(x)\rangle - B(\theta)\right)\eqsp.
@@ -487,11 +489,11 @@ Q(\theta,\theta')-Q(\theta',\theta') &= \ell(\theta)-\ell(\theta') + H(\theta',\
 \end{align*}
 As $\log$ is concave, by Jensen's inequality, 
 $$
-\int \log\left(\frac{p_\theta(z)}{p_{\theta'}(z)}\right)p_{\theta'}(z)\lambda(\rmd z) \leq \log\int \frac{p_\theta(z)}{p_{\theta'}(z)}p_{\theta'}(z)\lambda(\rmd z) \leq 0\eqsp,
+\int \log\left(\frac{p_\theta(z)}{p_{\theta'}(z)}\right)p_{\theta'}(z)\lambda(\rmd z) \leq \log\int \frac{p_\theta(z)}{p_{\theta'}(z)}p_{\theta'}(z)\lambda(\rmd z) = 0\eqsp,
 $$
-which concludes the proof.
+which concludes the proof. The ineqality $\int \log(p_\theta(z))p_{\theta'}(z)\lambda(\rmd z) \leq \int \log(p_{\theta'}(z))p_{\theta'}(z)\lambda(\rmd z)$ is known as Gibbs' inequality.
 \end{proof}
-By Lemma~\ref{lem:fundEM}, starting from a parameter estimate $\theta_k$, $k\geq 0$, a direct solution to obtain a parameter $\theta$ such that $\ell(\theta) \geq \ell(\theta_k)$ is to choose $\theta$ such that $Q(\theta,\theta_k)\geq Q(\theta_k,\theta_k)$. This result motivates the Expectation Maximization (EM) algorithm given in Algorithm~\ref{alg:EM} and introduced in \cite{}.
+By Lemma~\ref{lem:fundEM}, starting from a parameter estimate $\theta_k$, $k\geq 0$, a direct solution to obtain a parameter $\theta$ such that $\ell(\theta) \geq \ell(\theta_k)$ is to choose $\theta$ such that $Q(\theta,\theta_k)\geq Q(\theta_k,\theta_k)$. This result motivates the Expectation Maximization (EM) algorithm given in Algorithm~\ref{alg:EM} and introduced in \cite{dempster1977maximum}.
 
 \begin{algorithm}
 \caption{A generic EM algorithm}\label{alg:EM}
@@ -556,7 +558,7 @@ Note that the computation of $\mathbb{P}_{\theta^{(p)}}(Z_i = k|X_i) $ is explic
 \chapter{Variatonal inference and autoencoders}
 
 
-\section*{Evidence Lower Bound}
+\section{Evidence Lower Bound}
 In this chapter, we consider models with latent (unobserved) data. Let $(Z,X)$ be random variables in $\mathbb{R}^d\times \mathbb{R}^m$. We assume that the law of $(Z,X)$ has a density $(z,x)\mapsto p(z,x)$ with respect to a reference measure. In this setting, we write
 $$
 (z,x)\mapsto p(z,x) = p(z)p(x|z)\,,
@@ -596,7 +598,7 @@ $$
 q_* \in \mathrm{argmax}_{q\in \mathcal{D}}\;\mathrm{ELBO}(q)\,.
 $$
 
-\section*{Coordinate ascent variational inference}
+\section{Coordinate ascent variational inference}
 The most straightforward approach to solve the optimization problem is to consider a mean-field variational family  i.e. to choose $\mathcal{D}$ such that: 
 $$
 \mathcal{D} = \left\{z\mapsto q(z) = \prod_{j=1}^dq_j(z_j)\;;\; q_j \,\mbox{is\, a\, density} \right\}\,.
@@ -634,7 +636,7 @@ The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore 
 }
 \end{algorithm}
 
-\section*{Application to a mixture of Gaussian distributions}
+\section{Application to a mixture of Gaussian distributions}
 Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group $X_i$ belongs to, this variable is not observed. The weight of component  $k$ is written $\omega_k$, i.e. conditionally on $\mu$, $c= (c_i)_{1\leq i\leq n}$ are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, in particular, $c$ is independent of $\mu$.  
 
 Conditionally on  $\mu$ and $c$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are independent and $X_i$ has a Gaussian distribution with mean $\mu_{c_i}$ and variance $1$. Marginalizing on $c$, conditionally on  $\mu$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are i.i.d. and the conditional probability density of $X_1$ is:
@@ -720,7 +722,7 @@ $$
 \mu_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
 $$
 
-\section*{Variational Autoencoders}
+\section{Variational Autoencoders}
 Variational Auto-Encoders (VAE) are very popular approaches to introduce approximations of a target conditional distribution in the context of latent data models. Assume that $(X_1,\ldots,X_n)$ are i.i.d. random variables in $\mathsf{X}$ with unknown probability distribution function $\pi_{\mathrm{data}}$. We consider a family of joint probability distributions $\{(z,x) \mapsto  p_{\theta}(z,x)\}_{\theta\in\Theta}$ on $(\mathsf{Z}\times \mathsf{X}, \mathcal{Z}\times \mathcal{X})$ where $Z$ is a latent variable and $X$ is the observation. In this setting, we often write, for all $\theta\in\Theta$, $x\in\mathsf{X}$, $z\in\mathsf{Z}$,
 $$
 p_{\theta}(z,x) = p_{\theta}(z)p_{\theta}(x|z)\eqsp.
@@ -1152,7 +1154,7 @@ Thus, $\pi(h)$ is approximated using a population of "particles" $\{(X_k,\omega_
 
 Of course, if all the $X_k$ were iid from $\pi$ directly, all the associated weights would be equal. So here, by allowing different weights, we are more flexible. Still, if the weights are too different, this is not satisfactory because only a few particles contain all the information. In that case, we prefer to resample inside the population. 
 
-\subsubsection{Resampling step}
+\subsubsection*{Resampling step}
 \index{resampling}
 Assume that $\{(X_k,\omega_k)\}_{k\in[1:N]}$ targets $\pi_0$. Define $\bar \omega_k=\omega_k/(\sum_{\ell=1}^{k} \omega_\ell)$. An example of resampling step is defined as follows. For $k\in[1:n]$, set independently $\tilde X_k = X_j$ with probability $\bar \omega_j$. 
 %$$
@@ -1164,7 +1166,7 @@ Assume that $\{(X_k,\omega_k)\}_{k\in[1:N]}$ targets $\pi_0$. Define $\bar \omeg
 %$$
 Then $\{(\tilde X_k,1)\}_{k\in[1:N]}$ still targets $\pi_0$. The target distribution is not changed but now, all the weights are equal. Informative particles (i.e. with high weights) are likely to be replicated after resampling while noninformative are likely to disappear (because they were not chosen). Support points are changed but still within the initial pool of support points.
 
-\subsubsection{Exploration step}
+\subsubsection*{Exploration step}
 \index{exploration}
 Assume that $\{(X_k,\omega_k)\}_{k\in[1:N]}$ targets $\pi_0$ and that
 \begin{equation} \label{eq:explor}
@@ -1177,7 +1179,8 @@ where $q$ is the density of a Markov kernel. An example of exploration step is d
 where $r(X_k,\cdot)$ is a density that can be easily simulated.
 Then, $\lrcb{(\tilde X_k,\omega_k q(X_k,\tilde X_k)/r(X_k,\tilde X_k)}_{k\in[1:N]}$ targets $\pi_1$.
 Here, support points are moved and weights are updated by a multiplicative factor (except when $r=q$, in which case, support points are moved but the associated weights do not need to be updated  since $ q(X_k,\tilde X_k)/r(X_k,\tilde X_k)=1$).
-\subsubsection{Reweighting step}
+
+\subsubsection*{Reweighting step}
 \index{reweighting}
 Assume that $\{(X_k,\omega_k)\}_{k\in[1:N]}$ targets $\pi_0$ and that
 \begin{equation} \label{eq:resamp}
@@ -1189,7 +1192,7 @@ Finally, when choosing the intermediate target distributions $\pi_1\rightarrow \
 
 
 
-\section{Approximate Bayesian computation}
+\subsection{Approximate Bayesian computation}
 Approximate Bayesian computation (ABC) is an alternative approach when computation of the posterior is challenging, either because the size of the data or the complexity of realistic models makes the calculation computationally intractable. In this setting, the parameter $\theta$ is endowed with a prior distribution $\pi_0$ and, the conditional density of the observation $Y$ given $\theta$ is $y\mapsto p(y|\theta)$. ABC specifically provides a solution  when the likelihood $y\mapsto p(y|\theta)$ cannot be evaluated. A generic description of the original ABC algorithm requires (i) the introduction of statistics $S(y)\in\mathbb{R}^m$ where $m$ is usually sensibly smaller than the dimension of $y$ and (ii) a distance $\mathsf{d}$ on $\mathbb{R}^m\times \mathbb{R}^m$. Note that if no statistics can be widely defined $S$ can be the identity function. Then, the most direct ABC alforithm is described in Algorithm~\ref{alg:ABC}.
 
 \medskip
@@ -1230,8 +1233,8 @@ Return all $\theta_i$ such that $S(Y_i)$ is in the set of $M_N$ nearest neighbor
 
 These two algorithms generate independent samples but do not build upon the accepted samples to propose new candidates in a more efficient way than using the prior distribution. This can be performed by considering  ABC within a MCMC algorithm. %See the exercises for a proof that Algorithm~\ref{alg:ABC:MCMC} targets the correct posterior distribution.
 
-%\bibliographystyle{apalike}
-%\bibliography{biblio}
+\bibliographystyle{apalike}
+\bibliography{csbib}
 
 %\printindex
 \end{document}
