@@ -583,19 +583,19 @@ Then, for all $x$ and all $q\in \mathcal{D}$, writing $\mathrm{KL}$ the Kullback
 \begin{align*}
 \mathrm{KL}\left(q\|p(\cdot|x)\right) = \int q(z) \log \frac{q(z)}{p(z|x)} \mathrm{d}z&= \mathbb{E}_{q}[\log q(Z)] - \mathbb{E}_{q}[\log p(Z|x)]\,,\\
  &= \mathbb{E}_{q}[\log q(Z)] - \mathbb{E}_{q}[\log p(Z,x)]+\log p(x)\,,\\
-&= -\mathrm{ELBO}(q)+\log p(x)\,,
+&= -\mathcal{L}_x(q)+\log p(x)\,,
 \end{align*}
 where
 $$
-\mathrm{ELBO}(q) = \mathbb{E}_{q}\left[\log \frac{p(Z,x)}{q(Z)}\right]\,.
+\mathcal{L}_x(q) = \mathbb{E}_{q}\left[\log \frac{p(Z,x)}{q(Z)}\right]\,.
 $$
 Using Jensen's inequality, we obtain $\mathrm{KL}\left(q\|p(\cdot|x)\right) \geq 0$ so that
 $$
-\mathrm{ELBO}(q)\leq \log p(x)\,.
+\mathcal{L}_x(q)\leq \log p(x)\,.
 $$
-This inequality justifies the name Evidence Lower BOund for $\mathbb{E}_{q}[\log (p(Z,x)/q(Z))]$. In variational inference, we then aim to approximate  $p(\cdot|x)$ by $q_{*}$ where :
+This inequality justifies the name Evidence Lower BOund for $\mathcal{L}_x = \mathbb{E}_{q}[\log (p(Z,x)/q(Z))]$. In variational inference, we then aim to approximate  $p(\cdot|x)$ by $q_{*}$ where :
 $$
-q_* \in \mathrm{argmax}_{q\in \mathcal{D}}\;\mathrm{ELBO}(q)\,.
+q_* \in \mathrm{argmax}_{q\in \mathcal{D}}\;\mathcal{L}_x(q)\,.
 $$
 
 \section{Coordinate ascent variational inference}
@@ -605,7 +605,7 @@ $$
 $$
 In this case, we can write, for all $q\in \mathcal{D}$, and all $j\in\{1,\ldots,d\}$,
 \begin{align*}
-\mathrm{ELBO}(q) &= \mathbb{E}_{q}\left[\log \frac{p(Z_1,\ldots,Z_d,x)}{\prod_{j=1}^dq_j(Z_j)}\right]\,,\\
+\mathcal{L}_x(q) &= \mathbb{E}_{q}\left[\log \frac{p(Z_1,\ldots,Z_d,x)}{\prod_{j=1}^dq_j(Z_j)}\right]\,,\\
 &= \mathbb{E}_{q_j}\left[\mathbb{E}_{q_{-j}}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]  + \mathrm{C}
 \end{align*}
 where $\mathrm{C}$ does not depend on $q_j$,  $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$ and $q_{-j}(z_{-j}) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell})$. 
@@ -618,9 +618,9 @@ $$
 $$
 i.e. the desnity given by $\tilde q_j(z_j)= \exp(\mathbb{E}_{q_{-j}}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$. Therefore,
 $$
-\mathrm{ELBO}(q) = -\mathbb{E}_{q_j}\left[\log \frac{q_j(Z_j)}{\tilde q_j(Z_j) }\right]  + \mathrm{C} + \log C_j = -\mathrm{KL}(q_j\|\tilde q_j)  + \mathrm{C} + \log C_j\,.
+\mathcal{L}_x(q) = -\mathbb{E}_{q_j}\left[\log \frac{q_j(Z_j)}{\tilde q_j(Z_j) }\right]  + \mathrm{C} + \log C_j = -\mathrm{KL}(q_j\|\tilde q_j)  + \mathrm{C} + \log C_j\,.
 $$
-Therefore, optimizing  $\mathrm{ELBO}(q) $ on $q_j$ only, the other densities $(q_\ell)_{\ell\neq j}$ being kept fixed, yields an optimum given by $\tilde q_j$.
+Therefore, optimizing  $\mathcal{L}_x(q) $ on $q_j$ only, the other densities $(q_\ell)_{\ell\neq j}$ being kept fixed, yields an optimum given by $\tilde q_j$.
 The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore to sequentially update  $q_j$, $1\leq j \leq d$ until a stopping criterion is met. In Algorithm~\ref{alg:CAVI}, we propose a version of the algorithm where the variational distribution of only one component of $Z$ is updated at each iteration, of course many alternatives can be considered. A standard alternative is to update each variational distribution at each iteration.
 
 \begin{algorithm}[H] \label{alg:CAVI}
