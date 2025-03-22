@@ -491,7 +491,7 @@ As $\log$ is concave, by Jensen's inequality,
 $$
 \int \log\left(\frac{p_\theta(z)}{p_{\theta'}(z)}\right)p_{\theta'}(z)\lambda(\rmd z) \leq \log\int \frac{p_\theta(z)}{p_{\theta'}(z)}p_{\theta'}(z)\lambda(\rmd z) = 0\eqsp,
 $$
-which concludes the proof. The ineqality $\int \log(p_\theta(z))p_{\theta'}(z)\lambda(\rmd z) \leq \int \log(p_{\theta'}(z))p_{\theta'}(z)\lambda(\rmd z)$ is known as Gibbs' inequality.
+which concludes the proof. The inequality $\int \log(p_\theta(z))p_{\theta'}(z)\lambda(\rmd z) \leq \int \log(p_{\theta'}(z))p_{\theta'}(z)\lambda(\rmd z)$ is known as Gibbs' inequality.
 \end{proof}
 By Lemma~\ref{lem:fundEM}, starting from a parameter estimate $\theta_k$, $k\geq 0$, a direct solution to obtain a parameter $\theta$ such that $\ell(\theta) \geq \ell(\theta_k)$ is to choose $\theta$ such that $Q(\theta,\theta_k)\geq Q(\theta_k,\theta_k)$. This result motivates the Expectation Maximization (EM) algorithm given in Algorithm~\ref{alg:EM} and introduced in \cite{dempster1977maximum}.
 
@@ -567,7 +567,7 @@ where $z\mapsto p(z)$ is a prior density for $Z$ and $x \mapsto p(x|z)$ is the c
 $$
 z\mapsto p(z|x) = \frac{p(z)p(x|z)}{p(x)}\propto p(z)p(x|z)\,, 
 $$
-where $p(x) = \int p(z)p(x|z) \mathrm{d} z$ is an intractable integral.
+where $p(x) = \int p(z)p(x|z) \mathrm{d} z$ is an intractable integral. The conditional law of latent variables given observations is of utmost importance in many machine learning approaches. For instance, in the E-step of the EM algorithm, the intermediate quantity requires to compute an expecation under such a distribution. In most situations, this distribution cannot be sampled from easily. Standard solutions to sample approximately from $p(z|x)$ include Markov Chain (or Sequential) Monte Carlo methods. In this chapter, we focus on variational approaches where $p(z|x)$ is replaced by a simpler distribution obtained by solving an optimization problem. 
 
 \medskip
 
@@ -593,7 +593,7 @@ Using Jensen's inequality, we obtain $\mathrm{KL}\left(q\|p(\cdot|x)\right) \geq
 $$
 \mathcal{L}_x(q)\leq \log p(x)\,.
 $$
-This inequality justifies the name Evidence Lower BOund for $\mathcal{L}_x = \mathbb{E}_{q}[\log (p(Z,x)/q(Z))]$. In variational inference, we then aim to approximate  $p(\cdot|x)$ by $q_{*}$ where :
+This inequality justifies the name Evidence Lower BOund for $\mathcal{L}_x = \mathbb{E}_{q}[\log (p(Z,x)/q(Z))]$. In variational inference, we then aim to approximate  $p(\cdot|x)$ by $q_{*}$ where:
 $$
 q_* \in \mathrm{argmax}_{q\in \mathcal{D}}\;\mathcal{L}_x(q)\,.
 $$
@@ -603,20 +603,24 @@ The most straightforward approach to solve the optimization problem is to consid
 $$
 \mathcal{D} = \left\{z\mapsto q(z) = \prod_{j=1}^dq_j(z_j)\;;\; q_j \,\mbox{is\, a\, density} \right\}\,.
 $$
-In this case, we can write, for all $q\in \mathcal{D}$, and all $j\in\{1,\ldots,d\}$,
+Even when considering a simple variational family such as $\mathcal{D}$, it is not possible to maximize the ELBO explicitly. Assume therefore that we want to optimize $\mathrm{ELBO}(q) $ on $q_j$ only for some $1\leq j \leq d$, the other densities $(q_\ell)_{\ell\neq j}$ being kept fixed.
+Write $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$, and for all $q\in \mathcal{D}$,  $q_{-j}(z_{-j}) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell})$. Then,
 \begin{align*}
-\mathcal{L}_x(q) &= \mathbb{E}_{q}\left[\log \frac{p(Z_1,\ldots,Z_d,x)}{\prod_{j=1}^dq_j(Z_j)}\right]\,,\\
+\mathcal{L}_x(q) &= \int \left\{\prod_{\ell=1}^dq_\ell(z_\ell)\right\} \left\{\log (p(z_{-j},x)p(z_j|z_{-j},x)) - \sum_{\ell=1}^d\log q_\ell(z_\ell)\right\}\rmd z_1\ldots \rmd z_d\,,\\
+&= \int q_j(z_j)\int \left\{\prod_{\ell=1, \ell\neq j}^dq_\ell(z_\ell)\right\} \left\{\log (p(z_{-j},x)p(z_j|z_{-j},x))\rmd z_{-j}\right\}\rmd z_j \\
+&\hspace{3cm}- \sum_{\ell=1}^d\int q_\ell(z_\ell)\log q_\ell(z_\ell)\rmd z_\ell  \,\\
 &= \mathbb{E}_{q_j}\left[\mathbb{E}_{q_{-j}}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]  + \mathrm{C}
 \end{align*}
-where $\mathrm{C}$ does not depend on $q_j$,  $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$ and $q_{-j}(z_{-j}) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell})$. 
-
-\medskip
-
-Assume that we want to optimize $\mathrm{ELBO}(q) $ on $q_j$ only, the other densities $(q_\ell)_{\ell\neq j}$ being kept fixed. Consider the density $\tilde q_j$ such that
+%\begin{align*}
+%\mathcal{L}_x(q) &= \mathbb{E}_{q}\left[\log \frac{p(Z_1,\ldots,Z_d,x)}{\prod_{j=1}^dq_j(Z_j)}\right]\,,\\
+%&= \mathbb{E}_{q_j}\left[\mathbb{E}_{q_{-j}}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]  + \mathrm{C}
+%\end{align*}
+where $\mathrm{C}$ does not depend on $q_j$. %,  $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$ and $q_{-j}(z_{-j}) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell})$.  
+Consider the density $\tilde q_j$ such that
 $$
 \tilde q_j(z_j) \propto \exp\left(\mathbb{E}_{q_{-j}}\left[\log p(z_j | Z_{-j},x)\right]\right)\,,
 $$
-i.e. the desnity given by $\tilde q_j(z_j)= \exp(\mathbb{E}_{q_{-j}}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$. Therefore,
+i.e. the desnity given by $\tilde q_j(z_j)= \exp(\mathbb{E}_{q_{-j}}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$ ($C_j$ is the normalizing constant to obtain a density). Therefore,
 $$
 \mathcal{L}_x(q) = -\mathbb{E}_{q_j}\left[\log \frac{q_j(Z_j)}{\tilde q_j(Z_j) }\right]  + \mathrm{C} + \log C_j = -\mathrm{KL}(q_j\|\tilde q_j)  + \mathrm{C} + \log C_j\,.
 $$
@@ -624,7 +628,7 @@ Therefore, optimizing  $\mathcal{L}_x(q) $ on $q_j$ only, the other densities $(
 The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore to sequentially update  $q_j$, $1\leq j \leq d$ until a stopping criterion is met. In Algorithm~\ref{alg:CAVI}, we propose a version of the algorithm where the variational distribution of only one component of $Z$ is updated at each iteration, of course many alternatives can be considered. A standard alternative is to update each variational distribution at each iteration.
 
 \begin{algorithm}[H] \label{alg:CAVI}
-    \KwData{Observation $x$, mean-field family $\mathcal{D}$, initial variational distribution $\{q_j^{(0)}\}_{1\leq j \leq d}$, maximum number of iteration $N$}
+    \KwData{Observation $x$, initial variational distribution $\{q_j^{(0)}\}_{1\leq j \leq d}$, maximum number of iteration $N$}
     \KwResult{A variational distribution for each coordinate of $Z$, $q^{(N)}_j$, $1\leq j\leq d$.}
     \For {$ k= 1 \to N$}{
         Draw $j\in\{1,\ldots,d\}$ uniformly at random;
@@ -637,7 +641,7 @@ The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore 
 \end{algorithm}
 
 \section{Application to a mixture of Gaussian distributions}
-Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group $X_i$ belongs to, this variable is not observed. The weight of component  $k$ is written $\omega_k$, i.e. conditionally on $\mu$, $c= (c_i)_{1\leq i\leq n}$ are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, in particular, $c$ is independent of $\mu$.  
+Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group the $i$-th observation belongs to. The variables $\mu$ and $c$ are not observed.  The random variables $c= (c_i)_{1\leq i\leq n}$ are independent of  $\mu$ and are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, where $\sum_{k=1}^K\omega_k = 1$.  
 
 Conditionally on  $\mu$ and $c$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are independent and $X_i$ has a Gaussian distribution with mean $\mu_{c_i}$ and variance $1$. Marginalizing on $c$, conditionally on  $\mu$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are i.i.d. and the conditional probability density of $X_1$ is:
 $$
@@ -655,7 +659,7 @@ which means that under $q$:
 \begin{itemize}
 \item $\mu$ and  $c$ are independent.
 \item $(\mu_{k})_{1\leqslant k \leqslant K}$ are independent Gaussian random variables with means $(m_{k})_{1\leqslant k \leqslant K}$ and variances $(s_{k})_{1\leqslant k \leqslant K}$.
-\item $(c_{i})_{1\leqslant i \leqslant n}$ are independent with  multinomial distributions with parameters  $(\phi_i)_{1\leqslant i \leqslant n}$: $q(c_i=k) = \phi_i(k)$ for $1\leqslant k \leqslant K$. 
+\item $(c_{i})_{1\leqslant i \leqslant n}$ are independent with  multinomial distributions with parameters  $(\phi_i)_{1\leqslant i \leqslant n}$.%: $q(c_i=k) = \phi_i(k)$ for $1\leqslant k \leqslant K$. 
 \end{itemize}
 Write $\mathcal{D}$ this family where the means $(m_{k})_{1\leqslant k \leqslant K}\in \mathbb{R}^K$, and variances $(s_{k})_{1\leqslant k \leqslant K}\in (\mathbb{R}_+^*)^K$ and the parameters  $(\phi_i)_{1\leqslant i \leqslant n}\in \mathbb{S}_K^n$ where $\mathbb{S}_K$ is the simplex of dimension $K$.  Then, we aim at solving the optimization problem:
 $$
@@ -684,6 +688,7 @@ where $\mu_{-k} = (\mu_j)_{1\leq j \leq K, j\neq k}$, $c_{-i} = (c_j)_{1\leq j \
 %\item $\tilde p_i(c_i|x)$ is the conditional distribution of $c_i$ given the observations and the other parameters  and $\tilde p_k(\mu_k|x)$ is the conditional distribution of $\mu_k$ given the observations and the other parameters.
 %\item $\mathbb{E}_{\tilde q_z}$ is the expectation under the variational distribution of all variables except $z$.
 %\end{itemize}
+\subsubsection*{Update of the variaitonal distribution of $c_i$, $1\leq i \leq n$}
 Note that
 $$
 p(c_i|x,c_{-i},\mu) \propto p(c_i)p(x_i|c_i,\mu) \propto p(c_i)\prod_{k=1}^K \left(\varphi_{\mu_k,1}(x_i)\right)^{1_{c_i=k}}\,. 
@@ -700,8 +705,9 @@ and
 \end{align*}
 The update writes:
 $$
-\varphi_i(k) \propto p(c_i=k) \mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\,.
+\phi_i(k) \propto \omega_k\mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\,.
 $$
+\subsection*{Update of the variaitonal distribution of $\mu_k$, $1\leq k \leq K$}
 On the other hand,
 $$
 p(\mu_k|x,c,\mu_{-k}) \propto p(\mu_k)\prod_{i=1}^np(x_i|c_i,\mu) \,. 
