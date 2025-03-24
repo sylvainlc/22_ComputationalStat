@@ -116,7 +116,7 @@ o\`u $Z_{-j_0} = (Z_j)_{j\neq j_0}$ et $\mathbb{E}_{-j_0}$ est l'esp\'erance lor
 {\em
 Par d\'efinition,
 $$
-\mathcal{L}(q)  = \int \log\frac{p(z,x)}{q(z)}q(z) \mathrm{d} z = \mathbb{E}_{q_{j_0}}\left[\mathbb{E}_{-j_0}\left[\log p(Z_{j_0},Z_{-j_0},x)\right]\right] - \sum_{j=1}^d\mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]
+\mathcal{L}(q)  = \int \log\frac{p(z,x)}{q(z)}q(z) \mathrm{d} z = \mathbb{E}_{q_{j_0}}\left[\mathbb{E}_{-j_0}\left[\log p(Z_{j_0},Z_{-j_0},x)\right]\right] - \sum_{j=1}^d\mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]\,.
 $$
 La densit\'e $q_{j_0}^*$ est donc solution de 
 $$
@@ -133,7 +133,7 @@ ce qui permet de conclure.
 \end{enumerate}
 
 \section{Inf\'erence variationnelle : mod\`ele gaussien}
-Soient $\alpha_0$ et $\beta_0$ deux re\'els strictement positifs et $\mu_0$ un r\'eel. On consid\`ere les variables al\'eatoires suivantes : $\sigma^2 \sim\mathcal{IG}(\alpha_0,\beta_0)$, $\mu\sim\mathcal{N}(\mu_0,\sigma^2)$ et $X = (X_i)_{1\leq i\leq n}\sim\otimes_{i=1}^n\mathcal{N}(\mu,\sigma^2)$ o\`u $\mathcal{IG}$ est la loi inverse gamma de param\`etres $\alpha_0$ et $\beta_0$ de denist\'e $z\mapsto \beta_0^{\alpha_0}\Gamma^{-1}(\alpha_0)z^{-(\alpha_0+1)}\mathrm{exp}(-\beta_0/z)$ sur $\mathbb{R}_+^*$.
+Soient $\alpha_0$ et $\beta_0$ deux re\'els strictement positifs et $\mu_0$ un r\'eel. On consid\`ere les variables al\'eatoires suivantes : $\sigma^2 \sim\mathcal{IG}(\alpha_0,\beta_0)$, $\mu\sim\mathcal{N}(\mu_0,\sigma^2)$ et $X = (X_i)_{1\leq i\leq n}\sim\otimes_{i=1}^n\mathcal{N}(\mu,\sigma^2)$ o\`u $\mathcal{IG}$ est la loi inverse gamma de param\`etres $\alpha_0$ et $\beta_0$ de densit\'e $z\mapsto \beta_0^{\alpha_0}\Gamma^{-1}(\alpha_0)z^{-(\alpha_0+1)}\mathrm{exp}(-\beta_0/z)$ sur $\mathbb{R}_+^*$.
 \begin{enumerate}
 \item \'Ecrire la densit\'e jointe des variables $Z=(\mu,\sigma^2)$ et $X$.
 
@@ -195,7 +195,7 @@ $$
 $$
 On reconna\^it une loi inverse gamma de param\`etres 
 \begin{align*}
-\alpha &= 1/2 + \alpha_0+1+n/2\\
+\alpha &= 1/2 + \alpha_0+1+n/2\,.\\
 \beta &= \mathbb{E}_{q_1}\left[(\mu-\mu_0)^2 + \sum_{i=1}^n(x_i-\mu)^2\right]/2\,.
 \end{align*}
 }
