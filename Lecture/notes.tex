@@ -464,15 +464,15 @@ which is a random variable depending on $X$. This is the marginal density of $X$
 \end{example}
 
 \section{Algorithm}
-In the following, we write $p_\theta:z\mapsto f_\theta(z)/L(\theta)$. Solving the optimization problem is not possible in general frameworks. The Expectation Maximization (EM) algorithm computes sequentially $\{\theta_k\}_{k\geq 0}$ to estimate $\widehat \theta$. For all $\theta,\theta'\in\Theta$, we introduce the following quantity:
+In the following, we write $q_\theta:z\mapsto f_\theta(z)/L(\theta)$. Solving the optimization problem is not possible in general frameworks. The Expectation Maximization (EM) algorithm computes sequentially $\{\theta_k\}_{k\geq 0}$ to estimate $\widehat \theta$. For all $\theta,\theta'\in\Theta$, we introduce the following quantity:
 $$
-Q(\theta,\theta') = \int \log f_\theta(z)p_{\theta'}(z)\lambda(\rmd z) = \mathbb{E}_{\theta'}[\log f_\theta(Z)]\eqsp,
+Q(\theta,\theta') = \int \log f_\theta(z)q_{\theta'}(z)\lambda(\rmd z) = \mathbb{E}_{\theta'}[\log f_\theta(Z)]\eqsp,
 $$
-where $\mathbb{E}_{\theta}$ is a notation for the expectation under the density $p_\theta$. Then, we can write for all $\theta,\theta'\in\Theta$
+where $\mathbb{E}_{\theta}$ is a notation for the expectation under the density $q_\theta$. Then, we can write for all $\theta,\theta'\in\Theta$
 $$
-Q(\theta,\theta') = \int \log (L(\theta)p_\theta(z))p_{\theta'}(z)\lambda(\rmd z) = \ell(\theta) - H(\theta,\theta')\eqsp,
+Q(\theta,\theta') = \int \log (L(\theta)q_\theta(z))q_{\theta'}(z)\lambda(\rmd z) = \ell(\theta) - H(\theta,\theta')\eqsp,
 $$
-where $H(\theta,\theta') = - \int \log p_\theta(z) p_{\theta'}(z)\lambda(\rmd z)$.
+where $H(\theta,\theta') = - \int \log q_\theta(z) q_{\theta'}(z)\lambda(\rmd z)$.
 
 \begin{lemma}
 \label{lem:fundEM}
@@ -485,13 +485,13 @@ $$
 By definition, for all $\theta,\theta'\in\Theta$,
 \begin{align*}
 Q(\theta,\theta')-Q(\theta',\theta') &= \ell(\theta)-\ell(\theta') + H(\theta',\theta') - H(\theta,\theta')\\
-&= \ell(\theta)-\ell(\theta') + \int \log\left(\frac{p_\theta(z)}{p_{\theta'}(z)}\right)p_{\theta'}(z)\lambda(\rmd z)\eqsp.
+&= \ell(\theta)-\ell(\theta') + \int \log\left(\frac{q_\theta(z)}{q_{\theta'}(z)}\right)q_{\theta'}(z)\lambda(\rmd z)\eqsp.
 \end{align*}
 As $\log$ is concave, by Jensen's inequality, 
 $$
-\int \log\left(\frac{p_\theta(z)}{p_{\theta'}(z)}\right)p_{\theta'}(z)\lambda(\rmd z) \leq \log\int \frac{p_\theta(z)}{p_{\theta'}(z)}p_{\theta'}(z)\lambda(\rmd z) = 0\eqsp,
+\int \log\left(\frac{q_\theta(z)}{q_{\theta'}(z)}\right)q_{\theta'}(z)\lambda(\rmd z) \leq \log\int \frac{q_\theta(z)}{q_{\theta'}(z)}q_{\theta'}(z)\lambda(\rmd z) = 0\eqsp,
 $$
-which concludes the proof. The inequality $\int \log(p_\theta(z))p_{\theta'}(z)\lambda(\rmd z) \leq \int \log(p_{\theta'}(z))p_{\theta'}(z)\lambda(\rmd z)$ is known as Gibbs' inequality.
+which concludes the proof. The inequality $\int \log(q_\theta(z))q_{\theta'}(z)\lambda(\rmd z) \leq \int \log(q_{\theta'}(z))q_{\theta'}(z)\lambda(\rmd z)$ is known as Gibbs' inequality.
 \end{proof}
 By Lemma~\ref{lem:fundEM}, starting from a parameter estimate $\theta_k$, $k\geq 0$, a direct solution to obtain a parameter $\theta$ such that $\ell(\theta) \geq \ell(\theta_k)$ is to choose $\theta$ such that $Q(\theta,\theta_k)\geq Q(\theta_k,\theta_k)$. This result motivates the Expectation Maximization (EM) algorithm given in Algorithm~\ref{alg:EM} and introduced in \cite{dempster1977maximum}.
 
@@ -513,7 +513,10 @@ In the setting of Example~\ref{ex:EM}, we have
 $$
 Q(\theta,\theta') = \int \log p_\theta(z,X)p_{\theta'}(z|X)\lambda(\rmd z) = \mathbb{E}_{\theta'}[\log p_\theta(Z,X)|X]\eqsp.
 $$
-Therefore, the E-step of the EM algorithm amounts to computing the conditional expectation given $X$ of the complete data (joint) loglikelihood.
+Therefore, the E-step of the EM algorithm amounts to computing the conditional expectation given $X$ of the complete data (joint) loglikelihood. If $\{(Z_i,X_i)\}_{1\leq i  \leq n}$ are i.i.d we write $X = (X_1,\ldots,X_n)$ and $Z = (Z_1,\ldots,Z_n)$. In this case, the intermediate quantity of the EM algorithm is
+$$
+Q(\theta,\theta') = \sum_{i=1}^n \mathbb{E}_{\theta'}[\log p_\theta(Z_i,X_i)|X_i]\eqsp.
+$$
 \end{example}
 
 \section{Example: mixture of Gaussian distributions}
@@ -533,27 +536,101 @@ $$
 %$$
 Assume that $\{(X_i,Z_i)\}_{1\leq i\leq n}$ are i.i.d. with this distribution parameterized by $\theta\in\Theta$. Then, the complete-data loglikelihood writes
 $$
-\log p_\theta (Z_{1:n},X_{1:n}) = \sum_{i=1}^n \sum_{k=1}^K \mathds{1}_{Z_i = k}\left\{\log(\pi_k) -\frac{1}{2}(X_i - \mu_{k})^\top \Sigma^{-1}(X_i - \mu_{k})  \right\}\eqsp.%\\
+\log p_\theta (Z_{1:n},X_{1:n}) = \sum_{i=1}^n \sum_{k=1}^K \mathds{1}_{Z_i = k}\left\{\log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma) -\frac{1}{2}(X_i - \mu_{k})^\top \Sigma^{-1}(X_i - \mu_{k})  \right\}\eqsp.%\\
 %\left.+ \mathds{1}_{Z_i = 1}\left(\log(\pi_1) -\frac{1}{2}(X_i - \mu_{1})^\top \Sigma^{-1}(X_i - \mu_{1})\right)\right\} \eqsp.
 $$
 Therefore, the intermediate quantity of the EM algorithm is given, for all $\theta,\theta' \in\Theta$, by
 \begin{align*}
 Q(\theta,\theta') &= \mathbb{E}_{\theta'} \left[\log p_\theta (Z_{1:n},X_{1:n}) \middle | X_{1:n}\right]\eqsp,\\
-&= \sum_{i=1}^n \sum_{k=1}^K \left\{ \mathbb{P}_{\theta'}(Z_i = k|X_i)\left( \log(\pi_k) -\frac{1}{2}(X_i - \mu_{k})^\top \Sigma^{-1}(X_i - \mu_{k})\right) \right\} \eqsp.%\\
+&= \sum_{i=1}^n \sum_{k=1}^K \left\{ \mathbb{P}_{\theta'}(Z_i = k|X_i)\left( \log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma)  -\frac{1}{2}(X_i - \mu_{k})^\top \Sigma^{-1}(X_i - \mu_{k})\right) \right\} \eqsp.%\\
 %& \left. \hspace{2cm}+ \mathbb{P}_{\theta'}(Z_i = 1|X_i)\left( \log(\pi_1) -\frac{1}{2}(X_i - \mu_{1})^\top \Sigma^{-1}(X_i - \mu_{1})\right) \right\} \eqsp.
 \end{align*}
-The algorithm is initialized by choosing $\theta^{(0)}$ randomly. Then, for each iteration $p\geq 0$, the update is decomposed into two steps.
+The algorithm is initialized by choosing $\theta^{(0)}$ randomly. Then, for each iteration $p\geq 0$, the current parameter estimate is written
+$$
+\theta^{(p)} = \left\{\{\pi^{(p)}_k\}_{1\leq k \leq K}, \{\mu^{(p)}_k\}_{1\leq k \leq K}, \Sigma^{(p)}\right\}\eqsp,
+$$
+and the update is decomposed into two steps.
 \begin{enumerate}
 \item Compute $\mathbb{P}_{\theta^{(p)}}(Z_i = k|X_i)$ for all $1\leq i \leq n$, $1\leq k \leq K$:
 $$
-\mathbb{P}_{\theta^{(p)}}(Z_i = k|X_i) = \frac{\pi^{(p)}_kg^{\theta^{(p)}}_k(X)}{\sum_{\ell=1}^{K}\pi^{(p)}_\ell g^{\theta^{(p)}}_\ell(X)}\eqsp.
+\mathbb{P}_{\theta^{(p)}}(Z_i = k|X_i) = \frac{\pi^{(p)}_kg^{\theta^{(p)}}_k(X)}{\sum_{\ell=1}^{K}\pi^{(p)}_\ell g^{\theta^{(p)}}_\ell(X)} = \omega_{i,k}^{(p)}\eqsp.
 $$
 \item Update the parameter estimate by computing:
 $$
 \theta^{(p+1)} \in \mathrm{Argmax}_{\theta\in\Theta} Q(\theta,\theta^{(p)})\eqsp.
 $$
 \end{enumerate}
+The intermediate quantity is given, for all $\theta$, by:
+$$
+Q(\theta,\theta^{(p)}) = \sum_{i=1}^n \sum_{k=1}^K \left\{ \omega_{i,k}^{(p)}\left( \log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma) -\frac{1}{2}(X_i - \mu_{k})^\top \Sigma^{-1}(X_i - \mu_{k})\right) \right\} \eqsp.
+$$
+By Lemma~\ref{lem:matrix:calculus}, and using that $\pi_K = 1-\sum_{k=1}^{K-1}\pi_k$, for all $1\leq k \leq K-1$,
+$$
+\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \pi_k} = \left(\sum_{i=1}^n\omega_{i,k}^{(p)}\right)\frac{1}{\pi_k} - \left(\sum_{i=1}^n\omega_{i,K}^{(p)}\right)\frac{1}{\pi_K}\eqsp.
+$$
+In addition, for all $1\leq k \leq K$,
+$$
+\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \mu_k} = \sum_{i=1}^n \omega_{i,k}^{(p)} \left(2\Sigma^{-1}X_i - 2\Sigma^{-1}\mu_{k}\right)\eqsp,
+$$
+and
+$$
+%\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \mu_{-1}} &= \sum_{i=1}^n\1_{Y_i=-1}\left(2\Sigma^{-1}X_i - 2\Sigma^{-1}\mu_{-1}\right)\eqsp,\\
+\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \Sigma^{-1}} = \frac{n}{2}\Sigma -  \frac{1}{2}\sum_{i=1}^n\sum_{k=1}^K \omega_{i,k}^{(p)}\left(X_i - \mu_{k}\right)\left(X_i - \mu_{k}\right)^\top \eqsp.
+$$
+The maximum likelihood estimator is defined as the only parameter $\widehat \theta^{(p+1)}$ such that all these equations are set to 0. 
+We can note that there exists $c>0$ such that for all $k\in\{1,\ldots,K\}$, $\pi_k = c\sum_{i=1}^n\omega_{i,k}^{(p)}$. Computing the sum for $k=1$ to $k=K$ yields $c=n$. For $k\in\{1,\ldots,K\}$,  it is given by
+\begin{align*}
+\pi_k^{(p+1)} &= \frac{1}{n}\sum_{i=1}^n\omega_{i,k}^{(p)}\eqsp,\\
+\mu_k^{(p+1)} &= \frac{1}{\sum_{i=1}^n\omega_{i,k}^{(p)}}\sum_{i=1}^n\omega_{i,k}^{(p)}\,X_i\eqsp,\\
+\Sigma^{(p+1)} &= \frac{1}{n}\sum_{i=1}^n\sum_{k=1}^K\omega_{i,k}^{(p)}\left(X_i - \mu_{k}^{(p+1)}\right)\left(X_i - \mu_{k}^{(p+1)}\right)^\top\eqsp.
+\end{align*}
+\begin{remark}
 Note that the computation of $\mathbb{P}_{\theta^{(p)}}(Z_i = k|X_i) $ is explicit. The fact that the conditional expectation (and therefore $Q(\theta,\theta^{(p)})$) can be computed explicitly is a consequence of the fact that $Z_i$ is a discrete random variable. In other cases, $Q(\theta,\theta^{(p)})$ is likely to be unavailable explicitly and is often replaced by Monte Carlo estimators. In the setting of Gaussian mixtures, the computation of $\theta^{(p+1)}$ is also explicit. The M-step is often replaced by simply choosing an estimator $\theta^{(p+1)}$ such that $Q(\theta^{(p+1)},\theta^{(p)}) > Q(\theta^{(p)},\theta^{(p)})$  which is tractable in many cases and yields the Generalized EM algorithm.
+\end{remark}
+
+\begin{lemma}
+\label{lem:matrix:calculus}
+Let $\Sigma$ be a symmetric and invertible  matrix in $\rset^{d\times d}$.
+\begin{enumerate}[(i)]
+\item The derivative of the real valued function $\Sigma \mapsto \log\mathrm{det}(\Sigma)$ defined on $\rset^{d\times d}$ is given by:
+\[
+\partial_{\Sigma}\{\log\mathrm{det}(\Sigma)\}= \Sigma^{-1}\eqsp,
+\]
+where, for all real valued function $f$ defined on $\rset^{d\times d}$, $\partial_{\Sigma}f(\Sigma)$ denotes the $\rset^{d\times d}$ matrix such that for all $1\leqslant i,j\leqslant d$, $\{\partial_{\Sigma}f(\Sigma)\}_{i,j}$ is the partial derivative of $f$ with respect to $\Sigma_{i,j}$.
+\item The derivative of the real valued  function  $x\mapsto x^\top\Sigma x$ defined on $\rset^d$ is given by:
+\[
+\partial_{x}\{x^\top\Sigma x\} = 2 \Sigma x\eqsp.
+\]
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+  \begin{enumerate}[(i)]
+    \item Recall that for all $i \in \{1,\ldots,d\}$ we have
+      $\det(\Sigma)=\sum_{k=1}^d \Sigma_{i,k} \Delta_{i,k}$ where
+      $\Delta_{i,j}$ is the $(i,j)$-cofactor associated with
+      $\Sigma$. For any fixed $i,j$, the component $\Sigma_{i,j}$ does not appear in anywhere in
+      the decomposition $\sum_{k=1}^d \Sigma_{i,k} \Delta_{i,k}$,
+      except for the term $k=j$. This implies
+      $$
+      \frac{\partial \log \det(\Sigma)}{\partial \Sigma_{i,j}}=
+      \frac{1}{\det \Sigma}\frac{\partial  \det(\Sigma)}{\partial
+        \Sigma_{i,j}}=\frac{\Delta_{i,j}}{\det  \Sigma}
+      $$
+      Recalling the identity $\Sigma\; [\Delta_{j,i}]_{1\leq i,j \leq d}=(\det
+      \Sigma)\; I_d$ so that $\Sigma^{-1}=\frac{[\Delta_{j,i}]_{1\leq i,j \leq d}^\top}{\det
+      \Sigma}$, we finally get
+      $$
+\lrb{\frac{\partial \log \det(\Sigma)}{\partial \Sigma_{i,j}}}_{1\leq
+  i,j  \leq d}=(\Sigma^{-1})^\top=\Sigma^{-1}
+$$
+where the last equality follows from the fact that $\Sigma$ is
+symmetric.
+\item Define $\varphi(x)=x^\top\Sigma x$. Then, by straightforward
+  algebra, $\varphi(x+h)=\varphi(x)+2h^\top\Sigma
+  x+\varphi(h)=\varphi(x)+2h^\top\Sigma x+o(\|h\|)$, which concludes the
+  proof.
+  \end{enumerate}
+\end{proof}
 
 \chapter{Variatonal inference and autoencoders}
 
@@ -641,7 +718,7 @@ The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore 
 \end{algorithm}
 
 \section{Application to a mixture of Gaussian distributions}
-Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group the $i$-th observation belongs to. The variables $\mu$ and $c$ are not observed.  The random variables $c= (c_i)_{1\leq i\leq n}$ are independent of  $\mu$ and are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, where $\sum_{k=1}^K\omega_k = 1$.  
+This example can be found in  \cite{blei2017variational}. Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group the $i$-th observation belongs to. The variables $\mu$ and $c$ are not observed.  The random variables $c= (c_i)_{1\leq i\leq n}$ are independent of  $\mu$ and are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, where $\sum_{k=1}^K\omega_k = 1$.  
 
 Conditionally on  $\mu$ and $c$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are independent and $X_i$ has a Gaussian distribution with mean $\mu_{c_i}$ and variance $1$. Marginalizing on $c$, conditionally on  $\mu$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are i.i.d. and the conditional probability density of $X_1$ is:
 $$
@@ -669,11 +746,11 @@ Note that
 \begin{align*}
 \mathrm{KL}\left(q\|p(\cdot|x)\right) &= \mathbb{E}_q[\log q(\mu,c)] - \mathbb{E}_q[\log p(\mu,c|x)]\,,\\
  &= \mathbb{E}_q[\log q(\mu,c)] - \mathbb{E}_q[\log p(\mu,c,x)]+\log p(x)\,,\\
-&= -\mathrm{ELBO}(q)+\log p(x)\,,
+&= -\mathcal{L}_x(q)+\log p(x)\,,
 \end{align*}
 where
 $$
-\mathrm{ELBO}(q) = -\mathbb{E}_q[\log q(\mu,c)] + \mathbb{E}_q[\log p(\mu,c,x)] \,.
+\mathcal{L}_x(q)= -\mathbb{E}_q[\log q(\mu,c)] + \mathbb{E}_q[\log p(\mu,c,x)] \,.
 $$
 CAVI algorithm computes iteratively $1\leqslant k \leqslant K$,
 $$
@@ -707,7 +784,8 @@ The update writes:
 $$
 \phi_i(k) \propto \omega_k\mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\,.
 $$
-\subsection*{Update of the variaitonal distribution of $\mu_k$, $1\leq k \leq K$}
+
+\subsubsection*{Update of the variaitonal distribution of $\mu_k$, $1\leq k \leq K$}
 On the other hand,
 $$
 p(\mu_k|x,c,\mu_{-k}) \propto p(\mu_k)\prod_{i=1}^np(x_i|c_i,\mu) \,. 
@@ -727,6 +805,28 @@ The update writes therefore,
 $$
 \mu_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
 $$
+
+\begin{algorithm}[H] \label{alg:CAVI:mixtureGauss}
+    \KwData{Observations $x= (x_1,\ldots,x_n)$, initial values of $\phi_i(k)$, $m_k$ and $s_k$, $1\leq k \leq K$, $1\leq i \leq n$, maximum number of iteration $N$}
+    \KwResult{A variational distribution for each coordinate of $\mu_k$ and  $c_i$, $1\leq k\leq K$, $1\leq i\leq n$.}
+    \For {$ p= 1 \to N$}{
+    
+\For{$i = 1 \to n$}{
+Set $$
+\phi_i(k) \propto \omega_k\mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\,.
+$$;
+}
+
+\For{$k = 1 \to K$}{
+Set 
+$$
+\mu_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
+$$;
+}
+    
+}
+\caption{A version of CAVI algorithm for a Bayesian mixture of Gaussian distributions.}
+\end{algorithm}
 
 \section{Variational Autoencoders}
 Variational Auto-Encoders (VAE) are very popular approaches to introduce approximations of a target conditional distribution in the context of latent data models. Assume that $(X_1,\ldots,X_n)$ are i.i.d. random variables in $\mathsf{X}$ with unknown probability distribution function $\pi_{\mathrm{data}}$. We consider a family of joint probability distributions $\{(z,x) \mapsto  p_{\theta}(z,x)\}_{\theta\in\Theta}$ on $(\mathsf{Z}\times \mathsf{X}, \mathcal{Z}\times \mathcal{X})$ where $Z$ is a latent variable and $X$ is the observation. In this setting, we often write, for all $\theta\in\Theta$, $x\in\mathsf{X}$, $z\in\mathsf{Z}$,
