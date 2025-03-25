@@ -632,7 +632,7 @@ symmetric.
   \end{enumerate}
 \end{proof}
 
-\chapter{Variatonal inference and autoencoders}
+\chapter{Variational inference and autoencoders}
 
 
 \section{Evidence Lower Bound}
@@ -697,7 +697,7 @@ Consider the density $\tilde q_j$ such that
 $$
 \tilde q_j(z_j) \propto \exp\left(\mathbb{E}_{q_{-j}}\left[\log p(z_j | Z_{-j},x)\right]\right)\,,
 $$
-i.e. the desnity given by $\tilde q_j(z_j)= \exp(\mathbb{E}_{q_{-j}}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$ ($C_j$ is the normalizing constant to obtain a density). Therefore,
+i.e. the density given by $\tilde q_j(z_j)= \exp(\mathbb{E}_{q_{-j}}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$ ($C_j$ is the normalizing constant to obtain a density). Therefore,
 $$
 \mathcal{L}_x(q) = -\mathbb{E}_{q_j}\left[\log \frac{q_j(Z_j)}{\tilde q_j(Z_j) }\right]  + \mathrm{C} + \log C_j = -\mathrm{KL}(q_j\|\tilde q_j)  + \mathrm{C} + \log C_j\,.
 $$
@@ -777,7 +777,6 @@ $$
 and
 \begin{align*}
 \mathrm{exp}\left(\mathbb{E}_{\tilde q_{c_i}}[\log p(c_i|x,c_{-i},\mu)]\right) &\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
-&\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[-(x_i-\mu_k)^2/2]\right)\,\\
 &\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}}[-(x_i-\mu_k)^2/2]\right)\,.
 \end{align*}
 The update writes:
@@ -796,14 +795,14 @@ $$
 $$
 and
 \begin{align*}
-\mathrm{exp}\left(\mathbb{E}_{\tilde q_{\mu_k}}[\log p(\mu_k|x,c,\mu_{-k})]\right) &\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n\sum_{k=1}^K  \mathbb{E}_{\tilde q_{\mu_k}}[1_{c_i=k}\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
+\mathrm{exp}\left(\mathbb{E}_{\tilde q_{\mu_k}}[\log p(\mu_k|x,c,\mu_{-k})]\right) &\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n\sum_{\ell=1}^K  \mathbb{E}_{\tilde q_{\mu_k}}[1_{c_i=\ell}\log \varphi_{\mu_\ell,1}(x_i)]\right)\,\\
 &\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n \phi_i(k) \mathbb{E}_{\tilde q_{\mu_k}}[\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
 &\propto \mathrm{exp}\left(-\frac{\mu_k^2}{2\sigma^2}-\frac{1}{2}\sum_{i=1}^n \phi_i(k)(x_i-\mu_k)^2\right)\,,\\
 &\propto \mathrm{exp}\left(-\frac{\mu_k^2}{2\sigma^2}+\sum_{i=1}^n \phi_i(k)x_i\mu_k - \frac{1}{2}\sum_{i=1}^n \phi_i(k)\mu^2_k\right)\,.
 \end{align*}
 The update writes therefore,
 $$
-\mu_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
+m_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
 $$
 
 \begin{algorithm}[H] \label{alg:CAVI:mixtureGauss}
@@ -820,7 +819,7 @@ $$;
 \For{$k = 1 \to K$}{
 Set 
 $$
-\mu_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
+m_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
 $$;
 }
     
