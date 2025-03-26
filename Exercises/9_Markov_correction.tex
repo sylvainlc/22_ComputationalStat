@@ -78,8 +78,12 @@
 
 
 %\section{Expectation Maximization pour les HMM}
-Soit $(X_k)_{0\leq k\leq n}$ une cha\^ine de Markov discr\`ete \`a valeurs dans $\{1,\ldots,r\}$, de matrice de transition $Q$ et de loi initiale $\nu$. On consid\`ere que cette cha\^ine est uniquement observ\'ee au travers des variables $(Y_k)_{0\leq k\leq n}$, ind\'ependantes conditionnellement \`a $(X_k)_{0\leq k\leq n}$ et telles que pour tout $0\leq \ell\leq n$, la loi de $Y_\ell$ sachant $(X_k)_{0\leq k\leq n}$ est une gaussienne de moyenne $\mu_{X_\ell}$ et de variance $v_{X_\ell}$.
-Le param\`etre inconnu est ici $\theta= \{\mu_1,\ldots,\mu_r,v_1,\ldots,v_r\}$.
+Soit $r$ un entier strictement positif.  Notons $\mathbb{S}_r$ l'ensemble des matrices de transition de taille $r\times r$, i.e. l'ensemble des matrices de  taille $r\times r$ de r\'eels positifs telles que la somme de chaque ligne soit \'egale \`a 1. Consid\'erons un param\`etre $\theta= \{P,\mu_1,\ldots,\mu_r,v_1,\ldots,v_r\}\in\Theta$, o\`u $\Theta = \mathbb{S}_r\times \mathbb{R}^r\times(\mathbb{R}_+^*)^r$ et le mod\`ele suivant param\'etr\'e par $\theta$.
+
+Soit $(X_k)_{0\leq k\leq n}$ une cha\^ine de Markov discr\`ete \`a valeurs dans $\{1,\ldots,r\}$, de matrice de transition $P$ et de loi initiale $\nu$. Cela signifie que pour tout $1\leq j \leq r$, $\mathbb{P}_\theta(X_0 = j) = \nu_j$ et pour tout $0\leq k \leq n-1$ et tout $1\leq i,j\leq r$, $\mathbb{P}_\theta(X_{k+1} = j | X_k = i) = P_{i,j}$. On consid\`ere que cette cha\^ine est uniquement observ\'ee au travers des variables $(Y_k)_{0\leq k\leq n}$, ind\'ependantes conditionnellement \`a $(X_k)_{0\leq k\leq n}$ et telles que pour tout $0\leq \ell\leq n$, la loi de $Y_\ell$ sachant $(X_k)_{0\leq k\leq n}$ est une gaussienne de moyenne $\mu_{X_\ell}$ et de variance $v_{X_\ell}$.
+
+
+
 
 \begin{enumerate}
 \item \'Ecrire la logvraisemblance jointe de $(X_{0:n},Y_{0:n})$: $\theta \mapsto \log p_\theta (X_{0:n},Y_{0:n})$.
@@ -87,11 +91,12 @@ Le param\`etre inconnu est ici $\theta= \{\mu_1,\ldots,\mu_r,v_1,\ldots,v_r\}$.
 \vspace{.2cm}
 
 {\em
-Notons $\varphi_{\mu,\sigma^2}$ la densit\'e de la loi gaussienne de moyenne $\mu$ et de variance $\sigma^2$. Nous avons, pour tout $1$
+Notons $\varphi_{\mu,\sigma^2}$ la densit\'e de la loi gaussienne de moyenne $\mu$ et de variance $\sigma^2$. Nous avons, pour tout $\theta$,
 \begin{align*}
 \log p_\theta (X_{0:n},Y_{0:n}) &= \log p_\theta (X_{0:n}) + \log p_\theta (Y_{0:n}|X_{0:n})\,,\\
 &= \log p_\theta (X_{0}) + \sum_{k=1}^n\log p_\theta (X_{k}|X_{k-1})+ \sum_{k=0}^n\log p_\theta(Y_k|X_k)\,,\\
-&= \sum_{i=1}^r\mathds{1}_{X_0=i}\log \nu_i + \sum_{k=1}^n\sum_{i,j=1}^r\mathds{1}_{X_{k-1}=i,X_k=j} \log Q_{i,j} + \sum_{k=0}^n\sum_{i=1}^r\mathds{1}_{X_k=i}\log \varphi_{\mu_i,v_i}(Y_{k})\,.
+&= \sum_{i=1}^r\mathds{1}_{X_0=i}\log \nu_i + \sum_{k=1}^n\sum_{i,j=1}^r\mathds{1}_{X_{k-1}=i,X_k=j} \log P_{i,j} \\
+&\hspace{5cm}+ \sum_{k=0}^n\sum_{i=1}^r\mathds{1}_{X_k=i}\log \varphi_{\mu_i,v_i}(Y_{k})\,.
 \end{align*}
 }
 \item \'Ecrire la quantit\'e interm\'ediaire de l'EM $Q(\theta,\theta')$ pour tout $\theta$, $\theta'$ :
@@ -105,8 +110,8 @@ $$
 Par la question pr\'ec\'edente, 
 \begin{align*}
 Q(\theta,\theta') &= \mathbb{E}_{\theta'}\left[\log p_\theta (X_{0:n},Y_{0:n})\middle |Y_{0:n}\right]\,,\\
-&= \mathbb{E}_{\theta'}\left[ \sum_{i=1}^r\mathds{1}_{X_0=i}\log \nu_i + \sum_{k=1}^n\sum_{i,j=1}^r\mathds{1}_{X_{k-1}=i,X_k=j} \log Q_{i,j} + \sum_{k=0}^n\sum_{i=1}^r\mathds{1}_{X_k=i}\log \varphi_{\mu_i,v_i}(Y_{k})\middle |Y_{0:n}\right]\,,\\
-&=\sum_{i=1}^r\mathbb{E}_{\theta'}\left[ \mathds{1}_{X_0=i}\middle |Y_{0:n}\right]\log \nu_i +  \sum_{k=1}^n\sum_{i,j=1}^r\mathbb{E}_{\theta'}\left[ \mathds{1}_{X_{k-1}=i,X_k=j}\middle |Y_{0:n}\right] \log Q_{i,j} \\
+%&= \mathbb{E}_{\theta'}\left[ \sum_{i=1}^r\mathds{1}_{X_0=i}\log \nu_i + \sum_{k=1}^n\sum_{i,j=1}^r\mathds{1}_{X_{k-1}=i,X_k=j} \log Q_{i,j} + \sum_{k=0}^n\sum_{i=1}^r\mathds{1}_{X_k=i}\log \varphi_{\mu_i,v_i}(Y_{k})\middle |Y_{0:n}\right]\,,\\
+&=\sum_{i=1}^r\mathbb{E}_{\theta'}\left[ \mathds{1}_{X_0=i}\middle |Y_{0:n}\right]\log \nu_i +  \sum_{k=1}^n\sum_{i,j=1}^r\mathbb{E}_{\theta'}\left[ \mathds{1}_{X_{k-1}=i,X_k=j}\middle |Y_{0:n}\right] \log P_{i,j} \\
 &\hspace{6cm}+ \sum_{k=0}^n\sum_{i=1}^r\mathbb{E}_{\theta'}\left[ \mathds{1}_{X_k=i}\middle |Y_{0:n}\right]\log \varphi_{\mu_i,v_i}(Y_{k})\,.
 \end{align*}
 }
@@ -125,31 +130,31 @@ pour $0\leq k \leq n$.
 {\em
 Il suffit d'appliquer la question pr\'ec\'edente :
 $$
-Q(\theta,\theta') =\sum_{i=1}^r\tilde\omega_{0}^{\theta'}(i)\log \nu_i +  \sum_{k=1}^n\sum_{i,j=1}^r\omega_{k-1,k}^{\theta'}(i,j) \log Q_{i,j} + \sum_{k=0}^n\sum_{i=1}^r\tilde\omega_{k}^{\theta'}(i)\log \varphi_{\mu_i,v_i}(Y_{k})\,.
+Q(\theta,\theta') =\sum_{i=1}^r\tilde\omega_{0}^{\theta'}(i)\log \nu_i +  \sum_{k=1}^n\sum_{i,j=1}^r\omega_{k-1,k}^{\theta'}(i,j) \log P_{i,j} + \sum_{k=0}^n\sum_{i=1}^r\tilde\omega_{k}^{\theta'}(i)\log \varphi_{\mu_i,v_i}(Y_{k})\,.
 $$
 }
-\item \`A l'it\'eration $p\geq 0$, on dispose de l'estimation $\hat\theta^{(p)}$. \'Ecrire l'estimateur $\hat\theta^{(p+1)}$ en maximisant $\theta\mapsto Q(\theta,\hat\theta^{p})$, donner la valeur de $\theta^{(p+1)}$ en fonction des $\omega_{k-1,k}^{\theta^{(p)}}(i,j)$, $1\leq k \leq n$, $1\leq i, j \leq r$.
+\item \`A l'it\'eration $p\geq 0$, on dispose de l'estimation $\hat\theta^{(p)}$. \'Ecrire l'estimateur $\hat\theta^{(p+1)}$ en maximisant $\theta\mapsto Q(\theta,\hat\theta^{p})$.%, donner la valeur de $\theta^{(p+1)}$ en fonction des $\omega_{k-1,k}^{\theta^{(p)}}(i,j)$, $1\leq k \leq n$, $1\leq i, j \leq r$.
 
 \vspace{.2cm}
 
 {\em
 On peut montrer que la fonction $\theta\mapsto Q(\theta,\theta^{(p)})$ admet un maximum unique obtenu en r\'esolvant l'\'equation $\nabla_\theta Q(\theta,\theta^{(p)}) = 0$.
 \begin{itemize}
-\item Pour tout $1\leq i \leq r$ et tout $1\leq j \leq r-1$, en remarquant que $ Q_{i,r} = 1 - \sum_{\ell=1}^{r-1}Q_{i,\ell}$, 
+\item Pour tout $1\leq i \leq r$ et tout $1\leq j \leq r-1$, en remarquant que $ P_{i,r} = 1 - \sum_{\ell=1}^{r-1}P_{i,\ell}$, 
 $$
-\partial_{Q_{i,j}}Q(\theta,\theta^{(p)}) = \sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,j)}{Q_{i,j}} -  \sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,r)}{Q_{i,r}}\,.
+\partial_{P_{i,j}}Q(\theta,\theta^{(p)}) = \sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,j)}{P_{i,j}} -  \sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,r)}{P_{i,r}}\,.
 $$
 On obtient donc que pour tout $1\leq i \leq r$ et tout $1\leq j \leq r-1$,
 $$
-\sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,j)}{Q_{i,j}} = \sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,r)}{Q_{i,r}}\,,
+\sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,j)}{P_{i,j}} = \sum_{k=1}^n\frac{\omega_{k-1,k}^{\theta^{(p)}}(i,r)}{P_{i,r}}\,,
 $$
 puis que
 $$
-Q^{(p+1)}_{i,j} =\frac{\sum_{k=1}^n\omega_{k-1,k}^{\theta^{(p)}}(i,j)}{\sum_{k=1}^n\tilde \omega_{k-1}^{\theta^{(p)}}(i,j)}
+P^{(p+1)}_{i,j} =\frac{\sum_{k=1}^n\omega_{k-1,k}^{\theta^{(p)}}(i,j)}{\sum_{k=1}^n\tilde \omega_{k-1}^{\theta^{(p)}}(i,j)}\,.
 $$
 \item Pour tout $1\leq i \leq r$, 
 $$
-\partial_{\mu_i}Q(\theta,\theta^{(p)}) = -\frac{1}{v_i}\sum_{k=0}^n\tilde\omega_{k}^{\theta^{(p)}}(i)\left(\mu_i + Y_k\right)\,.
+\partial_{\mu_i}Q(\theta,\theta^{(p)}) = \frac{1}{v_i}\sum_{k=0}^n\tilde\omega_{k}^{\theta^{(p)}}(i)\left(Y_k-\mu_i\right)\,.
 $$
 Ainsi,
 $$
@@ -165,7 +170,7 @@ v^{(p+1)}_i = \frac{\sum_{k=0}^n\tilde\omega_{k}^{\theta^{(p)}}(i)(Y_k-\mu^{(p+1
 $$
 \end{itemize}
 }
-\item Dans le cas o\`u on souhaite \'egalement apprendre la loi initiale de la cha\^ine de Markov, i.e. si l'on note $\nu_i = \mathbb{P}(X_0=i)$, $1\leq i \leq r$ et que $\theta = \{\mu_1,\ldots,\mu_r,v_1,\ldots,v_r,\nu_1,\ldots,\nu_r\}$, donner les \'equations de mise \`a jour de $\nu$. 
+\item Dans le cas o\`u on souhaite \'egalement apprendre la loi initiale de la cha\^ine de Markov et que $\theta = \{P,\mu_1,\ldots,\mu_r,v_1,\ldots,v_r,\nu_1,\ldots,\nu_r\}$, donner les \'equations de mise \`a jour de $\nu$. 
 
 \vspace{.2cm}
 
@@ -184,12 +189,12 @@ $$
 \vspace{.2cm}
 
 {\em
-On remarque que pour tout $\theta,\theta'$
+On remarque que pour tout $\theta,\theta'$ et en notant $\mathsf{X} = \{1,\ldots,r\}$,
 \begin{align*}
-\log p_\theta(Y_{0:n}) &= \sum_{i=1}^n \log p_\theta(Y_{0:n}) p_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})\,\\
-&= \sum_{i=1}^n \log \frac{p_\theta(X_{0:n} = x_{0:n},Y_{0:n})}{p_\theta(X_{0:n} = x_{0:n}|Y_{0:n})} p_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n}) \,,\\
-&= \sum_{i=1}^n \log p_\theta(X_{0:n} = x_{0:n},Y_{0:n})p_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})  \\
-&\hspace{3cm}- \sum_{i=1}^n \log p_\theta(X_{0:n} = x_{0:n}|Y_{0:n})p_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})\,,\\
+\log p_\theta(Y_{0:n}) &= \sum_{x_{0:n}\in\mathsf{X}^{n+1}} \log p_\theta(Y_{0:n}) \mathbb{P}_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})\,\\
+&= \sum_{x_{0:n}\in\mathsf{X}^{n+1}} \log \frac{p_\theta( x_{0:n},Y_{0:n})}{\mathbb{P}_\theta(X_{0:n} = x_{0:n}|Y_{0:n})} \mathbb{P}_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n}) \,,\\
+&= \sum_{x_{0:n}\in\mathsf{X}^{n+1}} \log p_\theta(x_{0:n},Y_{0:n})\mathbb{P}_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})  \\
+&\hspace{3cm}- \sum_{x_{0:n}\in\mathsf{X}^{n+1}} \log \mathbb{P}_\theta(x_{0:n}|Y_{0:n})\mathbb{P}_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})\,,\\
 \end{align*}
 Ainsi,
 $$
@@ -197,10 +202,10 @@ $$
 $$
 car
 \begin{multline*}
-\nabla_{\theta=\theta'}\sum_{i=1}^n \log p_\theta(X_{0:n} = x_{0:n}|Y_{0:n})p_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})\\
-=\nabla_{\theta=\theta'}\sum_{i=1}^n p_\theta(X_{0:n} = x_{0:n}|Y_{0:n})  = 0\,.
+\nabla_{\theta=\theta'}\sum_{i=1}^n \log \mathbb{P}_\theta(X_{0:n} = x_{0:n}|Y_{0:n})\mathbb{P}_{\theta'}(X_{0:n} = x_{0:n}|Y_{0:n})\\
+=\nabla_{\theta=\theta'}\left(\sum_{x_{0:n}\in\mathsf{X}^{n+1}}  \mathbb{P}_\theta(X_{0:n} = x_{0:n}|Y_{0:n})\right)  = 0\,.
 \end{multline*}
-Le score se calcule \`a l'aide d'une esp\'erance conditionnelle du m\^eme type que la quantit\'e interm\'ediaire de l'EM.
+Le score (gradient de la logvraisemblance) se calcule \`a l'aide d'une esp\'erance conditionnelle du m\^eme type que la quantit\'e interm\'ediaire de l'EM.
 }
 \item En d\'eduire un algorithme de mise \`a jour des param\`etres de type "descente de gradient".
 
