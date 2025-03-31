@@ -78,6 +78,8 @@
 \medskip
 
 
+L'\'echantilloneur de Gibbs est un exemple d'algorithme de type Metropolis-Hastings dans le cas o\`u nous cherchons \`a simuler une loi  $\pi$ sur $(\rset^d,\mathcal{B}(\rset^d))$ et o\`u pour tout $x\in\rset^d$, $x$ peut \^etre \'ecrit $x = (x_{1},\ldots,x_{d})$ de telle sorte \`a ce que pour tout  $1\leq j \leq d$,  nous sachions simuler $\pi(\cdot |x_{-j})$ o\`u $x_{{-j}} = (x_{\ell})_{\ell \neq j}$. Une it\'eration de l'algorithme consiste alors simplement \`a simuler alternativement chaque $x_{j}$, $1\leq j \leq d$, conditionnellement aux autres.
+
 \section*{Warm-up}
 Soit $(X,Y)$ un couple de variables de loi gaussienne centr\'ee de matrice de covariance 
 $$
@@ -115,7 +117,7 @@ Soit $K\geq 2$ et $n\geq 1$. Notons $\mathsf{S}_K$ le $K$-simplexe i.e. l'ensemb
 \begin{itemize}
 \item Le vecteur $p = (p_1,\ldots,p_K)\in\mathsf{S}_K$ suit une loi de densit\'e proportionnelle \`a  $p \mapsto \prod_{k=1}^Kp_k^{\gamma_k-1}$ o\`u pour tout $1\leq k \leq K$, $\gamma_k>0$. Il s'agit d'une loi de Dirichlet permettant d'obtenir des \'echantillons sur $\mathsf{S}_K$.%$\frac{\Gamma\left(\sum_{k=1}^K\gamma_k\right)}{\prod_{k=1}^K\Gamma(\gamma_k)}$
 \item Le vecteur $s^2 =(s^2_{1},\ldots,s^2_K)$ contient des variables mutuellement ind\'ependantes, et telles que pour tout $1\leq k \leq K$, $s^2_k$ a une loi inverse-gamma de param\`etres, $\lambda_k/2$ et $\beta_k/2$, i.e. de densit\'e proportionnelle \`a $u\mapsto u^{-\lambda_k/2-1}\exp(-\beta_k/(2u))$ sur $\mathbb{R}_+^*$.
-\item Conditionnellement \`a $(p,s^2)$, le vecteur $m=(m_1,\ldots,m_K)$ est constitu\'e de variables in\'ependantes et pour tout $1\leq k \leq K$, la loi conditionnelle de $m_k$ est gaussienne de moyenne $\alpha_k$ et de variance $s_k^2/\lambda_k$.
+\item Conditionnellement \`a $(p,s^2)$, le vecteur $m=(m_1,\ldots,m_K)$ est constitu\'e de variables ind\'ependantes et pour tout $1\leq k \leq K$, la loi conditionnelle de $m_k$ est gaussienne de moyenne $\alpha_k$ et de variance $s_k^2/\lambda_k$.
 \item Conditionnellement \`a $\theta = (p, m, s^2)$, les $(Z_i,X_i)_{1\leq i \leq n}$ sont ind\'ependantes et telles que :
 \begin{itemize}
 \item pour tout $1\leq k \leq K$, $Z_i\in\{1,\ldots K\}$ et $Z_i = k $ avec probabilit\'e $p_k$ ;
@@ -126,7 +128,7 @@ La densit\'e jointe de toutes les variables peut alors s'\'ecrire :
 $$
 \pi: (\theta,x,z) \mapsto \pi(p) \left\{\prod_{k=1}^K\pi(s_k^2)\pi(m_k|s_k^2)\right\}\left\{\prod_{i=1}^n\pi(z_i|\theta)\pi(x_i|z_i,\theta)\right\}\,,
 $$
-o\`u $\pi(w_1|w_2)$ est une notation g\'en\'erique pour la densit\'e de la loi conditionnelle de la variable $W_1$ sachant $W_2$.
+o\`u $\pi(w_1|w_2)$ (resp. $\pi(w_1)$) est une notation g\'en\'erique pour la densit\'e de la loi conditionnelle de la variable $W_1$ sachant $W_2$ (resp. pour la densit\'e marginale de $W_1$).
 \begin{enumerate}
 \item Montrer que la loi a posteriori de $\theta$ s'\'ecrit :
 $$
@@ -153,6 +155,7 @@ o\`u $\varphi_{m_k,s_k^2}$ est la densit\'e gaussienne de moyenne $m_k$ et de va
 %\pi(z|\theta,x)\propto \pi(\theta,z,x) \propto \pi(z|\theta) \pi(x|z,\theta)&\propto \prod_{i=1}^n\pi(z_i|\theta)\pi(x_i|z_i\theta)\,,\\
 %&\propto \prod_{i=1}^n\left(\sum_{k=1}^K\mathds{1}_{z_i=k}p_k\varphi_{m_k,s_k^2}(x_i)\right)\,.
 %\end{align*}
+%Conditionnellement \`a $(X,\theta)$, les $(Z_1,\ldots,Z_n)$ sont donc ind\'ependants et la probabilit\'e conditionnelle de l'\'ev\'enement $\{Z_i=k\}$ est proportionnelle \`a $p_k\varphi_{m_k,s_k^2}(x_i)$ pour $1\leq k \leq K$, $1\leq i \leq n$.
 %}
 \item \'Ecrire la densit\'e de la loi conditionnelle de $\theta$ sachant $(Z,X)$.
 
@@ -161,14 +164,19 @@ o\`u $\varphi_{m_k,s_k^2}$ est la densit\'e gaussienne de moyenne $m_k$ et de va
 %{\em
 %La densit\'e de la loi conditionnelle de $\theta$ sachant $(Z,X)$ s'\'ecrit
 %\begin{align*}
-%\pi(\theta|z,x)\propto \pi(\theta,z,x) &\propto \pi(\theta)\pi(z|\theta) \pi(x|z,\theta)\propto \pi(p|z)\pi(m,s^2|x,z)\,.
+%\pi(\theta|z,x)\propto \pi(\theta,z,x) &\propto \pi(\theta)\pi(z|\theta) \pi(x|z,\theta)\,. %\propto \pi(p|z)\pi(m,s^2|x,z)\,.
 %\end{align*}
-%On peut ensuite calculer chacune de ces deux densit\'es. Tout d'abord,
+%Il suffit alors de calculer $\pi(p|z)$ et $\pi(m,s^2|x,z)$. 
+%%On peut ensuite calculer chacune de ces deux densit\'es. Tout d'abord,
 %\begin{align*}
 %\pi(p|z)\propto \pi(\theta,z,x) &\propto \pi(p)\pi(z|p) \,,\\
 %&\propto \prod_{k=1}^Kp_k^{\gamma_k-1} \prod_{i=1}^n p_{z_i} \propto \prod_{k=1}^Kp_k^{\gamma_k+n_k-1}\,,
 %\end{align*}
-%o\`u $n_k$ est le nombre de $z_i$ \'egaux \`a $k$. Ainsi, $\pi(p|z)$ est la densit\'e de la loi de Dirichlet de param\`etres $(\gamma_1+n_1,\ldots,\gamma_K+n_K)$. D'autre part, 
+%o\`u $n_k$ est le nombre de $z_i$ \'egaux \`a $k$. Ainsi, $\pi(p|z)$ est la densit\'e de la loi de Dirichlet de param\`etres $(\gamma_1+n_1,\ldots,\gamma_K+n_K)$. 
+%
+%\medskip
+%
+%D'autre part, 
 %\begin{align*}
 %\pi(m,s^2|x,z)&\propto \pi(s^2) \pi(m|s^2)\pi(z|m,s^2)\pi(x|z,m,s^2) \,,\\
 %&\hspace{-1cm}\propto \left\{\prod_{i=1}^n s_{z_i}^{-1}\exp\left(-\frac{(x_i-m_{z_i})^2}{2s_{z_i}^2}\right)\right\} \left\{\prod_{k=1}^K (s^2_k)^{-\lambda_k/2-1}\exp(-\beta_k/(2s_k^2))\right\}\\
@@ -199,7 +207,7 @@ o\`u $\varphi_{m_k,s_k^2}$ est la densit\'e gaussienne de moyenne $m_k$ et de va
 %\vspace{.2cm}
 %
 %{\em
-%Il suffit, \`a chaque it\'eration, de simuler la variable s\'electionn\'ee conditionnellement aux autres en utilisant les questions pr\'ec\'edentes.
+%Il suffit, \`a chaque it\'eration $k\geq 0$, de simuler $\theta_{k+1}$ sachant $(Z_k,X)$ puis de simuler $Z_{k+1}$ sachant $(\theta_{k+1},X)$ en utilisant les questions pr\'ec\'edentes.
 %}
 \end{enumerate}
 
