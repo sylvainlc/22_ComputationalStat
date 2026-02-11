@@ -10,15 +10,19 @@ The course covers the basics of computational statistics.
 - Basics on Makov chains and Metropolis-Hastings algorithm
 
 ### Labs
-- [1 - Maximum likelihood (Gamma distribution, Newton-Raphson update)](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/1_Gamma_distribution.ipynb)
-- [2 - Mixture models](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/2-mixtures.ipynb)
-- [3 - Variational inference](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/3_VI_basics.ipynb)
-- [4 - Expectation Maximization](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/4_ExpectationMaximization.ipynb)
-- [5 - Introduction to MCMC algorithm](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/5_mcmc_mh.ipynb)
+- [1a - Maximum likelihood (Gamma distribution, Newton-Raphson update)](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/1a_Gamma_distribution.ipynb)
+- [1b - Mixture models](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/1b_mixtures.ipynb)
+- [2 - Introduction to MCMC algorithm](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/2_mh_mala_hmc.ipynb)
+- [3 - Expectation Maximization](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/3_ExpectationMaximization.ipynb)
+- [4 - Variational inference](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Lab/4_VI_basics.ipynb)
+
+
 
 ### Exercises
-- [1 - Maximum likelihood (Gamma distribution, Newton-Raphson update)](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/6_mle_moments_correction.pdf)
-- [2 - Mixture models](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/7_mixtures_correction.pdf)
-- [3 - Variational inference](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/8_VI_correction.pdf)
-- [4 - EM pour les HMM discrets](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/9_Markov_correction.pdf)
-- [5 - Gibbs sampling](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/10_Gibbs_correction.pdf)
+- [1 - Gibbs sampling](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/1_Gibbs_correction.pdf)
+- [2 - Mixture models](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/2_mixtures_correction.pdf)
+- [3 - EM pour les HMM discrets](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/3_Markov_correction.pdf)
+- [4 - Variational inference](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/4_VI_correction.pdf)
+
+
+- [Bonus - Maximum likelihood (Gamma distribution, Newton-Raphson update)](https://github.com/sylvainlc/22_ComputationalStat/blob/main/Exercises/6_mle_moments_correction.pdf)
