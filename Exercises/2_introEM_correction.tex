@@ -71,13 +71,13 @@
 \noindent\hrulefill
 
 \begin{center}
-\textsc{Expectation Maximization pour les m\'elanges de lois de Poisson}
+\textsc{Introduction \`a l'algorithme Expectation Maximization}
 \end{center}
 \hrulefill
 
-\medskip
+\section*{M\'elange de lois de Poisson}
 
-Consid\'erons un m\'elange de $K$ lois de Poisson. Pour $1\leq k \leq K$, nous noterons $\lambda_k>0$ le param\`etre de la k-\`eme composante et $\pi_k\in(0,1)$ son poids. Notons $\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)$ et 
+Consid\'erons un m\'elange de $K$ lois de Poisson. Pour $1\leq k \leq K$, nous noterons $\lambda_k>0$ le param\`etre de la k-\`eme composante et $\pi_k\in(0,1)$ son poids. Notons $\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)$ le param\`etre inconnu et 
 $$
 \Theta = \left\{\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)\,;\, \forall k \in\{1,\ldots,K\}\,,\, \pi_k\in(0,1)\,,\,\lambda_k>0\,,\, \sum_{k=1}^K\pi_k = 1\right\}\,.
 $$
@@ -183,4 +183,70 @@ $$}
 {\em La seule garantie que nous avons est que la vraisemblance des observations augmente \`a chaque it\'eration. On peut montrer sous certaines hypoth\`eses que  l'algorithme converge vers un maximum local de la logvraisemblance, et il faut donc analyser les diff\'erents points de convergence obtenus si on initialise l'algorithme de diff\'erentes fa\c cons. }
 \end{enumerate}
 \end{enumerate}
+
+\section*{M\'elange de r\'egressions lin\'eaires}
+
+Consid\'erons des covariables $(x_i)_{i=1}^n$, suppos\'ees d\'eterministes,  o\`u $x_i\in\mathbb{R}^d$ pour $1\leq i \leq n$ et le mod\`ele suivant param\'etr\'e par 
+$$
+\theta=(\pi_1,\dots,\pi_K,\beta_1,\dots,\beta_K,\sigma_1^2,\dots,\sigma_K^2)\eqsp.
+$$
+\begin{itemize}
+\item Les variables $(Z_i)_{1\leq i \leq n}$ sont non observ\'ees, ind\'ependantes et telles que $Z_i\in\{1,\ldots,K\}$ et  $\mathbb{P}_\theta(Z_i= k) = \pi_k$ pour $1\leq k \leq K$, $1\leq i \leq n$.
+\item Conditionnellement aux variables  $(Z_i)_{1\leq i \leq n}$, les observations r\'eelles $(Y_i)_{1\leq i \leq n}$ sont ind\'ependantes et pout tout $1\leq i\leq n$, la loi conditionnelle de $Y_i$ est gaussienne, de moyenne $x_i^\top\beta_{Z_i}$ et de variance $\sigma_{Z_i}^2$.
+\end{itemize}
+
+
+\begin{enumerate}
+\item \'Ecrire la logvraisemblance compl\`ete de $(Z_{1:n},Y_{1:n})$.
+
+\vspace{.2cm}
+{\em
+Pour tout $1\leq i \leq n$, $y_i\in\mathbb{R}$, $z_i\in\{1,\ldots K\}$,
+$$
+p_\theta(y_i,z_i\mid x_i)=\prod_{k=1}^K\left(\pi_k\,\varphi_{x_i^\top\beta_k,\sigma_k^2}(y_i)\right)^{\mathds{1}_{Z_i=k}}\eqsp,
+$$
+o\`u $\varphi_{\mu,\sigma^2}$ est la densit\'e de la loi gaussienne de moyenne $\mu$ et de variance $\sigma^2$.
+Ainsi,
+$$
+\log p_\theta(y_{1:n},z_{1:n}\mid x_{1:n})=\sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{Z_i=k} \log \left(\pi_k\,\varphi_{x_i^\top\beta_k,\sigma_k^2}(y_i)\right)\eqsp.
+$$
+Finalement,
+$$
+\log p_\theta(y_{1:n},z_{1:n}\mid x_{1:n})=\sum_{i=1}^n\sum_{k=1}^K \mathds{1}_{Z_i=k} \left\{ \log \pi_k - \frac{1}{2} \log (2\pi \sigma_k^2) - \frac{1}{2\sigma_k^2}\left(y_i - x_i^\top \beta_k\right)^2\right\}\eqsp.
+$$
+}
+
+\item Soit $\theta^{(p)}$ l'estimateur de $\theta$ \`a l'it\'eration $p\geq 0$ de l'algorithme EM.  Donner la quantit\'e interm\'ediaire $\theta\mapsto Q(\theta,\theta^{(p)})$.
+
+\vspace{.2cm}
+{\em
+Pour tout $1\leq i \leq n$, $1\leq k \leq K$, par la formule de Bayes,
+$$
+\omega_{ik}^{(p)} = \mathbb{P}_\theta(Z_i=k\mid x_i,y_i) = \frac{\pi_k^{(p)}\,\varphi_{x_i^\top\beta^{(p)}_k,\sigma_k^{(p),2}}(y_i)}{\sum_{j=1}^K \pi_j^{(p)}\,\varphi_{x_i^\top\beta^{(p)}_k,\sigma_k^{(p),2}}(y_i)}.
+$$
+Ainsi, pour tout $\theta\in\Theta$,
+$$
+Q(\theta,\theta^{(p)}) = \sum_{i=1}^n\sum_{k=1}^K \omega_{ik}^{(p)}\left\{ \log \pi_k - \frac{1}{2} \log (2\pi \sigma_k^2) - \frac{1}{2\sigma_k^2}\left(y_i - x_i^\top \beta_k\right)^2\right\} \eqsp.
+$$
+}
+\item Donner la mise \`a jour des poids $\pi_k$,  $1\leq k \leq K$.
+
+\vspace{.2cm}
+{\em
+
+}
+\item Donner la mise \`a jour des $\beta_k$, $1\leq k \leq K$.
+
+\vspace{.2cm}
+{\em
+
+}
+\item Donner la mise \`a jour des variances $\sigma_k^2$,  $1\leq k \leq K$.
+
+\vspace{.2cm}
+{\em
+
+}
+\end{enumerate}
+
 \end{document}

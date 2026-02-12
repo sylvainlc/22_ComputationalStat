@@ -1,0 +1,136 @@
+\documentclass[a4paper,10pt,fleqn]{article}
+
+\usepackage{a4wide,amsmath,amsthm,amssymb,bbm,fancyhdr}
+\usepackage{ifthen,color,enumerate,comment,dsfont,pdfsync,framed,todonotes,enumitem}
+
+\newcommand{\titre}[1]{\textbf{\textsc{#1}}}
+
+\RequirePackage[T1]{fontenc}
+
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\newcommand{\eqsp}{\,}
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\rmd}{\mathrm{d}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\rset}{\ensuremath{\mathbb{R}}}
+\renewcommand{\P}{\ensuremath{\operatorname{P}}}
+\newcommand{\bP}{\mathbb{P}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+\newcommand{\rme}{\ensuremath{\mathrm{e}}}
+\newcommand{\calH}{\ensuremath{\mathcal{H}}}
+\newcommand{\xset}{\ensuremath{\mathsf{X}}}
+\newcommand{\V}{\ensuremath{\mathbb{V}}}
+\newcommand{\Sb}{\ensuremath{\mathbb{S}}}
+\newcommand{\gaus}{\ensuremath{\mathcal{N}}}
+\newcommand{\HH}{\ensuremath{\mathcal{H}}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\W}{\ensuremath{\mathcal{W}}}
+\newcommand{\X}{\ensuremath{\mathcal{X}}}
+\newcommand{\1}{\ensuremath{\mathbbm{1}}}
+\newcommand{\dlim}{\ensuremath{\stackrel{\mathcal{L}}{\longrightarrow}}}
+\newcommand{\plim}{\ensuremath{\stackrel{\mathrm{P}}{\longrightarrow}}}
+\newcommand{\PP}{\ensuremath{\mathbb{P}}}
+\newcommand{\p}{\ensuremath{\mathbb{P}}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bE}{\mathbb{E}}
+\newcommand{\pa}[1]{\left(#1\right)}
+\newcommand{\hatk}{\widehat K}
+\newcommand{\f}{\varphi}
+\newcommand{\Id}{\textsf{Id}}
+\newcommand{\bfU}{\mathbf{U}}
+\newcommand{\bfX}{\mathbf{X}}
+\newcommand{\bfs}{\mathbf{\Sigma}}
+\newcommand{\bfA}{\mathbf{A}}
+\newcommand{\bfV}{\mathbf{V}}
+\newcommand{\bfB}{\mathbf{B}}
+\newcommand{\bfI}{\mathbf{I}}
+\newcommand{\bfD}{\mathbf{D}}
+\newcommand{\bfK}{\mathbf{K}}
+\newcommand{\argmin}{\mathop{\textrm{argmin}}}
+\newcommand{\argmax}{\mathop{\textrm{argmax}}}
+\newcommand{\crit}{\mathop{\textrm{crit}}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\pc}{\pi_{\mathcal{C}}}
+
+
+% Style
+
+
+\newtheorem{theorem}{Theorem}
+
+
+\begin{document}
+
+%\noindent Statistiques computationnelles \hfill Sorbonne Universit\'e \\
+
+
+\noindent\hrulefill
+
+\begin{center}
+\textsc{Introduction \`a l'algorithme Expectation Maximization}
+\end{center}
+\hrulefill
+
+\section*{M\'elange de lois de Poisson}
+
+Consid\'erons un m\'elange de $K$ lois de Poisson. Pour $1\leq k \leq K$, nous noterons $\lambda_k>0$ le param\`etre de la k-\`eme composante et $\pi_k\in(0,1)$ son poids. Notons $\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)$ le param\`etre inconnu et 
+$$
+\Theta = \left\{\theta = (\pi_1,\ldots,\pi_K,\lambda_1,\ldots,\lambda_K)\,;\, \forall k \in\{1,\ldots,K\}\,,\, \pi_k\in(0,1)\,,\,\lambda_k>0\,,\, \sum_{k=1}^K\pi_k = 1\right\}\,.
+$$
+\begin{enumerate}
+\item Soit $\theta\in\Theta$, expliquer comment construire une variable al\'eatoire $X$ suivant un m\'elange de lois de Poisson param\'etr\'e par $\theta$.
+
+
+\item Notons $\mathbb{P}_\theta$ la loi de $X$. Pour tout $j\geq 0$, calculer $\mathbb{P}_\theta(X=j)$.
+
+\item Soit $\theta\in\Theta$ et $(x_1,\ldots,x_n)\in\mathbb{N}^n$. Calculer $\log \mathbb{P}_\theta(X_{1:n}=x_{1:n}) $ o\`u les $(X_i)_{1\leq i \leq n}$ sont i.i.d de m\^eme loi que $X$.
+
+\item Puisque nous ne pouvons pas maximiser la logvraisemblance explicitement, nous allons utiliser l'algorithme Expectation Maximization.
+
+\begin{enumerate}
+\item Pour tout $\theta\in\Theta$ et tout $k\in\{1,\ldots,K\}$, calculer $\mathbb{P}_\theta(Z=k|X=j)$.
+\item Calculer la logvraisemblance compl\`ete des donn\'ees.
+\item  Calculer la quantit\'e interm\'ediaire de l'algorithme EM.
+\item En d\'eduire la mise \`a jour d'une it\'eration de l'algorithme EM.
+
+\item D\'etailler le fonctionnement complet de l'algorithme EM
+
+\item Cet algorithme converge t'il vers le maximum de vraisemblance ?
+
+
+\end{enumerate}
+\end{enumerate}
+
+\section*{M\'elange de r\'egressions lin\'eaires}
+
+Consid\'erons des covariables $(x_i)_{i=1}^n$, suppos\'ees d\'eterministes,  o\`u $x_i\in\mathbb{R}^d$ pour $1\leq i \leq n$ et le mod\`ele suivant param\'etr\'e par 
+$$
+\theta=(\pi_1,\dots,\pi_K,\beta_1,\dots,\beta_K,\sigma_1^2,\dots,\sigma_K^2)\eqsp.
+$$
+\begin{itemize}
+\item Les variables $(Z_i)_{1\leq i \leq n}$ sont non observ\'ees, ind\'ependantes et telles que $Z_i\in\{1,\ldots,K\}$ et  $\mathbb{P}_\theta(Z_i= k) = \pi_k$ pour $1\leq k \leq K$, $1\leq i \leq n$.
+\item Conditionnellement aux variables  $(Z_i)_{1\leq i \leq n}$, les observations r\'eelles $(Y_i)_{1\leq i \leq n}$ sont ind\'ependantes et pout tout $1\leq i\leq n$, la loi conditionnelle de $Y_i$ est gaussienne, de moyenne $x_i^\top\beta_{Z_i}$ et de variance $\sigma_{Z_i}^2$.
+\end{itemize}
+
+
+\begin{enumerate}
+\item \'Ecrire la logvraisemblance compl\`ete de $(Z_{1:n},Y_{1:n})$.
+
+
+\item Soit $\theta^{(p)}$ l'estimateur de $\theta$ \`a l'it\'eration $p\geq 0$ de l'algorithme EM.  Donner la quantit\'e interm\'ediaire $\theta\mapsto Q(\theta,\theta^{(p)})$.
+
+\item Donner la mise \`a jour des poids $\pi_k$, $1\leq k \leq K$.
+
+\item Donner la mise \`a jour des  $\beta_k$, $1\leq k \leq K$.
+
+\item Donner la mise \`a jour des variances $\sigma_k^2$, $1\leq k \leq K$.
+
+
+\end{enumerate}
+
+
+\end{document}
