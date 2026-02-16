@@ -220,32 +220,53 @@ $$
 
 \vspace{.2cm}
 {\em
-Pour tout $1\leq i \leq n$, $1\leq k \leq K$, par la formule de Bayes,
+Dans la suite, nous notons $v_k = \sigma_k^2$, pour $1\leq k \leq K$. Pour tout $1\leq i \leq n$, $1\leq k \leq K$, par la formule de Bayes,
 $$
-\omega_{ik}^{(p)} = \mathbb{P}_\theta(Z_i=k\mid x_i,y_i) = \frac{\pi_k^{(p)}\,\varphi_{x_i^\top\beta^{(p)}_k,\sigma_k^{(p),2}}(y_i)}{\sum_{j=1}^K \pi_j^{(p)}\,\varphi_{x_i^\top\beta^{(p)}_k,\sigma_k^{(p),2}}(y_i)}.
+\omega_{ik}^{(p)} = \mathbb{P}_{\theta^{(p)}}(Z_i=k\mid x_i,y_i) = \frac{\pi_k^{(p)}\,\varphi_{x_i^\top\beta^{(p)}_k,v_k^{(p)}}(y_i)}{\sum_{j=1}^K \pi_j^{(p)}\,\varphi_{x_i^\top\beta^{(p)}_k,v_k^{(p)}}(y_i)}.
 $$
 Ainsi, pour tout $\theta\in\Theta$,
 $$
-Q(\theta,\theta^{(p)}) = \sum_{i=1}^n\sum_{k=1}^K \omega_{ik}^{(p)}\left\{ \log \pi_k - \frac{1}{2} \log (2\pi \sigma_k^2) - \frac{1}{2\sigma_k^2}\left(y_i - x_i^\top \beta_k\right)^2\right\} \eqsp.
+Q(\theta,\theta^{(p)}) = \sum_{i=1}^n\sum_{k=1}^K \omega_{ik}^{(p)}\left\{ \log \pi_k - \frac{1}{2} \log (2\pi v_k) - \frac{1}{2v_k}\left(y_i - x_i^\top \beta_k\right)^2\right\} \eqsp.
 $$
 }
 \item Donner la mise \`a jour des poids $\pi_k$,  $1\leq k \leq K$.
 
 \vspace{.2cm}
 {\em
-
+En utilisant le fait que $\pi_K = 1 - \sum_{k=1}^{K-1}\pi_k$, nous obtenons, pour tout $1\leq k \leq K-1$,
+$$
+\frac{\sum_{i=1}^n \omega_{ik}^{(p)}}{\pi_k} = \frac{\sum_{i=1}^n \omega_{iK}^{(p)}}{\pi_K}. 
+$$
+Ainsi la fonction $k\mapsto \sum_{i=1}^n \omega_{ik}^{(p)}/\pi_k$ est constante sur $\{1,\ldots, K\}$. On en d\'eduit que, pour tout $1\leq k \leq K$
+$$
+\pi^{(p+1)}_k = \frac{1}{n}\sum_{i=1}^n \omega_{ik}^{(p)}.
+$$ 
 }
 \item Donner la mise \`a jour des $\beta_k$, $1\leq k \leq K$.
 
 \vspace{.2cm}
 {\em
-
+On remarque que la maximisation de la quantit\'e interm\'ediare par rapport aux coefficients de r\'egression revient \`a la r\'esolution d'un probl\`eme de moindres carr\'es pond\'er\'es. En introduisant $X$ la matrice de $\mathbb{R}^{n\times d}$ telle que la $i$-\`eme ligne de $X$ est $x_i^\top$, $y = (y_1,\ldots,y_n)^\top$ et $W_k = \mathrm{diag}( \omega_{1k}^{(p)},\ldots, \omega_{nk}^{(p)})$, on souhaite r\'esoudre
+$$
+(X^\top W_k X) \beta_k = X^\top W_k y,
+$$
+ce qui conduit \`a
+$$
+\beta_k^{(p+1)} = (X^\top W_k X)^{-1}X^\top W_k y.
+$$
 }
 \item Donner la mise \`a jour des variances $\sigma_k^2$,  $1\leq k \leq K$.
 
 \vspace{.2cm}
 {\em
-
+Pour tout $1\leq k \leq K$, il suffit de r\'esoudre
+$$
+\partial_{v_k} Q(\theta,\theta^{(p)}) = 0,
+$$
+ce qui conduit \`a
+$$
+v_k^{(p+1)} = \frac{\sum_{i=1}^n \omega_{ik}^{(p)}\left(y_i - x_i^\top \beta_k^{(p+1)}\right)^2}{\sum_{i=1}^n \omega_{ik}^{(p)}}.
+$$
 }
 \end{enumerate}
 
