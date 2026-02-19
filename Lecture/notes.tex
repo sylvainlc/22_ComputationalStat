@@ -843,9 +843,9 @@ $\bullet$ Draw $\tilde X_{t+1}\sim Q(X_{t},\cdot)$ and then $ \tilde W_{t+1}\sim
 $\bullet$ Set $(X_{t+1},W_{t+1})=\begin{cases} (\tilde X_{t+1},\tilde W_{t+1}) & \mbox{with probability}\ \frac{\tilde W_{t+1} q(\tilde X_{t+1},X_t)}{W_t q(X_t,\tilde X_{t+1})}\wedge 1\eqsp,\\ (X_{t},W_t)& \mbox{with probability}\ 1-\frac{\tilde W_{t+1} q(\tilde X_{t+1},X_t)}{W_t q(X_t,\tilde X_{t+1})}\wedge 1\eqsp.\end{cases}$
 }
 \end{algorithm}
-We now justify the Pseudo-marginal Monte Carlo algorithm by showing that it is actually a generalized MH algorithm (as described in \Lemref{generalMH}) by considering extended Markov chain, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ on an extended space and with an extended target. Define the extended target distribution $\Pi(\rmd \bar x)=\Pi(\rmd x\rmd w)=w R(x,\rmd w) \mu(\rmd x)$ (where we set $\bar x=(x,w)$). Note that $\Pi$ is indeed a probability measure on $\bar\Xset=\Xset \times \rset^+_\star$, since
+We now justify the Pseudo-marginal Monte Carlo algorithm by showing that it is actually a generalized MH algorithm (as described in \Lemref{generalMH}) by considering extended Markov chain, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ on an extended space and with an extended target. Define the extended target distribution $\bar{\pi}(\rmd \bar x)=\bar{\pi}(\rmd x\rmd w)=w R(x,\rmd w) \mu(\rmd x)$ (where we set $\bar x=(x,w)$). Note that $\bar{\pi}$ is indeed a probability measure on $\bar\Xset=\Xset \times \rset^+_\star$, since
 $$
-\iint_{\Xset\times\rset^+_\star} \Pi(\rmd x\rmd w)=\int_\Xset \lr{ \int_{\rset^+_\star} w R(x,\rmd w)}\mu(\rmd x)=\int_\Xset \pi(x)\mu(\rmd x)=1\eqsp.
+\int_{\Xset\times\rset^+_\star} \bar{\pi}(\rmd x\rmd w)=\int_\Xset \lr{ \int_{\rset^+_\star} w R(x,\rmd w)}\mu(\rmd x)=\int_\Xset \pi(x)\mu(\rmd x)=1\eqsp.
 $$
 Moreover, in Algorithm~\ref{alg:pseudo:mh}, the candidate $(\tilde X_{t+1},W_{t+1})$ is proposed according to $\bar Q$ where the proposal kernel $\bar Q$ is defined by $\bar Q( \bar x,\rmd \bar x')=Q(x,\rmd x') R(x',\rmd w')$. In order to check \ref{assum:detailed}, we first set
 \begin{align*}
@@ -861,11 +861,11 @@ where
 $$
 r(\bar x,\bar x') = \frac{w' q(x',x)}{w q(x,x')}\eqsp.
 $$
-Since $r$ is positive, we can apply \Lemref{generalMH} with $\alpha(\bar x,\bar x')=r(\bar x,\bar x') \wedge 1$ and we finally get that $\mh{\Pi,\bar Q}(\bar x,\rmd \bar x')$ is $\Pi$-reversible. Since Algorithm~\ref{alg:pseudo:mh} corresponds to applying the Markov kernel $\mh{\Pi,\bar Q}$, this completes the proof. Note that the extended target distribution $\Pi$ has the marginal $\pi$ with respect to the first component:
+Since $r$ is positive, we can apply \Lemref{generalMH} with $\alpha(\bar x,\bar x')=r(\bar x,\bar x') \wedge 1$ and we finally get that $\mh{\bar{\pi},\bar Q}(\bar x,\rmd \bar x')$ is $\bar{\pi}$-reversible. Since Algorithm~\ref{alg:pseudo:mh} corresponds to applying the Markov kernel $\mh{\bar{\pi},\bar Q}$, this completes the proof. Note that the extended target distribution $\Pi$ has the marginal $\pi$ with respect to the first component:
 $$
-\Pi(A \times \rset^+_\star)=\int_A \int_{\rset^+_\star} w R(x,\rmd w) \mu(\rmd x)=\int_A \pi(\rmd x)=\pi(A).
+\bar{\pi}(A \times \rset^+_\star)=\int_A \int_{\rset^+_\star} w R(x,\rmd w) \mu(\rmd x)=\int_A \pi(\rmd x)=\pi(A).
 $$
-To sum up, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ produced by Algorithm~\ref{alg:pseudo:mh} is a generalized Metropolis-Hastings algorithm where the target distribution $\Pi$ admits $\pi$ as the marginal distribution on the first component.
+To sum up, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ produced by Algorithm~\ref{alg:pseudo:mh} is a generalized Metropolis-Hastings algorithm where the target distribution $\bar{\pi}$ admits $\pi$ as the marginal distribution on the first component.
 Note that $(X_k)_{k\in\nset}$ is not a Markov chain anymore (but $(\bar X_k)_{k\in\nset}$ is).
 
 
@@ -1019,7 +1019,7 @@ Each of these mappings is volume-preserving and so is the Leapfrog update. To su
 \chapter{Expectation Maximization algorithm}
 The Expectation Maximization (EM) algorithm \cite{dempster1977maximum} is a general iterative method for maximum likelihood estimation in statistical models that involve latent (hidden) variables or missing data. When the likelihood function is difficult or impossible to optimize directly because part of the information is hidden, the EM algorithm provides a systematic way to alternate between estimating the missing information and optimizing the parameters. This algorithm is widely used in statistics, machine learning, and signal processing, especially for mixture models, clustering, density estimation, and probabilistic inference.
 \section{Introduction}
-Let $(\mathsf{X},\mathcal{X})$ be a measurable space and $\mu$ be a measure on $(\mathsf{X},\mathcal{X})$. Consider also a family $\{f_\theta\}_{\theta\in\Theta}$ of $\lambda$-integrable and positive functions. Define
+Let $(\mathsf{X},\mathcal{X})$ be a measurable space and $\mu$ be a measure on $(\mathsf{X},\mathcal{X})$. Consider also a family $\{f_\theta\}_{\theta\in\Theta}$ of $\mu$-integrable and positive functions. Define
 $$
 L(\theta) = \int f_\theta(x)\mu(\rmd x)\eqsp.
 $$
@@ -1380,12 +1380,12 @@ statistics, and the M-step consists in solving
 When $\bar S(\theta^{(k)})$ is not available in closed form, the Monte Carlo EM (MCEM)
 algorithm estimates it with a simulation-based approximation. At iteration $k$, let
 \[
-X_{(k,1)},\ldots,X_{(k,M_k)} \sim p_{\theta^{(k)}}(X | Y)
+X_{k,1},\ldots,X_{k,M_k} \sim p_{\theta^{(k)}}(X | Y)
 \]
 be (approximately) independent draws from the conditional distribution of $X$ given
 $Y$ under $\theta^{(k)}$. Define the Monte Carlo estimate
 \[
-\widehat S^{(k)} := \frac{1}{M_k}\sum_{m=1}^{M_k} S\!\left(X_{(k,m)},Y\right).
+\widehat S^{(k)}(\theta^{(k)}) := \frac{1}{M_k}\sum_{m=1}^{M_k} S\!\left(X_{k,m},Y\right).
 \]
 The corresponding %Monte Carlo surrogate of the EM auxiliary function is
 %\[
@@ -1395,7 +1395,7 @@ The corresponding %Monte Carlo surrogate of the EM auxiliary function is
 update is obtained by the approximate M-step
 \[
 \theta^{(k+1)} \in \arg\max_{\theta\in\Theta}\left\{
-\phi(\theta) + \left\langle \widehat S^{(k)},\ \psi(\theta)\right\rangle
+\phi(\theta) + \left\langle \widehat S^{(k)}(\theta^{(k)}),\ \psi(\theta)\right\rangle
 \right\}.
 \]
 Under standard regularity conditions, $\widehat S^{(k)}$ converges
@@ -1406,17 +1406,17 @@ Carlo samples $M_k$ increases sufficiently with $k$. Convergence rates of the MC
 %\subsection{MCMC-EM: approximating the E-step using MCMC}
 
 In many models, direct sampling from $p_{\theta^{(k)}}(X\mid Y)$ is not feasible but $p_{\theta^{(k)}}(X\mid Y)$  is known up to a normalizing constant. A common alternative is to approximate the conditional expectation in the E-step using
-a Markov chain Monte Carlo (MCMC) method targeting $p_{\theta^{(k)}}(X\mid Y)$. Specifically, at iteration $k$, let $\{X_{(k,t)}\}_{t\ge 1}$ be a Markov chain with
+a Markov chain Monte Carlo (MCMC) method targeting $p_{\theta^{(k)}}(X\mid Y)$. Specifically, at iteration $k$, let $\{X_{k,t}\}_{p\ge 1}$ be a Markov chain with
 invariant distribution $p_{\theta^{(k)}}(X\mid Y)$ (e.g., a Metropolis--Hastings or
 Gibbs sampler). After a burn-in period $B_k$, an ergodic average yields
 \[
-\widehat S^{(k)}_{\mathrm{MCMC}}
-:= \frac{1}{M_k}\sum_{t=B_k+1}^{B_k+M_k} S\!\left(X_{(k,t)},Y\right),
+\widehat S^{(k)}_{\mathrm{MCMC}}(\theta^{(k)})
+:= \frac{1}{M_k}\sum_{p=B_k+1}^{B_k+M_k} S\!\left(X_{k,p},Y\right),
 \]
 which replaces $\bar S(\theta^{(k)})$ in the E-step. The resulting MCMC-EM update is
 \[
 \theta^{(k+1)} \in \arg\max_{\theta\in\Theta}\left\{
-\phi(\theta) + \left\langle \widehat S^{(k)}_{\mathrm{MCMC}},\ \psi(\theta)\right\rangle
+\phi(\theta) + \left\langle \widehat S^{(k)}_{\mathrm{MCMC}}(\theta^{(k)}),\ \psi(\theta)\right\rangle
 \right\}.
 \]
 Compared to MCEM with independent samples, the estimator
@@ -1841,12 +1841,23 @@ L_{n}(y_0, \dots, y_n) :=
 \int \nu(\mathrm{d}x_0) g(x_0, y_0) 
 \prod_{k=1}^{n} Q(x_{k-1}, \mathrm{d}x_k) g(x_k, y_k).
 \end{equation}
-The \emph{log-likelihood function} is defined as
+The \emph{log-likelihood function} is defined, droping the dependency on $(y_0, \dots, y_n)$, as
 \begin{equation}\label{eq:log-likelihood-HMM}
 \ell_{n} \;:=\; \log L_{n}.
 \end{equation}
 \end{definition}
-
+The likelihood function given in Definition~\ref{def:likelihood-HMM} is not availbale in closed form. Therefore, in a setting where the law of the HMM depends on au unknown parameter $\theta\in\Theta$, and in the fully dominated case, the log-likelihood
+$$
+\ell_{n}(\theta) := \log
+\int \nu_\theta(x_0) g_\theta(x_0, y_0) 
+\prod_{k=1}^{n} Q_\theta(x_{k-1}, x_k) g_\theta(x_k, y_k) \mu^{\otimes (n+1)}(\rmd x_{0:n})
+$$
+cannot be optimized easily. A natural solution is to estimate $\theta$ using the EM algorithm. Therefore, at iteration $p\geq 0$ with a current parameter estimate $\widehat \theta_p$ it is required to compute:
+\begin{align*}
+Q(\theta,\widehat \theta_p) &= \mathbb{E}_{\widehat \theta_p}\left[\log p_\theta(X_{0:n},Y_{0:n})\middle| Y_{0:n}\right]\\
+&=  \mathbb{E}_{\widehat \theta_p}\left[\log \nu_\theta(X_{0})g_\theta(X_0,Y_0)\middle| Y_{0:n}\right] + \sum_{k=1}^n \mathbb{E}_{\widehat \theta_p}\left[\log q_\theta(X_{k-1},X_k)g_\theta(X_k,Y_k)\middle| Y_{0:n}\right].
+\end{align*}
+This means that we need to sample (at least approximately) from the conditional distributions of $(X_{k-1},X_k)$ given $Y_{0:n}$ for a given parameter value $\widehat \theta_p$. This is in general not possible exactly and an appealing solution is to use Sequential Monte Carlo methods. In the next subsection we present these sequential methods, omitting the dependency on $\widehat \theta_p$ for simplicity.
 
 \subsection{Sequential Monte Carlo methods for HMMs}
 We now specialize the sampling techniques introduced above to hidden Markov
@@ -1860,38 +1871,38 @@ g_k(\cdot) := g(\cdot, Y_k).
 \] 
 In the following we consider the following distributions.
 \begin{itemize}
-\item For all $0\leq k \leq n$, $\varphi_k$ is the conditional distribution of $X_k$ given $Y_{0:k}$, and is referred to as the filtering distribution at time $k$.
-\item For all $0\leq k \leq \ell \leq n$, $\varphi_{k:\ell|n}$ is the conditional distribution of $X_{k:\ell}$ given $Y_{0:n}$, and is referred to as the joint smoothing  distribution of $X_{k:\ell}$ given $Y_{0:n}$.
-\item  For all $0\leq k \leq n$, $\varphi_{k|n}\varphi_{k:k|n}$, is the marginal smoothing distribution at time $k$.
+\item For all $0\leq k \leq n$, $\phi_k$ is the conditional distribution of $X_k$ given $Y_{0:k}$, and is referred to as the filtering distribution at time $k$.
+\item For all $0\leq k \leq \ell \leq n$, $\phi_{k:\ell|n}$ is the conditional distribution of $X_{k:\ell}$ given $Y_{0:n}$, and is referred to as the joint smoothing  distribution of $X_{k:\ell}$ given $Y_{0:n}$.
+\item  For all $0\leq k \leq n$, $\phi_{k|n} = \phi_{k:k|n}$, is the marginal smoothing distribution at time $k$.
 \end{itemize}
 Note that for all bounded measurable functions $f$,
 \[
-\varphi_0(f) = \frac{\int f(x_0)\, g_0(x_0)\, \nu(\mathrm{d}x_0)}
+\phi_0(f) = \frac{\int f(x_0)\, g_0(x_0)\, \nu(\mathrm{d}x_0)}
 {\int g_0(x_0)\, \nu(\mathrm{d}x_0)}.
 \]
-Therefore, $\varphi_0(f)$ can be estimated using self-normalized importance sampling. Sample $(\xi_0^1,\ldots,\xi_0^N)$ i.i.d. with probability density $\chi$ and associate each $\xi_0^i$ with $\omega_0^i = g_0(\xi^i_0)/\chi(\xi_0^i)$ and compute
+Therefore, $\phi_0(f)$ can be estimated using self-normalized importance sampling. Sample $(\xi_0^1,\ldots,\xi_0^N)$ i.i.d. with probability density $\chi$ and associate each $\xi_0^i$ with $\omega_0^i = g_0(\xi^i_0)/\chi(\xi_0^i)$ and compute
 $$
-\varphi^N_0(f) = \sum_{i=1}^N\frac{\omega_0^i}{\sum_{j=1}^N\omega_0^j}f(\xi_0^i).
+\phi^N_0(f) = \sum_{i=1}^N\frac{\omega_0^i}{\sum_{j=1}^N\omega_0^j}f(\xi_0^i).
 $$
 In addition, for all $n\geq 0$ and all bounded measurable functions $f$,
 $$
-\varphi_{0:n|n}(f) =  \frac{\int \nu(x_0) g_0(x_0) 
-\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)f(x_{0:n})\mu^{\otimes (n+1)}(\mathrm{d}x_0, \dots, \mathrm{d}x_n),}{\int \nu(x_0) g_0(x_0) 
-\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)\mu^{\otimes (n+1)}(\mathrm{d}x_0, \dots, \mathrm{d}x_n)}.
+\phi_{0:n|n}(f) =  \frac{\int \nu(x_0) g_0(x_0) 
+\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)f(x_{0:n})\mu^{\otimes (n+1)}(\mathrm{d}x_{0:n})}{\int \nu(x_0) g_0(x_0) 
+\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)\mu^{\otimes (n+1)}(\mathrm{d}x_{0:n})}.
 $$
 Therefore, it is straightforward to note that for all $0\leq k \leq n-1$,
 \begin{align*}
-\varphi_{0:k+1|k+1}(x_{0:k+1}) \propto \varphi_{0:k|k}(x_{0:k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})
+\phi_{0:k+1|k+1}(x_{0:k+1}) \propto \phi_{0:k|k}(x_{0:k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})
 \end{align*}
 Therefore,  for all bounded measurable functions $f$,
 $$
-\varphi_{k+1}(f) = \frac{\int \varphi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})f(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}{\int \varphi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}.
+\phi_{k+1}(f) = \frac{\int \varphi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})f(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}{\int \phi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}.
 $$
 As these integrals are intractable, if at time $k$ we have access to a weighted sample $\{(\omega_k^i,\xi_k^i) \}_{1\leq i \leq N}$ we may estimate $\varphi_{k+1}$  by
 \begin{align*}
-\tilde\varphi^N_{k+1}(x_{k+1}) \propto \sum_{i=1}^N\omega_k^iq(\xi^i_{k}, x_{k+1})g_{k+1}(x_{k+1}).
+\tilde\phi^N_{k+1}(x_{k+1}) \propto \sum_{i=1}^N\omega_k^iq(\xi^i_{k}, x_{k+1})g_{k+1}(x_{k+1}).
 \end{align*}
-This approximation suggests that an importance sampling estimator of $\varphi_{k+1}(f) $ can be obtained as follows.
+This approximation suggests that an importance sampling estimator of $\phi_{k+1}(f) $ can be obtained as follows.
 \begin{itemize}
 \item For all $1\leq i \leq N$ sample $I_{k+1}^i$ in $\{1,\ldots, N\}$ with probabilities proportional to $\{\omega_k^i\}_{1\leq i \leq N}$.
 \item For all $1\leq i \leq N$ sample $\xi_{k+1}^i \sim P(\xi_k^{I_{k+1}^i},\cdot)$ where $P$ is a proposal kernel.
@@ -1902,7 +1913,7 @@ $$
 \end{itemize}
 Then, $\varphi_{k+1}(f) $ is estimated by
 $$
-\varphi^N_{k+1}(f) = \sum_{i=1}^N\frac{\omega_{k+1}^i}{\sum_{j=1}^N\omega_{k+1}^j}f(\xi_{k+1}^i).
+\phi^N_{k+1}(f) = \sum_{i=1}^N\frac{\omega_{k+1}^i}{\sum_{j=1}^N\omega_{k+1}^j}f(\xi_{k+1}^i).
 $$
 
 
@@ -2152,6 +2163,126 @@ where for all $1\leqslant i \leqslant n$, $(Z_{i,1},\ldots,Z_{i,M})_{1\leqslant 
 \caption{An illustration of a VAE. From "An Introduction to Variational Autoencoders", Kingma et al., 2019.}
 \label{fig:vae}
 \end{figure}
+
+\section{Gradient-based optimization}
+In order to solve \eqref{eq:optim:ELBO}, we need to compute the gradient of the loss function. Under classical regularity assumptions:
+$$
+\nabla_{\theta} \mathcal{L}(\theta, \varphi) = -\mathbb{E}_{\pi_{\mathrm{data}}} \left[\mathbb{E}_{q_{\varphi}(\cdot|X)}\left[ \nabla_{\theta} \log p_{\theta}(X, Z)\right]\right]\eqsp.
+$$
+This gradient can be estimated using samples from $\pi_{\mathrm{data}}$. Given a batch of i.i.d. observations $(X_1,\ldots,X_n)_{1\leqslant i \leqslant B}$ with distribution $\pi_{\mathrm{data}}$, an estimator of $\nabla_{\theta} \mathcal{L}(\theta, \varphi)$  can be computed as follows:
+$$
+S_{\theta}(\theta, \varphi;\{X_i\}_{i=1}^B) = -\frac{1}{B}\sum_{i=1}^B\frac{1}{M}\sum_{j=1}^M \nabla_\theta \log p_\theta(Z_{i,j},X_i)\eqsp,
+$$
+where for all $1\leqslant i \leqslant B$, $(Z_{i,1},\ldots, Z_{i,M})_{1\leqslant j\leqslant M}$ are i.i.d. with distribution $q_{\varphi}(\cdot|X_i)$.
+Computing the gradient with respect to the variational parameter $\varphi$ is more challenging since the inner expectation depends on  $q_{\varphi}$. There are two common methods for computing this gradient. 
+
+\subsection{Pathwise Gradient}
+The reparametrization trick involves expressing variational distribution using a deterministic transform $ g(\varepsilon, \varphi)$, where $\varepsilon$ is an auxiliary independent random variable drawn from a known probability density function $p_\varepsilon$.
+Using this trick, the ELBO can be expressed as:
+$$ \mathcal{L}(\theta, \varphi, x) = \mathbb{E}_{p_\varepsilon}\left[ \log w_{\theta, \varphi}(x, g(\varepsilon,\varphi)) \right]\eqsp,$$
+where $w_{\theta, \varphi}(x,z) = p_{\theta}(x, z)/q_{\varphi}(z|x)$ the unnormalized importance weights and $\mathbb{E}_{p_\varepsilon}$ is the expectation under the law of $\varepsilon$ when $\varepsilon \sim p_\varepsilon$. The pathwise gradient \cite{kingma2013auto, rezende2014stochastic} of the ELBO is given by:
+\begin{equation*}
+\nabla^{}_{\varphi} \mathcal{L}(\theta, \varphi; x) =  \mathbb{E}_{p_\varepsilon}\left[ \nabla_z \log w_{\theta, \varphi}(x,z) \nabla_{\varphi} g(\varepsilon, \varphi) \right]  - \mathbb{E}_{p_\varepsilon}\left[\nabla_{\varphi} \log q_{\varphi}(g(\varepsilon, \varphi) | x) \right]\eqsp.
+\end{equation*}
+The gradient estimator with respect to $\varphi$ of the ELBO can be estimated using samples from the dataset. Let  $(X_1,\ldots,X_B)_{1\leqslant i \leqslant B}$ be i.i.d. with distribution $\pi_{\mathrm{data}}$. Then, an estimator of $\nabla_{\varphi} \mathcal{L}(\theta, \varphi)$  can be computed as follows:
+\begin{multline} \label{eq:grad_estimator_phi}
+S_{\varphi}(\theta, \varphi; \{X_i\}_{i=1}^B) \\= -\frac{1}{B} \sum_{i=1}^{B} \frac{1}{M} \sum_{j=1}^{M} \left\{\nabla_z \log \frac{p_{\theta}(X_i, g(\varepsilon_{i,j}, \varphi))}{q_{\varphi}(g(\varepsilon_{i,j}, \varphi) | x_i)} \nabla_{\varphi} g(\varepsilon_{i,j}, \varphi) - \nabla_{\varphi} \log q_{\varphi}(g(\varepsilon_{i,j}, \varphi) | X_i)\right\}\eqsp,
+\end{multline}
+%where $K$ denotes the number of samples drawn from the latent space.
+%\begin{align} \label{eq:grad_estimator_PW}
+%\tilde{g}^{}_{i,\ell} = \left( \nabla_{\theta} \log \frac{p_{\theta}(x_i, g(\varepsilon_i^{(\ell)}, \varphi))}{q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)}, \nabla_z \log \frac{p_{\theta}(x_i, g(\varepsilon_i^{(\ell)}, \varphi))}{q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)} \nabla_{\varphi} g(\varepsilon_i^{(\ell)}, \varphi) - \nabla_{\phi} \log q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)\right)^\top\eqsp,
+%\end{align}
+where, for all $1 \leq i \leq B$, $(\varepsilon_{i,1},\ldots,\varepsilon_{i,M})$ are independent samples from $p_{\varepsilon}$.
+
+\begin{example}
+In a context of deep Gaussian models, $q_{\varphi}(\cdot|x)$ is a Gaussian probability density function with mean $\mu_{\varphi}(x)\in\rset^d$ and variance $\mathrm{diag}(\sigma_{\varphi}^2(x))\in\rset^{d\times d}$ where $(\mu_{\varphi}(x),\sigma_{\varphi}^2(x))$ is the output of a neural network with input $x$. Then, if $z = \mu_{\varphi}(x) + \mathrm{diag}(\sigma_{\varphi}(x))\varepsilon$ with $\varepsilon \sim \mathcal{N}(0,\Id_d)$, $z\sim q_{\varphi}(\cdot|x)$. Writing $g(\varepsilon, \varphi) = \mu_{\varphi}(x) + \sigma_{\varphi}(x)\varepsilon$, the Jacobian of $g$ with respect to $\varepsilon$ is
+$$
+J_\varepsilon[g](\varepsilon, \varphi) = \mathrm{diag}(\sigma_{\varphi}(x))\eqsp.
+$$
+Therefore, by standard change of variables, with $z=g(\varepsilon, \varphi)$,
+$$
+\log q_{\varphi}(g(\varepsilon, \varphi) | x) = \log p_\varepsilon(\varepsilon) - \sum_{i=1}^{d}\log \sigma_{\varphi,i}(x)\eqsp.
+$$  
+\end{example}
+
+\subsection{Score Function Gradient}
+Alternatively, the score function gradient, also known as the Reinforce gradient \cite{glynn1990likelihood, williams1992simple,paisley2012variational}, can be used. Unlike the reparameterization trick, this method does not necessitate reparameterization and is applicable to a wider range of variational distributions. 
+\begin{proposition}\label{prop:score_estimator}
+For all $\theta \in \Theta$, $\varphi \in \Phi$, we have:
+$$
+\nabla^{}_{\varphi} \mathcal{L}(\theta, \varphi) = -\mathbb{E}_{\pi_{\mathrm{data}}}\left[ \mathbb{E}_{q_{\varphi}(\cdot|X)}\left[ \log \frac{p_{\theta}(X, Z)}{q_{\varphi}(Z | X)} \nabla_{\varphi} \log q_{\varphi}(Z | X) \right] \right]\eqsp.
+$$
+\end{proposition}
+
+%\subsection*{Proof of Proposition \ref{prop:score_estimator}}
+
+\begin{proof}
+For all $x \in \Xset$, the score function gradient of the ELBO with respect to $\varphi$ is given by:
+\begin{align*}
+\nabla_{\varphi} \mathcal{L}(\theta, \varphi; x) &= \nabla_{\varphi} \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \log p_{\theta}(x, Z) - \log q_{\varphi}(Z|x)\right] \\
+&= \nabla_{\varphi} \int (\log p_{\theta}(x, z) - \log q_{\varphi}(z|x)) q_{\varphi}(z|x) \, \rmd z  \\
+&= \int \nabla_{\varphi}\left[(\log p_{\theta}(x, z) - \log q_{\varphi}(z|x)) q_{\varphi}(z|x)\right] \, \rmd z  \\
+%&= \int \nabla_{\phi} q_{\phi}(z|x) (\log p_{\theta}(x, z) - \log q_{\phi}(z|x)) + q_{\phi}(z|x) \nabla_{\phi} (\log p_{\theta}(x, z) - \log q_{\phi}(z|x)) \, dz \quad  \\
+&= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \nabla_{\varphi} \log q_{\varphi}(Z|x) (\log p_{\theta}(x, Z) - \log q_{\varphi}(Z|x)) \right] - \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\nabla_{\varphi} \log q_{\varphi}(Z|x)\right]\eqsp.
+\end{align*}
+Using the fact that $\mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\nabla_{\varphi} \log q_{\varphi}(Z|x)\right]=0$ under regularity conditions on $q_{\varphi}(z|x)$ yields
+\begin{align*}
+\nabla_{\varphi} \mathcal{L}(\theta, \phi; x) &= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \nabla_{\varphi} \log q_{\varphi}(Z|x) (\log p_{\theta}(x, Z) - \log q_{\varphi}(Z|x)) \right] \\
+&= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \log \frac{p_{\theta}(x, Z)}{q_{\varphi}(Z|x)} \nabla_{\varphi} \log q_{\varphi}(Z|x) \right]\eqsp.
+\end{align*}
+\end{proof}
+%\subsection{Score Function and Pathwise Gradient Estimator}
+The gradient estimator with respect to $\varphi$ of the ELBO can be estimated using samples from the dataset. Let  $(X_1,\ldots,X_B)_{1\leqslant i \leqslant B}$ be i.i.d. with distribution $\pi_{\mathrm{data}}$. Then, an estimator of $\nabla_{\varphi} \mathcal{L}(\theta, \varphi)$  can be computed as follows:
+\begin{align} \label{eq:grad_estimator_score_phi}
+S_{\varphi}(\theta, \varphi; \{X_i\}_{i=1}^B) = -\frac{1}{B} \sum_{i=1}^{B} \frac{1}{M} \sum_{j=1}^{M} \log \frac{p_{\theta}(X_i, Z_{i,j})}{q_{\varphi}(Z_{i,j} | X_i)} \nabla_{\varphi} \log \frac{p_{\theta}(X_i, Z_{i,j})}{q_{\varphi}(Z_{i,j} | X_i)}\eqsp,
+\end{align}
+where, for all $1 \leq i \leq B$,  $(Z_{i,1},\ldots, Z_{i,M})$ are independent samples from $q_{\varphi}(\cdot|X_i)$. 
+
+%For the score function gradient estimator, the expression is given by:
+%\begin{align} \label{eq:grad_estimator_SF}
+%\tilde{g}^{}_{i,\ell} = \left( \nabla_{\theta} \log \frac{p_{\theta}(x_i, z_i^{(\ell)})}{q_{\varphi}(z_i^{(\ell)} | x_i)}, \log \frac{p_{\theta}(x_i, z_i^{(\ell)})}{q_{\varphi}(z_i^{(\ell)} | x_i)} \nabla_{\varphi} \log \frac{p_{\theta}(x_i, z_i^{(\ell)})}{q_{\varphi}(z_i^{(\ell)} | x_i)}\right)^\top\eqsp,
+%\end{align}
+%where, for all $1 \leq i \leq B$ and $1 \leq \ell \leq K$, $z_i^{(\ell)}$ are independent samples from $q_{\varphi}(\cdot|x_i)$.
+%The pathwise gradient estimator is given by:
+%\begin{align} \label{eq:grad_estimator_PW}
+%\tilde{g}^{}_{i,\ell} = \left( \nabla_{\theta} \log \frac{p_{\theta}(x_i, g(\varepsilon_i^{(\ell)}, \varphi))}{q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)}, \nabla_z \log \frac{p_{\theta}(x_i, g(\varepsilon_i^{(\ell)}, \varphi))}{q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)} \nabla_{\varphi} g(\varepsilon_i^{(\ell)}, \varphi) - \nabla_{\phi} \log q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)\right)^\top\eqsp,
+%\end{align}
+%where, for all $1 \leq i \leq B$ and $1 \leq \ell \leq K$, $\varepsilon_i^{(\ell)}$ are independent samples from $p_{\varepsilon}$.
+
+%\begin{algorithm}[H] \label{alg:adam}
+%    \KwData{Initial estimates $\theta_{0}, \phi_{0}$, maximum number of iterations $n$, step sizes $\{\gamma_{k}\}_{k \geq 1}$, momentum parameters $\beta_{1}, \beta_{2} \in [0,1)$, regularization parameter $\delta \geq 0$ and batch size $B$}
+%Set $m_{0} = 0$ and $v_{0} = 0$.\\
+%\For{$t\leftarrow 0$ \KwTo $n-1$}
+%{
+%Sample a mini-batch $\{x_{i}\}_{i=1}^B$.\\
+%Compute the stochastic gradient $g_{k+1} = \widehat{\nabla}_{\theta, \phi} \mathcal{L}(\theta_{k}, \phi_{k}; \{x_i\}_{i=1}^B)$ using \eqref{eq:grad_estimator}.\\
+%Set $m_{k+1} = \beta_{1}m_{k} + (1-\beta_{1})g_{k+1}$\\
+%Set $v_{k+1} = \beta_{2}v_{k} + (1-\beta_{2}) g_{k+1} \odot g_{k+1}$.\\
+% Set $(\theta_{k+1}, \phi_{k+1}) = (\theta_{k}, \phi_{k}) -\gamma_{k+1}\big[\delta \mathit{I}_d + v_{k} \big]^{-1/2} m_{k}$.
+%}
+%\caption{Adam Algorithm for ELBO Maximization}
+%\end{algorithm}
+
+%Algorithm~\ref{alg:adam:elbo} displays an example of stochastic gradient descent to estimate $\theta$ and $\varphi$ using Adam.
+%\begin{algorithm}
+%\centering
+%\begin{algorithmic}
+%\State {\bf Input}: Initial estimates $\theta_{0}, \varphi_{0}$, maximum number of iterations $n$, step sizes $\{\gamma_{k}\}_{k \geq 1}$, momentum parameters $\beta_{1}, \beta_{2} \in [0,1)$, regularization parameter $\delta \geq 0$ and batch size $B$.
+%\State Set $m_{0} = 0$ and $v_{0} = 0$.
+%\For{$k = 0$ to $k = n-1$}
+%\State Sample a mini-batch $\{X_{i}\}_{i=1}^B$.
+%\State Compute the stochastic gradient $g_{k+1} = (S_{\theta}(\theta_k, \varphi_k; \{X_i\}_{i=1}^B),S_{\varphi}(\theta_k, \varphi_k; \{X_i\}_{i=1}^B))^\top$. 
+%\State Set $m_{k+1} = \beta_{1}m_{k} + (1-\beta_{1})g_{k+1}$.
+%\State Set $v_{k+1} = \beta_{2}v_{k} + (1-\beta_{2}) g_{k+1} \odot g_{k+1}$.
+%\State Set $(\theta_{k+1}, \varphi_{k+1}) = (\theta_{k}, \varphi_{k}) -\gamma_{k+1}\big[\delta \mathit{I}_d + v_{k} \big]^{-1/2} m_{k}$.
+%\EndFor
+%\end{algorithmic}
+%\caption{Adam Algorithm for ELBO Maximization}
+%\label{alg:adam:elbo}
+%\end{algorithm}
+The pathwise gradient estimator often yields lower-variance estimates than the score function estimator \cite{miller2017reducing, buchholz2018quasi}, but its variance can sometimes exceed that of the score function estimator, especially when the score function correlates with other components of the pathwise estimator.
+Several methods have been proposed to further reduce variance, such as the Rao-Blackwellization estimator \cite{ranganath2014black}, Control Variates \cite{lievin2020optimal}, Stop Gradient estimator \cite{roeder2017sticking}, Quasi-Monte Carlo VAE \cite{buchholz2018quasi}, and Multi-Level Monte Carlo estimator \cite{fujisawa2021multilevel, he2022unbiased}. While our analysis focuses on the convergence rate of score function and pathwise gradient estimators, our convergence results also apply to most of these other methods.
+
 
 
 
