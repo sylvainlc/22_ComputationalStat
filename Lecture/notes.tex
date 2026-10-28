@@ -265,7 +265,7 @@
 \chapter{Markov chain Monte Carlo}
 
 \section{Introduction}
-This chapter aims at designing algorithms to obtain samples from a complex distribution $\pi$ defined on a measurable space $(\mathsf{X},\mathcal{X})$. Such algorithms can be applied in many situations, and the target distribution can have several forms depending on the different contexts. In many areas of statistics and machine learning, we are interested in drawing samples from $\pi$ although $\pi$ is known only up to a normalizing constant. Such situations arise naturally in a wide variety of contexts, for example, in Bayesian inference, where $\pi$ represents a posterior distribution over parameters given data, or in energy-based models, where $\pi$ is a probability distribution defined through an energy function.
+This chapter aims at designing algorithms to obtain samples from a complex distribution $\pi$ defined on a measurable space $(\mathsf{X},\mathcal{X})$. Such algorithms can be applied in many situations, and the target distribution can have several forms depending on the context. In many areas of statistics and machine learning, we are interested in drawing samples from $\pi$ although $\pi$ is known only up to a normalizing constant. Such situations arise naturally in a wide variety of contexts, for example, in Bayesian inference, where $\pi$ represents a posterior distribution over parameters given data, or in energy-based models, where $\pi$ is a probability distribution defined through an energy function.
 
 Direct sampling from $\pi$ is often infeasible, either because the distribution has a complex, high-dimensional structure or because computing the normalizing constant is intractable. Markov Chain Monte Carlo (MCMC) methods provide a powerful framework for addressing this challenge. The central idea is to construct a Markov chain whose stationary distribution is precisely $\pi$, and then to use the long-run behavior of the chain to generate approximate samples from $\pi$.
 
@@ -313,29 +313,65 @@ Direct sampling from $\pi$ is often infeasible, either because the distribution 
 %\end{example}
 %%Note that in \eqref{eq:target:bayes}, the numerator is usually known and explicit while, due to the integral, the denominator is a multiplicative unknown constant.  
 
+In most applications, samples are not an end in themselves: they are used to approximate integralsof the form
+$$
+\pi(h) = \int_\Xset h(x)\,\pi(\rmd x)\eqsp,
+$$
+for measurable  real-valued functions $h$ such that $\pi(|h|)<\infty$. If $X_1,\ldots,X_n$ are i.i.d. with distribution $\pi$, the estimator $\pi_n(h) = n^{-1}\sum_{k=1}^n h(X_k)$ is unbiased, converges almost surely to $\pi(h)$ by the strong law of large numbers and, if $\pi(h^2)<\infty$, the central limit theorem yields
+$$
+\sqrt{n}\,\big(\pi_n(h)-\pi(h)\big) \dlim{} \gauss\big(0,\mathrm{Var}_\pi(h)\big)\eqsp,
+$$
+with  $\mathrm{Var}_\pi(h) = \pi(h^2)-\pi(h)^2$. In the context of MCMC methods, we use a similar estimator, $\pi_n(h)=n^{-1}\sum_{k=0}^{n-1}h(X_k)$, where $(X_k)_{k\in\nset}$ is a Markov chain admitting $\pi$ as invariant distribution. The samples are neither independent nor distributed according to $\pi$, and under suitable assumptions the law of large numbers and the central limit theorem still hold, with a different asymptotic variance.
+
+\begin{example}[Bayesian inference]
+\label{ex:bayes}
+In Bayesian inference, a prior belief is combined with data to obtain a posterior distribution on which statistical inference is based. The unknown parameter $\theta\in\Theta\subset\rset^d$ is endowed with a \emph{prior} distribution with density $\pi_0$ with respect to a measure $\lambda$ (often the Lebesgue measure), and the \emph{likelihood} $\theta\mapsto \dens[][]{y_{1:n}\mid\theta}$ is the density of the observations given $\theta$. By Bayes' formula, the \emph{posterior} density is
+$$
+\theta \mapsto \pi(\theta) =\frac{\pi_0( \theta) \dens[][]{ y_{1:n} \mid \theta}}{\int_\Theta \pi_0( \vartheta) \dens[][]{ y_{1:n} \mid \vartheta} \lambda(\rmd \vartheta)} \propto \pi_0( \theta) \dens[][]{ y_{1:n} \mid \theta}\eqsp.
+$$
+The numerator is explicit while the denominator, the \emph{evidence} or marginal likelihood, is an integral over $\Theta$ which is usually intractable.
+\begin{itemize}[-]
+\item \emph{A conjugate case.} Assume that conditionally on $\theta$, $Y\sim\mathrm{Bin}(n,\theta)$ and let the prior be $\mathrm{Beta}(a,b)$, with $a,b>0$: $\pi_0(\theta)\propto \theta^{a-1}(1-\theta)^{b-1}\indi{(0,1)}(\theta)$. Then $\pi(\theta)\propto \theta^{y+a-1}(1-\theta)^{n-y+b-1}\indi{(0,1)}(\theta)$, i.e. the posterior is $\mathrm{Beta}(a+y,b+n-y)$ and no simulation algorithm is needed.
+\item \emph{A non-conjugate case: Bayesian logistic regression.} Let $(x_i,y_i)_{1\leq i\leq n}$ with $x_i\in\rset^d$, $y_i\in\{0,1\}$, and assume that, conditionally on $\theta$, the $(Y_i)_{1\leq i \leq n}$ are independent with $\PP(Y_i=1\mid\theta) = \sigma(x_i^\top\theta)$, where $\sigma(u) = 1/(1+\rme^{-u})$. With a Gaussian prior $\gauss(0,\tau^2 I_d)$, the posterior density with respect to the Lebesgue measure satisfies
+\begin{equation}
+\label{eq:logistic:post}
+\log\pi(\theta) = -\frac{\|\theta\|^2}{2\tau^2} + \sum_{i=1}^n \Big\{ y_i\, x_i^\top\theta - \log\big(1+\rme^{x_i^\top\theta}\big)\Big\} + \mathrm{const}\eqsp,
+\end{equation}
+and
+$$
+\nabla\log\pi(\theta) = -\frac{\theta}{\tau^2} + \sum_{i=1}^n \big(y_i-\sigma(x_i^\top\theta)\big)\,x_i\eqsp.
+$$
+Both $\log \pi$ (up to an additive constant) and its gradient are cheap to evaluate, but the normalizing constant is a $d$-dimensional integral without closed form. Every algorithm presented in this chapter only requires evaluations of $\theta\mapsto\pi(\theta)$ up to a constant (and of $\nabla\log\pi$ for gradient-based methods).
+\end{itemize}
+\end{example}
+
+
 \begin{example}
-Energy-based models (EBM) are very flexible models which describe the target distribution using an unnormalized function, referred to as the energy function. These models are easier to design that models with a tractable likelihood such as autoregressive models, in particular in high-dimensional setting. As the energy function is not normalized, it can
-be easily parameterized with any nonlinear regression function. Using neural networks such as Multi-layer Perceptrons, or convolutional neural networks,  it is straightforward to introduce energy function with specific structures depending nonlinearly on the input. %We can choose specific
-%architectures tailored for every type of data, see \cite{song2021train} for a recent overview of EBM.
+Energy-based models (EBM) are very flexible models which describe the target distribution using an unnormalized function, referred to as the energy function. These models are easier to design than models with a tractable likelihood such as autoregressive models, in particular in high-dimensional settings. As the energy function is not normalized, it can
+be easily parameterized with any nonlinear regression function. Using neural networks such as multi-layer perceptrons, or convolutional neural networks,  it is straightforward to introduce energy functions with specific structures depending nonlinearly on the input. We can choose specific architectures tailored for every type of data, see \cite{song2021train} for a recent overview of EBM.
 
 In a generic setting, the target random variable takes values in $(\rset^d,\mathcal{B}(\rset^d))$ and the target distribution (the target density with respect to the Lebesgue measure) is written:
 $$
 x\mapsto \pi_\theta(x) \propto \exp\left(-\mathrm{E}_\theta(x)\right) = \frac{\exp\left(-\mathrm{E}_\theta(x)\right)}{\int \exp\left(-\mathrm{E}_\theta(u)\right)\rmd u},
 $$
-where $\theta$ is an unknown parameter to estimate and $\mathrm{E}_\theta$ is the energy function. The normalizing constant is often written $Z_\theta$ and referred to as the partition function:
+where $\theta$ is an unknown parameter to estimate and $\mathrm{E}_\theta$ is the energy function such that the normalizing constant is finite. The normalizing constant is often written $Z_\theta$ and referred to as the partition function:
 $$
 Z_\theta = \int \exp\left(-\mathrm{E}_\theta(u)\right)\rmd u.
 $$
 Since $Z_\theta$ is an intractable integral, evaluation and
-differentiation of $x\mapsto \log \pi_\theta(x)$ is not possible in usual settings. In order to estimate the unknwon parameter $\theta$ using i.i.d. data, an appealing approach is to use gradient-based maximization procedures of the likelihood function. This means that we need to compute:
+differentiation of $\theta\mapsto \log \pi_\theta(x)$ are not possible in usual settings. In order to estimate the unknown parameter $\theta$ using i.i.d. data, an appealing approach is to use gradient-based maximization procedures of the likelihood function. This means that we need to compute:
 $$
 x\mapsto \nabla_\theta \log\pi_\theta(x) = -\nabla_\theta\mathrm{E}_\theta(x) - \nabla_\theta \log Z_\theta.
 $$
-The first term can be evaluated easily as $\mathrm{E}_\theta(x)$ is known. For the second term, we can write, under regularity assumptions on the model:
+The first term can be evaluated easily as $\mathrm{E}_\theta$ is known. For the second term, we can write, under regularity assumptions on the model:
 \begin{multline*}
 \nabla_\theta \log Z_\theta = Z_\theta^{-1} \int \nabla_\theta\exp\left(-\mathrm{E}_\theta(u)\right)\rmd u \\=  \int \left\{-\nabla_\theta \mathrm{E}_\theta(u)\right\}Z_\theta^{-1}\exp\left(-\mathrm{E}_\theta(u)\right)\rmd u = \int \left\{-\nabla_\theta \mathrm{E}_\theta(u)\right\}\pi_\theta(u)\rmd u .
 \end{multline*}
-Therefore $\nabla_\theta \log Z_\theta = \mathbb{E}_{\pi_\theta}[-\nabla_\theta \mathrm{E}_\theta(X)]$ where $\mathbb{E}_{\mu}[f(X)]$ denotes the expectation of $f(X)$ when $X\sim \mu$. Therefore, it is possible to train an EBM by providing a Monte Carlo estimate of $\nabla_\theta \log Z_\theta$ which requires to obtain samples from $\pi_\theta$. However, this is not straightforward as $\pi_\theta$ is known only up to a multiplicative normalizing constant (as in the Bayesian setting).
+Therefore $\nabla_\theta \log Z_\theta = \mathbb{E}_{\pi_\theta}[-\nabla_\theta \mathrm{E}_\theta(X)]$ where $\mathbb{E}_{\mu}[f(X)]$ denotes the expectation of $f(X)$ when $X\sim \mu$. Given i.i.d. observations $X_1,\ldots,X_n$ with distribution $\pi_\theta$, the gradient of the normalized log-likelihood is thus
+$$
+\nabla_\theta \left(\frac{1}{n}\sum_{i=1}^n \log\pi_\theta(X_i)\right) = -\frac{1}{n}\sum_{i=1}^n \nabla_\theta\mathrm{E}_\theta(X_i) +  \mathbb{E}_{\pi_\theta}[\nabla_\theta \mathrm{E}_\theta(X)]\eqsp,
+$$
+which lowers the energy of the observed data and raises the energy of samples drawn from the model. It is therefore possible to train an EBM by providing a Monte Carlo estimate of $\nabla_\theta \log Z_\theta$, which requires samples from $\pi_\theta$. However, this is not straightforward as $\pi_\theta$ is known only up to a multiplicative normalizing constant, as in the Bayesian setting of Example~\ref{ex:bayes}.
 \end{example}
 
 %\begin{example}
@@ -350,15 +386,16 @@ Let $(\Xset,\Xsigma)$ be a measurable space, i.e.  $\Xsigma$ is a $\sigma$-algeb
 \item $\funcset{}(\Xset)$ is the set of real-valued measurable functions
 $f$ on $\Xset$ and $\funcset{}_{+}(\Xset)$ the set of non-negative measurable
 functions on $\Xset$.
+\item For $\mu\in\meas +(\Xset)$ and $h\in\funcset{}_{+}(\Xset)$ (or $h$ $\mu$-integrable), $\mu(h) = \int_\Xset h(x)\mu(\rmd x)$.
 \item If $k\leq\ell$, $(u_{k},\ldots,u_{\ell})$ is denoted by $u_{k:\ell}$   and $(u_{k+\ell})_{\ell\in\nset}$ by $u_{k:\infty}$.
 \end{itemize}
 
 \begin{definition}
 We say that $P:\Xset\times\Xsigma\to\rset^{+}$
-is a Markov kernel if, for all $(x,A)\in\Xset\times\Xsigma$,
+is a Markov kernel if,
 \begin{itemize}[-]
-\item $\Xset\ni y\mapsto P(y,A)$ is $\Xsigma/\mcbb(\rset^{+})$ measurable,
-\item $\Xsigma\ni B\mapsto P(x,B)$ is a probability measure on $(\Xset,\Xsigma)$.
+\item for all $A\in\Xsigma$, $\Xset\ni y\mapsto P(y,A)$ is $\Xsigma/\mcbb(\rset^{+})$ measurable,
+\item for all $x\in\Xset$, $\Xsigma\ni B\mapsto P(x,B)$ is a probability measure on $(\Xset,\Xsigma)$.
 \end{itemize}
 \end{definition}
 For all $(x,A)\in\Xset\times\Xsigma$, as a function
@@ -370,25 +407,34 @@ $P(x,\rmd y)$. For example,
 $$
 P(x,A)=\int_{\Xset}\indi A(y)P(x,\rmd y)=\int_{A}P(x,\rmd y)\eqsp.
 $$
-%In almost all the course, a Markov kernel $P$ allows to move a point $x$ from a measurable space $(\Xset,\Xsigma)$ to another point on the same measurable space, that is, $P$ is defined on $\Xset\times \Xsigma$ but we can more generally define a Markov kernel from a measurable space $(\Xset,\Xsigma)$ to another measurable space $(\Yset,\Ysigma)$. In such case, $P$ will be a  Markov kernel on $\Xset \times \Ysigma$. 
+%In almost all the course, a Markov kernel $P$ allows to move a point $x$ from a measurable space $(\Xset,\Xsigma)$ to another point on the same measurable space, that is, $P$ is defined on $\Xset\times \Xsigma$ but we can more generally define a Markov kernel from a measurable space $(\Xset,\Xsigma)$ to another measurable space $(\Yset,\Ysigma)$. In such case, $P$ will be a  Markov kernel on $\Xset \times \Ysigma$.
+
+\begin{example}[Three basic Markov kernels]
+\label{ex:kernels}
+\begin{enumerate}[i)]
+\item \emph{Finite state space.} If $\Xset = \{1,\ldots,m\}$ and $\Xsigma = \mathcal{P}(\Xset)$, a Markov kernel is characterized by the stochastic matrix $(P_{xy})_{1\leq x,y\leq m}$, $P_{xy} = P(x,\{y\})$, with non-negative entries and rows summing to one.
+\item \emph{Kernel with a density.} If $\lambda\in\meas +(\Xset)$ is $\sigma$-finite and $p:\Xset\times\Xset\to\rset^+$ is measurable with $\int p(x,y)\lambda(\rmd y) = 1$ for all $x\in\Xset$, then $P(x,\rmd y) = p(x,y)\lambda(\rmd y)$ is a Markov kernel. For instance, on $\rset$, the \emph{Gaussian autoregressive kernel} is $P(x,\cdot) = \gauss(c+\phi x,\sigma^2)$, $c\in\rset$, $\phi\in\rset$, $\sigma>0$.
+\item \emph{Random iterative functions.} Let $(\Uset,\Usigma)$ be a measurable space, $\Phi:\Xset\times\Uset\to\Xset$ be measurable and $\Gamma\in\meas 1(\Uset)$. Then $P(x,A) = \int_{\Uset} \indi{A}(\Phi(x,u))\Gamma(\rmd u)$ is a Markov kernel: $P(x,\cdot)$ is the distribution of $\Phi(x,U)$ when $U\sim\Gamma$. The random walk $\Phi(x,u)=x+u$ on $\rset^d$ and the AR(1) kernel ($\Phi(x,u) = c+\phi x+\sigma u$, $\Gamma = \gauss(0,1)$) are of this form. All algorithms of this chapter are written in this way.
+\end{enumerate}
+\end{example}
+ 
 For all $\mu\in\meas +(\Xset)$, all Markov kernels $P$, $Q$ on
 $\Xset\times\Xsigma$, and all measurable non-negative or bounded
 functions $h$ on $\Xset$, we use the following conventions and
 notations.
 \begin{itemize}[-]
-\item $\mu P$ is the (positive) measure: $\Xsigma\ni A\mapsto\mu P(A)=\int\mu(\rmd x)P(x,A)$,
+\item $\mu P$ is the non-negative measure: $\Xsigma\ni A\mapsto\mu P(A)=\int\mu(\rmd x)P(x,A)$,
 \item $PQ$ is the Markov kernel: $(x,A)\mapsto\int_{\Xset}P(x,\rmd y)Q(y,A)$,
 \item $Ph$ is the measurable function $x\mapsto\int_{\Xset}P(x,\rmd y)h(y)$.
 \end{itemize}
 It is easy to check that if $\mu$ is a probability measure, then
 $\mu P$ is also a probability measure (since $\mu P(\Xset)=\int_{\Xset}\mu(\rmd x)P(x,\Xset)=\int_{\Xset}\mu(\rmd x)=1$).
-With this notation, using Fubini's theorem,
+With this notation, using the Fubini--Tonelli theorem,
 \begin{align*}
 \mu(P(Qh)) & =(\mu P)(Qh)=(\mu(PQ))h\\
  & =\mu((PQ)h)=\int_{\Xset^{3}}\mu(\rmd x)P(x,\rmd y)Q(y,\rmd z)h(z).
 \end{align*}
-%Therefore, all these parenthesis can be discarded and we can write
-%$\mu PQh$ without any ambiguity. 
+Therefore, all these parenthesis can be discarded and we can write $\mu PQh$ without any ambiguity. 
 %To sum up, measures act on the left side of a Markov kernel whereas
 %functions acts on the right side. To make sure you have mastered all
 %the notation, check your understanding with the following equalities
@@ -401,33 +447,68 @@ $k\geq0$, $P^{k+1}=P^{k}P$.
 
 \begin{definition}
 Let $\seq{X_{k}}{k\in\nset}$
-be a sequence of random variables on the same probability space $(\Omega,\mcg,\PP)$
-and taking values on $\Xset$, we say that $\seq{X_{k}}{k\in\nset}$
+be a sequence of random variables defined on the same probability space $(\Omega,\mcg,\PP)$
+and taking values in $\Xset$. We say that $\seq{X_{k}}{k\in\nset}$
 is a Markov chain with Markov kernel $P$ and initial distribution
 $\nu\in\meas 1(\Xset)$ if and only if the two following statements hold.
 \begin{enumerate}[i)]
 \item  For all $(k,A)\in\nset\times\Xsigma$,  $\PP(X_{k+1}\in A|X_{0:k})=P(X_{k},A)$,
 $\PP$-a.s.
-\item $\PP(X_{0}\in A)=\nu(A)$.
+\item For all $A\in\Xsigma$, $\PP(X_{0}\in A)=\nu(A)$.
 \end{enumerate}
 \end{definition}
 Note that, in this definition, we consider $\PP(X_{k+1}\in A|X_{0:k})$,
-that is, the conditional probability is with respect to the sigma-field
-$\sigma(X_{0:k})$. We can replace $\sigma(X_{0:k})$ by
-$\mcf_{k}$ as soon as we know that $(X_{k})_{k\geq0}$ is $(\mcf_{k})_{k\geq0}$-adapted.
+that is, the conditional probability is with respect to the $\sigma$-field
+$\sigma(X_{0:k})$. More generally, if $(\mcf_{k})_{k\geq0}$ is a filtration such that $(X_{k})_{k\geq0}$ is $(\mcf_{k})_{k\geq0}$-adapted, we say that $(X_k)_{k\geq 0}$ is a Markov chain with respect to $(\mcf_{k})_{k\geq0}$ if $\PP(X_{k+1}\in A|\mcf_{k})=P(X_{k},A)$, $\PP$-a.s., for all $(k,A)\in\nset\times\Xsigma$. Since $\sigma(X_{0:k})\subset\mcf_k$, the tower property shows that a Markov chain with respect to $(\mcf_{k})_{k\geq0}$ is a Markov chain in the sense of the definition above. This is the property which is mostly used to analyze the algorithms below, where $\mcf_k$ contains all the auxiliary random variables simulated up to iteration $k$.
+
+\begin{proposition}
+\label{prop:fidi}
+Let $(X_k)_{k\in\nset}$ be a Markov chain with Markov kernel $P$ and initial distribution $\nu$. Then, for all $n\in\nset$ and all $h\in\funcset{+}(\Xset^{n+1})$,
+\begin{equation}
+\label{eq:fidi}
+\PE\lrb{h(X_{0:n})} = \int_{\Xset^{n+1}} \nu(\rmd x_0)P(x_0,\rmd x_1)\cdots P(x_{n-1},\rmd x_n)\, h(x_{0:n})\eqsp.
+\end{equation}
+In particular, $X_n\sim\nu P^n$ and, for all $k,n\in\nset$ and $h\in\funcset{+}(\Xset)$, $\PE[h(X_{n+k})|X_{0:n}] = P^k h(X_n)$, $\PP$-a.s.
+\end{proposition}
+\begin{proof}
+By a monotone class argument, it is enough to consider functions of the form $h(x_{0:n}) = h_0(x_0)\cdots h_n(x_n)$ with $h_j\in\funcset{+}(\Xset)$ for all $0\leq j \leq n$. The case $n=0$ is the definition of $\nu$. If \eqref{eq:fidi} holds for $n$, then, since $\PE[h_{n+1}(X_{n+1})|X_{0:n}] = Ph_{n+1}(X_n)$,
+$$
+\PE\left[\prod_{j=0}^{n+1}h_j(X_j)\right] = \PE\left[\prod_{j=0}^{n}h_j(X_j)\, Ph_{n+1}(X_n)\right]\eqsp,
+$$
+and the induction hypothesis yields \eqref{eq:fidi} for $n+1$. 
+\end{proof}
+
+The next lemma is the tool used to identify the Markov kernel of all the algorithms of this chapter.
+\begin{lemma}
+\label{lem:iterative}
+Let $X_0\sim\nu$ and $(U_k)_{k\geq1}$ be i.i.d. with distribution $\Gamma$, independent of $X_0$. Let $\Phi:\Xset\times\Uset\to\Xset$ be measurable and define recursively $X_{k+1} = \Phi(X_k,U_{k+1})$. Then $(X_k)_{k\in\nset}$ is a Markov chain with respect to $\mcf_k = \sigma(X_0,U_{1:k})$ with initial distribution $\nu$ and Markov kernel given, for all $(x,A)\in \Xset\times \Xsigma$, by $P(x,A) = \PP(\Phi(x,U_1)\in A)$.
+\end{lemma}
+\begin{proof}
+$X_k$ is $\mcf_k$-measurable and $U_{k+1}$ is independent of $\mcf_k$. Therefore,  $\PP(X_{k+1}\in A|\mcf_k) = \psi(X_k)$ with $\psi(x) = \PP(\Phi(x,U_{k+1})\in A) = P(x,A)$.
+\end{proof}
 
 \begin{definition}
 We say that $\pi\in\meas 1(\Xset)$ is an invariant probability measure
 for the Markov kernel $P$ on $\Xset\times\Xsigma$ if $\pi P=\pi$.
 \end{definition}
-If $(X_{k})$ is a Markov chain with Markov kernel $P$
-and assuming that $X_{0}\sim\pi$, then for all $k\geq1$, we have
-$X_{k}\sim\pi$ since $\pi P^{k+1}=\pi P^{k}$ and
-therefore, for all $k\in\nset$, $\pi P^{k}=\pi$.  It can be readily checked that if $\pi$ is an \emph{invariant
-probability measure }for $P$, then the sequence of random variables
-$\seq{X_{k}}{k\in\nset}$ is a \emph{strongly stationary sequence} in the sense that for all $n,p\in\nset^{*}$,
-and all n-tuple $k_{1:n}$, the random vector $(X_{k_{1}},\ldots,X_{k_{n}})$
-has the same distribution as $(X_{k_{1}+p},\ldots,X_{k_{n}+p})$.
+If $(X_{k})_{k\in\nset}$ is a Markov chain with Markov kernel $P$
+and if $X_{0}\sim\pi$ where $\pi$ is invariant for $P$, then, by induction, $\pi P^{k}=\pi P^{k-1}P = \pi P = \pi$ for all $k\geq 1$, so that, by Proposition~\ref{prop:fidi}, $X_{k}\sim\pi$ for all $k\in\nset$. More precisely, by \eqref{eq:fidi}, the sequence of random variables
+$\seq{X_{k}}{k\in\nset}$ is then a \emph{strongly stationary sequence} in the sense that for all $n,p\in\nset^{*}$
+and all $k_{1:n}\in\nset^n$, the random vector $(X_{k_{1}},\ldots,X_{k_{n}})$
+has the same distribution as $(X_{k_{1}+p},\ldots,X_{k_{n}+p})$. Invariant probability measures are also called \emph{stationary distributions}.
+
+\begin{example}[Invariant distributions]
+\label{ex:invariant}
+\begin{enumerate}[i)]
+\item \emph{Two-state chain.} Let $\Xset=\{1,2\}$ and, for $a,b\in(0,1)$,
+$$
+P = \begin{pmatrix} 1-a & a\\ b & 1-b\end{pmatrix}\eqsp.
+$$
+Solving $\pi P = \pi$ with $\pi(1)+\pi(2) = 1$ yields the unique invariant probability $\pi = \big(b/(a+b),a/(a+b)\big)$.
+\item \emph{Gaussian AR(1) process.} Let $X_{k} = c + \phi X_{k-1} + \sigma Z_{k}$ where $(Z_k)_{k\geq 1}$ are i.i.d. $\gauss(0,1)$, independent of $X_0$, $|\phi|<1$ and $\sigma>0$. If $X_{k-1}\sim\gauss(m,s^2)$, then $X_k\sim\gauss(c+\phi m,\phi^2s^2+\sigma^2)$. Therefore $\gauss(m,s^2)$ is invariant if and only if $m = c/(1-\phi)$ and $s^2 = \sigma^2/(1-\phi^2)$. Figure~\ref{fig:inv:hist} shows that the histogram of a single trajectory is close to this invariant distribution: the chain ``forgets'' its initial condition $X_0=0$ after a few dozens of iterations. When $|\phi|\geq1$, there is no invariant probability measure.
+\item \emph{Random walk.} If $X_{k} = X_{k-1}+Z_k$ with $Z_k\sim\gauss(0,1)$ on $\rset$, the Lebesgue measure $\mathrm{Leb}$ satisfies $\mathrm{Leb}\,P = \mathrm{Leb}$ (by Fubini's theorem and translation invariance), but $P$ admits no invariant \emph{probability} measure: if $\pi P = \pi$, then the characteristic function of $\pi$ would satisfy $\hat\pi(t) = \hat\pi(t)\rme^{-t^2/2}$, so that $\hat\pi(t)=0$ for $t\neq0$, which contradicts the continuity of $\hat \pi$ at $0$.
+\end{enumerate}
+\end{example}
 
 \begin{definition}
 Let $\pi\in\meas 1(\Xset)$ and $P$ be a Markov kernel on $\Xset\times\Xsigma$.
@@ -445,22 +526,32 @@ notation,
 \pi(\rmd x)P(x,\rmd y)=\pi(\rmd y)P(y,\rmd x)\eqsp.
 \end{equation}
 \end{definition}
+
 \begin{proposition}
-Let $P$ be a Markov kernel on $\Xset\times\Xsigma$. Let $\pi\in\meas 1(\Xset)$
-such that $P$ is $\pi$-reversible, then the Markov kernel $P$ is
-$\pi$-invariant.
+\label{prop:rev:inv}
+Let $P$ be a Markov kernel on $\Xset\times\Xsigma$ and $\pi\in\meas 1(\Xset)$
+such that $P$ is $\pi$-reversible. Then $\pi$ is invariant for $P$.
 \end{proposition}
 
 \begin{proof}
-For any $A\in\Xsigma$, 
+For any $A\in\Xsigma$, applying \eqref{eq:reversibility:h} with $h(x,y) = \indi A(y)$,
 \[
 \pi P(A)=\iint_{\Xset^{2}}\indi A(y)\pi(\rmd x)P(x,\rmd y)=\iint_{\Xset^{2}}\indi A(y)\pi(\rmd y)P(y,\rmd x)=\int_{A}\pi(\rmd y)P(y,\Xset)=\pi(A),
 \]
 which completes the proof.
 \end{proof}
 Therefore, if we want to check easily that
-a kernel $P$ is $\pi$-invariant, it is sufficient to check that
-it is $\pi$-reversible.
+$\pi$ is invariant for a kernel $P$, it is sufficient to check that
+$P$ is $\pi$-reversible. Reversibility is a ``local'' condition involving pairs of points, whereas invariance is a ``global'' condition involving an integral over $\Xset$.
+
+\begin{example}[Reversible and non-reversible kernels]
+\label{ex:reversible}
+\begin{enumerate}[i)]
+\item The two-state chain of Example~\ref{ex:invariant} is reversible: $\pi(1)P_{12} = ab/(a+b) = \pi(2)P_{21}$.
+\item The stationary AR(1) chain is reversible: if $X_0\sim\gauss(m,s^2)$ with $m=c/(1-\phi)$ and $s^2 = \sigma^2/(1-\phi^2)$, $(X_0,X_1)$ is a Gaussian vector whose marginals are both $\gauss(m,s^2)$ and whose covariance matrix is symmetric, so $(X_0,X_1)\eqlaw(X_1,X_0)$.
+\item Reversibility is sufficient but not necessary for invariance. On $\Xset = \{0,1,2\}$, let $P(x,\{x+1 \bmod 3\}) = 1-\varepsilon$ and $P(x,\{x-1 \bmod 3\}) = \varepsilon$, with $\varepsilon\in[0,1/2)$. Each column of $P$ sums to one so the uniform distribution is invariant, but $\pi(0)P_{01} = (1-\varepsilon)/3\neq\varepsilon/3 = \pi(1)P_{10}$. Non-reversible kernels also appear naturally when composing reversible kernels.
+\end{enumerate}
+\end{example}
 
 
 \begin{figure}
@@ -471,7 +562,7 @@ it is $\pi$-reversible.
 \end{figure}
 
 
-\section{Metropolis-Hastings algorithm}
+\section{Metropolis--Hastings algorithm}
 In this section, we are given a probability measure $\pi\in\meas 1(\Xset)$
 and the idea now is to construct a Markov chain $\seq{X_{k}}{k\in\nset}$
 admitting $\pi$ as invariant probability measure, in which case we
@@ -491,27 +582,26 @@ $\pi$ is positive. Moreover, let $Q$ be a Markov kernel on $\Xset\times\Xsigma$ 
 that $Q(x,\rmd y)=q(x,y)\mu(\rmd y)$, that is, for any $x\in\Xset$,
 $Q(x,\cdot)$ is also dominated by $\mu$ and denoting by $q(x,\cdot)$
 this density, we assume for simplicity that $q(x,y)$ is positive
-for all $x,y\in\Xset$. 
+for all $x,y\in\Xset$. The kernel $Q$ is called the \emph{proposal kernel}.
 
-For a given function $\alpha:\Xset^{2}\to[0,1]$,  Algorithm~\ref{alg:mh} describes the Metropolis algorithm.
-
+For a given measurable function $\alpha:\Xset^{2}\to[0,1]$,  Algorithm~\ref{alg:mh} describes the Metropolis--Hastings algorithm.
 \begin{algorithm}
-\caption{\label{alg:mh}The Metropolis Algorithm}
+\caption{\label{alg:mh}The Metropolis--Hastings algorithm}
 %\SetAlgoLined
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-\Input{Initial distribution $\mu$, maximum number of iterations $n$.}
+\Input{Initial distribution $\nu$, number of iterations $n$.}
 \Output{Markov chain $X_0,\ldots,X_n$.}
 \BlankLine
-At iteration $k=0$, draw $X_{0}\sim \mu$.\\
+At iteration $k=0$, draw $X_{0}\sim \nu$.\\
 \For{$k = 0$ \KwTo $n-1$}
 {
-$\bullet$ Draw independently $Y_{k+1}\sim Q(X_{k},\cdot)$ and $U_{k+1}\sim\mathrm{U}(0,1)$.\\
-$\bullet$ Set $X_{k+1}=\begin{cases} Y_{k+1} & \mbox{if }U_{k+1}\eqsp,\leq\alpha(X_{k},Y_{k+1})\\ X_{k} & \mbox{otherwise}\eqsp. \end{cases}$
+$\bullet$ Draw $Y_{k+1}\sim Q(X_{k},\cdot)$ and $U_{k+1}\sim\mathrm{U}(0,1)$,\\ \hspace{1em}independently of each other and of the past.\\
+$\bullet$ Set $X_{k+1}=\begin{cases} Y_{k+1} & \mbox{if }U_{k+1}\leq\alpha(X_{k},Y_{k+1})\eqsp,\\ X_{k} & \mbox{otherwise}\eqsp. \end{cases}$
 }
 \end{algorithm}
-The Markov kernel $Q$ allows to propose a candidate for the next value of
+The Markov kernel $Q$ is used to propose a candidate for the next value of
 the Markov chain $(X_{k})_{k\in\nset}$ and this candidate is accepted or
-rejected according to a probability that depends on the function $\alpha$. We now choose conveniently $\alpha$ in such a way that $(X_{k})_{k\in\nset}$
+rejected with a probability that depends on the function $\alpha$. We now choose conveniently $\alpha$ in such a way that $(X_{k})_{k\in\nset}$
 is a Markov chain with invariant probability measure $\pi$. 
 %To do so, let us assume that
 %for all $x,y\in\Xset$,
@@ -522,20 +612,21 @@ is a Markov chain with invariant probability measure $\pi$.
 %with $(X_{k})_{k\in\nset}$ is $\pi$-reversible.
 First, we write down the Markov kernel associated with $(X_{k})_{k\in\nset}$. Write $\mcf_{k}=\sigma(X_{0},U_{1:k},Y_{1:k})$
 and note that $(X_{k})_{k\in\nset}$ is adapted to the filtration $(\mcf_{k})_{k\in\nset}$
-(which is equivalent to $\sigma(X_{0:k})\subset\mcf_{k}$). Then,
+(which implies $\sigma(X_{0:k})\subset\mcf_{k}$). Then,
 setting $\bar{\alpha}(x)=1-\int_{\Xset}Q(x,\rmd y)\alpha(x,y)$, we
 have for any bounded or non-negative measurable function $h$ on $\Xset$
-and any $k\in\nset$,
+and any $k\in\nset$,  since conditionally on $\mcf_k$, $Y_{k+1}\sim Q(X_k,\cdot)$ and $U_{k+1}\sim\mathrm{U}(0,1)$ are independent, and $\PP(U_{k+1}\leq a) = a$ for $a\in[0,1]$,
 \begin{align*}
 \PE\lrb{h(X_{k+1})|\mcf_{k}} & =\PE\lrb{\indiacc{U_{k+1}<\alpha(X_{k},Y_{k+1})}h(Y_{k+1})|\mcf_{t}}+\PE\lrb{\indiacc{U_{k+1}\geq\alpha(X_{k},Y_{k+1})}|\mcf_{k}}h(X_{k})\\
  & =\int_{\Xset}Q(X_{k},\rmd y)\alpha(X_{k},y)h(y)+\bar{\alpha}(X_{k})h(X_{k})\\
  & =\int_{\Xset}\lrb{Q(X_{k},\rmd y)\alpha(X_{k},y)+\bar{\alpha}(X_{k})\delta_{X_{k}}(\rmd y)}h(y)=\mh{\pi,Q}h(X_{k}).
 \end{align*}
-Therefore, $\seq{X_{k}}{k\in\nset}$ is a Markov chain with Markov
+Therefore, $\seq{X_{k}}{k\in\nset}$ is a Markov chain (with respect to $(\mcf_k)_{k\in\nset}$, hence also with respect to its natural filtration) with Markov
 kernel
 \begin{equation}
 \mh{\pi,Q}(x,\rmd y)=Q(x,\rmd y)\alpha(x,y)+\bar{\alpha}(x)\delta_{x}(\rmd y).\label{eq:def:mh}
 \end{equation}
+The function $\bar\alpha(x)$ is the probability of rejecting the candidate when the chain is at $x$. Although this kernel depends on $\alpha$, we keep the notation $\mh{\pi,Q}$, as $\alpha$ will be chosen as a function of $\pi$ and $Q$ below.
 
 \begin{lemma}
 \label{lem:reversible} The Markov kernel $\mh{\pi,Q}$ is $\pi$-reversible
@@ -552,7 +643,7 @@ First, note that
 \begin{equation}
 \pi(\rmd x)\bar{\alpha}(x)\delta_{x}(\rmd y)=\pi(\rmd y)\bar{\alpha}(y)\delta_{y}(\rmd x).\label{eq:balance:dirac}
 \end{equation}
-Indeed, for any measurable function $h$ on $\Xset^{2}$, we have
+Indeed, for any non-negative measurable function $h$ on $\Xset^{2}$, we have
 \begin{align*}
 \iint_{\Xset^{2}}h(x,y)\pi(\rmd x)\bar{\alpha}(x)\delta_{x}\lr{\rmd y} & =\int_{\Xset}h(x,x)\pi(\rmd x)\bar{\alpha}(x)\\
  & =\int_{\Xset}h(y,y)\pi(\rmd y)\bar{\alpha}(y)=\iint_{\Xset^{2}}h(x,y)\pi(\rmd y)\bar{\alpha}(y)\delta_{y}(\rmd x).
@@ -563,60 +654,113 @@ condition \eqref{eq:balance:detaillee} is satisfied. This completes
 the proof.
 \end{proof}
 
-We now provide an explicit expression of the acceptance probability $\alpha$. The proof of Lemma~\ref{lem:acceptance} is straightforward.
-
+Since $\pi(\rmd x)Q(x,\rmd y)\alpha(x,y) = \pi(x)q(x,y)\alpha(x,y)\,\mu(\rmd x)\mu(\rmd y)$, the detailed balance condition \eqref{eq:balance:detaillee} holds if and only if
+\begin{equation}
+\label{eq:balance:density}
+\pi(x)q(x,y)\alpha(x,y)=\pi(y)q(y,x)\alpha(y,x)\quad\mbox{for $\mu^{\otimes2}$-almost all $(x,y)\in\Xset^2$}\eqsp.
+\end{equation}
+We now provide explicit expressions of the acceptance probability $\alpha$.
 
 \begin{lemma}
-\label{lem:acceptance} Define 
+\label{lem:acceptance} Define
 $$
 \alpha^{MH}(x,y)=\min\lr{\frac{\pi(y)q(y,x)}{\pi(x)q(x,y)},1}
 $$
-and 
+and
 $$
 \alpha^{b}(x,y)=\frac{\pi(y)q(y,x)}{\pi(x)q(x,y)+\pi(y)q(y,x)}.
 $$
 Then, $\alpha^{MH}$ and $\alpha^{b}$ satisfy
-the detailed balance condition \eqref{eq:balance:detaillee}. 
+the detailed balance condition \eqref{eq:balance:detaillee}. Moreover, any function $\alpha:\Xset^2\to[0,1]$ satisfying \eqref{eq:balance:density} is such that $\alpha\leq\alpha^{MH}$, $\mu^{\otimes2}$-a.e.
 \end{lemma}
 
-%\begin{proof}
-%The fact that any $\alpha\in\left\{ \alpha^{MH},\alpha^{b}\right\} $
-%satisfies $\pi(x)q(x,y)\alpha(x,y)=\pi(y)q(y,x)\alpha(y,x)$ for $\lambda^{\otimes2}$-almost
-%all $x,y\in\Xset$, is immediate, by plugging the value of $\alpha$ in the equation.
-%It remains to check \eqref{eq:accept:max}. Assume now that for $\lambda^{\otimes2}$-almost
-%all $x,y\in\Xset$,
-%\[
-%\pi(x)q(x,y)\alpha(x,y)=\pi(y)q(y,x)\alpha(y,x).
-%\]
-%then, using that $\alpha(y,x)\leq1$ shows that $\alpha(x,y)\leq\frac{\pi(y)q(y,x)}{\pi(x)q(x,y)}$.
-%Moreover, $\alpha(x,y)\leq1$ and this finally implies
-%\[
-%\alpha(x,y)\leq\min\left(\frac{\pi(y)q(y,x)}{\pi(x)q(x,y)},1\right)=\alpha^{MH}(x,y),
-%\]
-%which completes the proof.
-%\end{proof}
+\begin{proof}
+By \eqref{eq:balance:density}, it is enough to note that
+$$
+\pi(x)q(x,y)\alpha^{MH}(x,y) = \min\big(\pi(y)q(y,x),\pi(x)q(x,y)\big)
+$$
+and
+$$
+\pi(x)q(x,y)\alpha^{b}(x,y) = \frac{\pi(x)q(x,y)\pi(y)q(y,x)}{\pi(x)q(x,y)+\pi(y)q(y,x)}
+$$
+are both symmetric functions of $(x,y)$. Assume now that $\alpha$ satisfies \eqref{eq:balance:density}. Since $\alpha(y,x)\leq1$,
+$\alpha(x,y)\leq\pi(y)q(y,x)/(\pi(x)q(x,y))$ and, as $\alpha(x,y)\leq1$,
+$\alpha(x,y)\leq\alpha^{MH}(x,y)$.
+\end{proof}
 
 
+\begin{remark}
+\label{rem:mh:practical}
+\begin{enumerate}[i)]
+\item \emph{Unknown normalizing constants.} The acceptance probability only depends on $\pi$ through the ratio $\pi(y)/\pi(x)$. If $\pi = \tilde\pi/Z$ with $\tilde\pi$ explicit and $Z$ unknown, $\alpha^{MH}$ can be computed with $\tilde\pi$: this is the key property which makes MH algorithms applicable in many settings.
+\item \emph{Numerical implementation.} The ratio is usually computed on the log scale: the candidate is accepted if $\log U_{k+1}\leq \log\tilde\pi(Y_{k+1})+\log q(Y_{k+1},X_k)-\log\tilde\pi(X_k)-\log q(X_k,Y_{k+1})$, which avoids overflows and underflows.
+\end{enumerate}
+\end{remark}
 
 \begin{example}[The random walk MH sampler]
-If $\Xset=\rset^{p}$ and if
-the proposal kernel is $Q(x,\rmd y)=q(y-x)\lambda(\rmd y)$ where
-$q$ is a symmetric density with respect to $\lambda$ on $\Xset$, (by symmetric,
-we mean that $q(u)=q(-u)$ for all $u\in\Xset$) then at each time
-step in the MH algorithm, we draw a candidate $Y_{k+1}\sim q\left(y\ -X_{k}\right)\lambda(\rmd y)$.
-In such a case, the acceptance probability is $\alpha(x,y)=\min\left(\pi(y)/\pi(x),1\right)$
-and the associated algorithm is called the \emph{(symmetric)} \emph{Random
-Walk Metropolis-Hasting.}\textbf{ }Another way of writing the proposal
-update is $Y_{k+1}=X_{k}+\eta_{k}$ where $\eta_{k}\sim q$.
+\label{ex:rwmh}
+Let $\Xset=\rset^{d}$, $\mu = \lambda$ be the Lebesgue measure and let
+the proposal kernel be $Q(x,\rmd y)=g(y-x)\lambda(\rmd y)$ where
+$g$ is a symmetric probability density on $\rset^d$ (by symmetric,
+we mean that $g(u)=g(-u)$ for all $u\in\rset^d$). Then at each time
+step in the MH algorithm, we draw a candidate $Y_{k+1}\sim g(y -X_{k})\lambda(\rmd y)$, or equivalently $Y_{k+1}=X_{k}+\eta_{k+1}$ where $\eta_{k+1}\sim g$ is independent of the past.
+Since $q(x,y)=g(y-x)=g(x-y)=q(y,x)$, the acceptance probability is $\alpha^{MH}(x,y)=\min\left(\pi(y)/\pi(x),1\right)$:
+a move towards a region of higher density is always accepted. The associated algorithm is called the \emph{(symmetric)} \emph{random
+walk Metropolis--Hastings} algorithm (RWMH).
+
+\emph{Choice of the scale.} With Gaussian increments $\eta_{k+1}\sim\gauss(0,s^2I_d)$, the scale $s$ governs a trade-off illustrated in Figure~\ref{fig:rwmh:scaling}: if $s$ is too small, almost all candidates are accepted but the chain moves by tiny steps; if $s$ is too large, the candidates fall in regions of low probability and are almost always rejected, so that the chain stays still for long periods. In both cases, the autocorrelations decay slowly. For targets of product form $\pi(x) = \prod_{i=1}^d f(x_i)$, \cite{roberts1997weak} showed that the optimal scale is $s = \ell^\star/\sqrt{d}$, and that it corresponds to an average acceptance rate of approximately $0.234$ as $d\to\infty$. In dimension one, for a Gaussian target, the optimal acceptance rate is close to $0.44$. Because $s\propto d^{-1/2}$, the number of iterations needed to explore $\pi$ grows linearly with the dimension.
+\end{example}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{rwmh_scaling}
+\caption{RWMH with Gaussian increments $\gauss(0,s^2)$ targeting $\gauss(0,1)$, for three values of the scale $s$ (empirical acceptance rates in the legend). Left: first $500$ iterations. Right: empirical autocorrelations $\hat\rho_\ell$ computed on $20\,000$ iterations. The intermediate scale yields the fastest decay of the autocorrelations, i.e. the smallest integrated autocorrelation time.}
+\label{fig:rwmh:scaling}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{mh_mixt}
+\caption{Trajectory of a random walk MH sampler targeting the mixture $0.5\gauss(-a,1)+0.5\gauss(a,1)$ with $a = 3$. At each iteration $k\geq 0$, the proposal distribution is a Gaussian distribution centered at the current state $X_k$ with unit variance. The chain stays in one mode for hundreds of iterations before crossing the low-density region around $0$.}
+\label{fig:hist:mh}
+\end{figure}
+
+\begin{example}[Multimodality]
+Figure~\ref{fig:hist:mh} illustrates the main weakness of local proposals. With $a=3$, a RWMH with unit increments must cross the region around $0$ where $\pi(0)/\pi(a)\approx 2\rme^{-a^2/2}\approx 0.02$, which only happens through a sequence of unlikely accepted moves. The mean time between two switches grows very fast with $a$ (heuristically like $\rme^{a^2/2}$), so that, for instance with $a=6$, a chain of reasonable length started in one mode never visits the other one, while all the diagnostics computed on this single chain seem perfect. Running several chains from dispersed initial points, tempering strategies, or the sequential Monte Carlo methods of Chapter~\ref{chap:smc} are typical remedies.
+\end{example}
+
+\begin{example}[Independent MH sampler]
+\label{ex:indep:mh}
+Let $Q(x,\rmd y) = g(y)\mu(\rmd y)$ where $g$ is a positive probability density which does not depend on the current state. Writing $w = \pi/g$ for the importance weight function (see Chapter~\ref{chap:smc}),
+$$
+\alpha^{MH}(x,y) = \min\Big(\frac{\pi(y)g(x)}{\pi(x)g(y)},1\Big) = \min\Big(\frac{w(y)}{w(x)},1\Big)\eqsp.
+$$
+Assume that $M = \sup_x w(x)<\infty$. Since $\min(1,w(y)/w(x))\geq \min(1,w(y)/M) = w(y)/M$, for all $x\in\Xset$ and $A\in\Xsigma$,
+$$
+\mh{\pi,Q}(x,A)\geq\int_A g(y)\frac{w(y)}{M}\mu(\rmd y) = \frac{\pi(A)}{M}\eqsp.
+$$
+This minorization condition (Doeblin's condition) implies that $\|P^n(x,\cdot)-\pi\|_{\mathrm{TV}}\leq(1-1/M)^n$ for all $x$, i.e. the chain is uniformly ergodic. Conversely, if $w$ is not bounded ($g$ has lighter tails than $\pi$), the independent sampler is not even geometrically ergodic \cite{mengersen1996rates}: the chain gets stuck for long periods at points $x$ where $w(x)$ is large. The same quantity $M$ governs the efficiency of rejection sampling, which needs on average $M$ proposals per accepted sample but, unlike the independent MH sampler, requires $M$ to be known.
+\end{example}
+
+\begin{example}[A discrete target]
+Let $\pi$ be the Poisson distribution with parameter $\theta>0$ on $\Xset=\nset$, $\pi(x) = \rme^{-\theta}\theta^x/x!$, and let the proposal be $Y_{k+1} = X_k\pm1$ with probability $1/2$ each. With the convention $\pi(-1)=0$ (a proposal at $-1$ is always rejected), $q$ is symmetric and
+$$
+\alpha^{MH}(x,x+1) = \min\Big(\frac{\theta}{x+1},1\Big)\eqsp,\qquad \alpha^{MH}(x,x-1) = \min\Big(\frac{x}{\theta},1\Big)\eqsp,\quad x\geq 1\eqsp.
+$$
+Neither $\rme^{-\theta}$ nor the factorials need to be computed. Here $q$ is not positive everywhere, but $\mh{\pi,Q}$ is still $\pi$-irreducible since any integer can be reached from any other in finitely many steps with positive probability, and aperiodic since $\mh{\pi,Q}(0,\{0\})>0$.
+\end{example}
+
+\begin{example}[Bayesian logistic regression]
+For the posterior \eqref{eq:logistic:post}, a RWMH iteration only requires the evaluation of $\log\tilde\pi(Y_{k+1})$, i.e. $\mathcal{O}(nd)$ operations. In practice, the posterior may be strongly anisotropic (correlated covariates), and isotropic increments $\gauss(0,s^2I_d)$ are inefficient. A standard improvement is to use $\gauss(0,s^2\Sigma)$ where $\Sigma$ approximates the posterior covariance (e.g. the inverse Hessian of $-\log\pi$ at the posterior mode), with $s\approx 2.38/\sqrt{d}$ as suggested by the optimal scaling results.
 \end{example}
 
 
-\begin{figure}
-\label{fig:hist:mh}
-\centering
-\includegraphics[scale=0.5]{mh_mixt}
-\caption{Trajectory of a  random walk MH sampler targetting a mixture of two Gaussian distributions, one centered at $a>0$ and the other one centered at $-a$. At each iteration $k\geq 1$, the proposal distribution is a Gaussian centered at the current state $X_k$ with unit variance. Example with $a = 3$}
-\end{figure}
+%\begin{figure}
+%\label{fig:hist:mh}
+%\centering
+%\includegraphics[scale=0.5]{mh_mixt}
+%\caption{Trajectory of a  random walk MH sampler targetting a mixture of two Gaussian distributions, one centered at $a>0$ and the other one centered at $-a$. At each iteration $k\geq 1$, the proposal distribution is a Gaussian centered at the current state $X_k$ with unit variance. Example with $a = 3$}
+%\end{figure}
 
 
 %\section*{Gibbs sampler}
@@ -744,45 +888,77 @@ update is $Y_{k+1}=X_{k}+\eta_{k}$ where $\eta_{k}\sim q$.
 
 %We start with a general version of MH algorithms that will be useful in many contexts.
 
-\subsection{Metropolis--Adjusted Langevin Algorithm}
+\subsection{Metropolis--adjusted Langevin Algorithm}
 
-The Metropolis--Adjusted Langevin Algorithm (MALA) combines a Langevin-type proposal with a Metropolis--Hastings correction.
-The algorithm was in particular analyzed  in \cite{roberts1996exponential}. 
+The Metropolis--adjusted Langevin Algorithm (MALA) combines a Langevin-type proposal with a Metropolis--Hastings correction. We assume here that $\Xset=\rset^d$ and that $\pi$ has a positive and continuously differentiable density with respect to the Lebesgue measure.
+The algorithm was in particular analyzed in \cite{roberts1996exponential}.
+
 %\paragraph{Proposal kernel.}
 For all $k\geq 0$, given the current state $X_k$, a proposal $Y_{k+1}$ is generated according to the Euler discretization of the overdamped Langevin dynamics,
 \[
-Y_{k+1} = X_k + \frac{h^2}{2} \nabla \log \pi(X_k) + h Z_k\eqsp,
+Y_{k+1} = X_k + \frac{h^2}{2} \nabla \log \pi(X_k) + h Z_{k+1}\eqsp,
 \]
-where $Z_k \sim \mathcal{N}(0, I_d)$ and $h > 0$ denotes the stepsize parameter. This defines a proposal kernel $Q$ given by
+where $Z_{k+1} \sim \mathcal{N}(0, I_d)$ is independent of the past and $h > 0$ denotes the stepsize parameter. This defines a proposal kernel $Q$ given by
 \[
-Q(x,\cdot) = \mathcal{N}\!\left(x + \frac{h^2}{2} \nabla \log \pi(x), \, h^2 I_d \right)\eqsp.
+Q(x,\cdot) = \mathcal{N}\!\left(x + \frac{h^2}{2} \nabla \log \pi(x), \, h^2 I_d \right)\eqsp,
 \]
-MALA can be interpreted as a Metropolis-corrected Euler discretization of the overdamped Langevin diffusion
+i.e., with a constant $c_{h,d}$ which does not depend on $(x,y)$,
 \[
-\rmd X_t = \frac{1}{2} \nabla \log \pi(X_t)\,dt + \rmd B_t\eqsp,
+q(x,y) = c_{h,d}\,\exp\Big(-\frac{1}{2h^2}\Big\|y-x-\frac{h^2}{2}\nabla\log\pi(x)\Big\|^2\Big)\eqsp.
 \]
-which has $\pi$ as its invariant distribution.
+This proposal is not symmetric, and the candidate is accepted with probability $\alpha^{MH}(X_k,Y_{k+1})$ where
+\begin{multline*}
+\log\frac{\pi(y)q(y,x)}{\pi(x)q(x,y)} = \log\pi(y)-\log\pi(x) \\- \frac{1}{2h^2}\Big\|x-y-\frac{h^2}{2}\nabla\log\pi(y)\left\|^2+\frac{1}{2h^2}\Big\|y-x-\frac{h^2}{2}\nabla\log\pi(x)\right\|^2\eqsp.
+\end{multline*}
+As for RWMH, only $\log\pi$ up to an additive constant and its gradient are needed. MALA can be interpreted as a Metropolis-corrected Euler discretization of the overdamped Langevin diffusion
+\[
+\rmd X_t = \frac{1}{2} \nabla \log \pi(X_t)\,\rmd t + \rmd B_t\eqsp,
+\]
+where $(B_t)_{t\geq0}$ is a standard $d$-dimensional Brownian motion; under mild assumptions on $\pi$, this diffusion has $\pi$ as its unique invariant distribution.
 The Metropolis--Hastings step corrects for the discretization bias introduced by the Euler scheme, ensuring exact invariance of $\pi$. The efficiency of MALA strongly depends on the choice of the stepsize $h$.
-In high dimension, for a broad class of target distributions (including product measures), optimal scaling is achieved when
+In high dimension, for target distributions of product form (and some extensions), optimal scaling is achieved when
 \[
 h\asymp d^{-1/6}\eqsp,
 \]
-which leads to a non-degenerate limiting acceptance rate, as established in \cite{roberts1998optimal}.
-Using larger stepsizes results in low acceptance probabilities, while overly small stepsizes lead to slow exploration of the state space. Compared to Random Walk Metropolis algorithms, MALA leverages gradient information through $\nabla \log \pi$, yielding improved mixing and reduced random-walk behavior, particularly in moderately high dimensions.
-This improvement comes at the expense of an increased computational cost per iteration due to gradient evaluations, resulting in a trade-off between statistical efficiency and numerical cost.
+which leads to a non-degenerate limiting acceptance rate (approximately $0.574$ at the optimum), as established in \cite{roberts1998optimal}; compare with $s\asymp d^{-1/2}$ for RWMH.
+Using larger stepsizes results in low acceptance probabilities, while overly small stepsizes lead to slow exploration of the state space. Compared to random walk Metropolis algorithms, MALA leverages gradient information through $\nabla \log \pi$, yielding improved mixing and reduced random-walk behavior, particularly in moderately high dimensions.
+This improvement comes at the expense of an increased computational cost per iteration due to gradient evaluations, resulting in a trade-off between statistical efficiency and numerical cost. MALA can also behave badly in the tails: for targets with tails lighter than Gaussian, it may fail to be geometrically ergodic \cite{roberts1996exponential}.
+
+Omitting the accept/reject step, i.e. setting $X_{k+1} = Y_{k+1}$, defines the \emph{unadjusted Langevin algorithm} (ULA). ULA is cheaper and does not suffer from rejections, but its invariant distribution $\pi_h$ (when it exists) differs from $\pi$. For strongly log-concave and smooth targets, non-asymptotic bounds on the distance between the law of $X_k$ and $\pi$ show that this bias is controlled by the stepsize \cite{dalalyan2017theoretical,durmus2017nonasymptotic}; for targets with tails lighter than Gaussian, ULA may even be transient \cite{roberts1996exponential}. ULA and its stochastic gradient variants are widely used in machine learning and in score-based generative models.
+
+\begin{example}[ULA versus MALA for a Gaussian target]
+\label{ex:ula}
+Let $\pi = \gauss(0,1)$, so that $\nabla\log\pi(x) = -x$, and set $\gamma = h^2$. ULA reads
+$$
+X_{k+1} = \Big(1-\frac{\gamma}{2}\Big)X_k + \sqrt{\gamma}\,Z_{k+1}\eqsp,
+$$
+which is the AR(1) process of Example~\ref{ex:invariant} with $c=0$, $\phi = 1-\gamma/2$ and $\sigma^2 = \gamma$. For $\gamma\in(0,4)$, $|\phi|<1$ and its invariant distribution is
+$$
+\pi_h = \gauss\left(0,\frac{\gamma}{1-(1-\gamma/2)^2}\right) = \gauss\left(0,\frac{1}{1-\gamma/4}\right)\eqsp,
+$$
+while for $\gamma\geq4$ the chain has no invariant probability. The bias $\mathrm{Var}_{\pi_h}(X)-1 = \gamma/(4-\gamma)$ is of order $\gamma$. MALA with the same stepsize is exactly $\pi$-invariant (Figure~\ref{fig:ula}).
+\end{example}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.9\textwidth]{ula_mala}
+\caption{Histograms of $2\cdot10^5$ iterations of ULA and MALA targeting $\gauss(0,1)$ with $\gamma = h^2 = 1$. ULA samples from $\gauss(0,4/3)$ (Example~\ref{ex:ula}); MALA corrects this bias.}
+\label{fig:ula}
+\end{figure}
+
+For the Bayesian logistic regression of Example~\ref{ex:bayes}, the gradient $\nabla\log\pi(\theta)$ is explicit, so that MALA and the Hamiltonian Monte Carlo algorithm below can be implemented at a cost of $\mathcal{O}(nd)$ operations per iteration.
 
 
 
-
-\subsection{Generalisation of MH Algorithms}
+\subsection{Generalization of MH algorithms}
 \label{sec:gener}
-Let $\pi\in\meas{1}(\Xset)$ and let $Q$ be a Markov kernel on $\Xset \times\Xsigma$. In this chapter, we have presented the Metropolis-Hastings algorithm when $\pi$ and $Q(x,\cdot)$ have both densities with respect to a common dominating measure $\mu$. In this section, we do not make such an assumption so that the expression of $\alpha^{MH}$ given in \Lemref{acceptance} is not available anymore and should be adapted. Instead, we will need the following assumption. Define
+Let $\pi\in\meas{1}(\Xset)$ and let $Q$ be a Markov kernel on $\Xset \times\Xsigma$. In this chapter, we have presented the Metropolis--Hastings algorithm when $\pi$ and $Q(x,\cdot)$ both have densities with respect to a common dominating measure $\mu$. In this section, we do not make such an assumption so that the expression of $\alpha^{MH}$ given in \Lemref{acceptance} is not available anymore and should be adapted. Instead, we will need the following assumption. Define
 $$
 \mu_0(\rmd x \rmd y)=\pi(\rmd x) Q(x,\rmd y)\quad \mbox{and} \quad \mu_1(\rmd x \rmd y)=\pi(\rmd y) Q(y,\rmd x).
 $$
 
 \begin{hyp}{B}
-\item \label{assum:detailed}  There exists a function $(x,y)\mapsto r(x,y)$ such that $r(x,y)>0$, $\mu_0$-a.s. and for all $h\in \funcset{+}(\Xset^2)$,
+\item \label{assum:detailed}  There exists a measurable function $(x,y)\mapsto r(x,y)$ such that $r(x,y)>0$, $\mu_0$-a.s. and for all $h\in \funcset{+}(\Xset^2)$,
 \begin{equation}
 \label{eq:detailed}
 \int h(x,y)\mu_1(\rmd x\rmd y)=\int h(x,y) r(x,y)\mu_0(\rmd x\rmd y).
@@ -792,7 +968,11 @@ This equation shows that the measure $\mu_1$ is dominated by $\mu_0$ with a $\mu
 $$
 r(x,y)=\frac{\rmd \mu_1}{\rmd \mu_0}(x,y).
 $$ 
-Then, by symmetry, we can easily show that $1/r(x,y)=r(y,x)$, $\mu_1$-a.s. And finally the two measures, $\mu_0$ and $\mu_1$ are equivalent (one is dominated by the other and conversely). In this case, the generalised version of the Metropolis-Hastings kernel, where $\alpha^{MH}$ given in \Lemref{acceptance} is replaced by $\alpha(x,y)=r(x,y) \wedge 1$ is $\pi$-reversible.
+Then, by symmetry, $r(y,x)=1/r(x,y)$, $\mu_0$-a.s. Indeed, let $s(x,y) = (y,x)$, so that $\mu_1$ is the image of $\mu_0$ by $s$ and conversely. For all $h\in\funcset{+}(\Xset^2)$, applying \eqref{eq:detailed} twice,
+$$
+\int h\,\rmd\mu_0 = \int h\circ s\,\rmd\mu_1 = \int (h\circ s)\, r\,\rmd\mu_0 = \int h\,(r\circ s)\,\rmd\mu_1 = \int h\,(r\circ s)\,r\,\rmd\mu_0\eqsp,
+$$
+so that $r(x,y)r(y,x) = 1$, $\mu_0$-a.s. Finally, the two measures $\mu_0$ and $\mu_1$ are equivalent (each one is dominated by the other). In this case, the generalized version of the Metropolis--Hastings kernel, where $\alpha^{MH}$ given in \Lemref{acceptance} is replaced by $\alpha(x,y)=r(x,y) \wedge 1$, is $\pi$-reversible, see \cite{tierney1998note}. When $\pi$ and $Q$ have densities, $r(x,y) = \pi(y)q(y,x)/(\pi(x)q(x,y))$ and we recover $\alpha^{MH}$.
 
 \begin{lemma} \label{lem:generalMH}
 Assume \ref{assum:detailed}. Then, setting $\alpha(x,y)=r(x,y) \wedge 1$, the MH kernel:
@@ -804,7 +984,7 @@ is $\pi$-reversible.
 
 
 \begin{proof}
-Similarly to \Lemref{reversible}, we only need to check the detailed balance condition. Let $h\in\funcset{+}(\Xset)$, then,
+Similarly to \Lemref{reversible}, we only need to check the detailed balance condition. Let $h\in\funcset{+}(\Xset^2)$.  Then,
 \begin{align*}
 &\int_{\Xset^2} \pi(\rmd x) Q(x,\rmd y) \alpha(x,y) h(x,y)=\int_{\Xset^2} \mu_0(\rmd x\rmd y) (r(x,y)\wedge 1)  h(x,y)
 \\
@@ -815,7 +995,7 @@ Thus, the detailed balance condition is verified and the proof is completed.
 \end{proof}
 
 \subsection{Pseudo-marginal Monte Carlo methods}
-Assume that $\pi$ and $Q$ are dominated by a common dominating measure $\mu$ and write by abuse of notation, $\pi(\rmd x)=\pi(x)\mu(\rmd x)$ and $Q(x,\rmd y)=q(x,y)\mu(\rmd y)$. When considering a Metropolis-Hastings algorithm, we need an explicit expression of $\pi(x)$ for any $x\in\Xset$, up to a multiplicative constant. It may happen that we are not able to calculate $\pi(x)$ explicitly (even up to a multiplicative constant). Instead, assume that we are able to have an unbiased estimator of $\pi(x)$. To obtain such an unbiased estimator, we draw $W\sim R(x,\rmd w)$ where $R$ is a Markov kernel from $\Xset$ to $\rset^+_\star$, that is, a Markov kernel on $\Xset\times {\mathcal B}(\rset^+_\star)$ such that $\int_{\rset^+_\star} w R(x,\rmd w)=\pi(x)$ (the {\em unbiasedness} condition). The pseudo-marginal algorithm is described in Algorithm~\ref{alg:pseudo:mh}\ below.
+Assume that $\pi$ and $Q$ are dominated by a common measure $\mu$ and write by abuse of notation, $\pi(\rmd x)=\pi(x)\mu(\rmd x)$ and $Q(x,\rmd y)=q(x,y)\mu(\rmd y)$. When considering a Metropolis--Hastings algorithm, we need an explicit expression of $\pi(x)$ for any $x\in\Xset$, up to a multiplicative constant. It may happen that we are not able to calculate $\pi(x)$ explicitly (even up to a multiplicative constant). Instead, assume that we are able to compute an unbiased estimator of $\pi(x)$. To obtain such an unbiased estimator, we draw $W\sim R(x,\rmd w)$ where $R$ is a Markov kernel from $\Xset$ to $\rset^+_\star$, that is, a Markov kernel on $\Xset\times {\mathcal B}(\rset^+_\star)$ such that $\int_{\rset^+_\star} w R(x,\rmd w)=\pi(x)$ (the {\em unbiasedness} condition).  As for MH, it is enough that $\int w R(x,\rmd w) = C\pi(x)$ for a constant $C>0$ which does not depend on $x$. The pseudo-marginal algorithm \cite{beaumont2003estimation,andrieu2009pseudo} is described in Algorithm~\ref{alg:pseudo:mh} below.
 %\begin{algorithm}
 %\centering
 %\begin{algorithmic}
@@ -836,18 +1016,18 @@ Assume that $\pi$ and $Q$ are dominated by a common dominating measure $\mu$ and
 \Input{Initial distribution $\mu$, total number of samples $n$.}
 \Output{$X_0,\ldots,X_n$}
 \BlankLine
-At $t=0$, draw $X_{0}\sim \mu$ and $W_0\sim R(X_0,\cdot)$.\\
-\For{$t\leftarrow 0$ \KwTo $n-1$}
+At $k=0$, draw $X_{0}\sim \nu$ and $W_0\sim R(X_0,\cdot)$.\\
+\For{$k\leftarrow 0$ \KwTo $n-1$}
 {
-$\bullet$ Draw $\tilde X_{t+1}\sim Q(X_{t},\cdot)$ and then $ \tilde W_{t+1}\sim R(\tilde X_{t+1},\cdot)$.\\
-$\bullet$ Set $(X_{t+1},W_{t+1})=\begin{cases} (\tilde X_{t+1},\tilde W_{t+1}) & \mbox{with probability}\ \frac{\tilde W_{t+1} q(\tilde X_{t+1},X_t)}{W_t q(X_t,\tilde X_{t+1})}\wedge 1\eqsp,\\ (X_{t},W_t)& \mbox{with probability}\ 1-\frac{\tilde W_{t+1} q(\tilde X_{t+1},X_t)}{W_t q(X_t,\tilde X_{t+1})}\wedge 1\eqsp.\end{cases}$
+$\bullet$ Draw $\tilde X_{k+1}\sim Q(X_{t},\cdot)$ and then $ \tilde W_{k+1}\sim R(\tilde X_{k+1},\cdot)$.\\
+$\bullet$ Set $(X_{k+1},W_{k+1})=\begin{cases} (\tilde X_{k+1},\tilde W_{k+1}) & \mbox{with probability}\ \frac{\tilde W_{k+1} q(\tilde X_{k+1},X_k)}{W_k q(X_k,\tilde X_{k+1})}\wedge 1\eqsp,\\ (X_{k},W_k)& \mbox{with probability}\ 1-\frac{\tilde W_{k+1} q(\tilde X_{k+1},X_k)}{W_k q(X_k,\tilde X_{k+1})}\wedge 1\eqsp.\end{cases}$
 }
 \end{algorithm}
-We now justify the Pseudo-marginal Monte Carlo algorithm by showing that it is actually a generalized MH algorithm (as described in \Lemref{generalMH}) by considering extended Markov chain, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ on an extended space and with an extended target. Define the extended target distribution $\bar{\pi}(\rmd \bar x)=\bar{\pi}(\rmd x\rmd w)=w R(x,\rmd w) \mu(\rmd x)$ (where we set $\bar x=(x,w)$). Note that $\bar{\pi}$ is indeed a probability measure on $\bar\Xset=\Xset \times \rset^+_\star$, since
+We now justify the pseudo-marginal Monte Carlo algorithm by showing that it is actually a generalized MH algorithm (as described in \Lemref{generalMH}) by considering extended Markov chain, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ on an extended space and with an extended target. Define the extended target distribution $\bar{\pi}(\rmd \bar x)=\bar{\pi}(\rmd x\rmd w)=w R(x,\rmd w) \mu(\rmd x)$ (where we set $\bar x=(x,w)$). Note that $\bar{\pi}$ is indeed a probability measure on $\bar\Xset=\Xset \times \rset^+_\star$, since
 $$
 \int_{\Xset\times\rset^+_\star} \bar{\pi}(\rmd x\rmd w)=\int_\Xset \lr{ \int_{\rset^+_\star} w R(x,\rmd w)}\mu(\rmd x)=\int_\Xset \pi(x)\mu(\rmd x)=1\eqsp.
 $$
-Moreover, in Algorithm~\ref{alg:pseudo:mh}, the candidate $(\tilde X_{t+1},W_{t+1})$ is proposed according to $\bar Q$ where the proposal kernel $\bar Q$ is defined by $\bar Q( \bar x,\rmd \bar x')=Q(x,\rmd x') R(x',\rmd w')$. In order to check \ref{assum:detailed}, we first set
+Moreover, in Algorithm~\ref{alg:pseudo:mh}, the candidate $(\tilde X_{k+1},W_{k+1})$ is proposed according to $\bar Q$ where the proposal kernel $\bar Q$ is defined by $\bar Q( \bar x,\rmd \bar x')=Q(x,\rmd x') R(x',\rmd w')$. In order to check \ref{assum:detailed}, we first set
 \begin{align*}
 \mu_0(\rmd \bar x \rmd \bar x')=\mu_0(\rmd x \rmd w \rmd x'\rmd w')&=w R(x,\rmd w) \mu(\rmd x) Q(x,\rmd x') R(x',\rmd w')\\
 \mu_1(\rmd \bar x \rmd \bar x')=\mu_1(\rmd x \rmd w \rmd x'\rmd w')&=w' R(x',\rmd w') \mu(\rmd x') Q(x',\rmd x) R(x,\rmd w).
@@ -861,33 +1041,45 @@ where
 $$
 r(\bar x,\bar x') = \frac{w' q(x',x)}{w q(x,x')}\eqsp.
 $$
-Since $r$ is positive, we can apply \Lemref{generalMH} with $\alpha(\bar x,\bar x')=r(\bar x,\bar x') \wedge 1$ and we finally get that $\mh{\bar{\pi},\bar Q}(\bar x,\rmd \bar x')$ is $\bar{\pi}$-reversible. Since Algorithm~\ref{alg:pseudo:mh} corresponds to applying the Markov kernel $\mh{\bar{\pi},\bar Q}$, this completes the proof. Note that the extended target distribution $\Pi$ has the marginal $\pi$ with respect to the first component:
+Since $r$ is positive, we can apply \Lemref{generalMH} with $\alpha(\bar x,\bar x')=r(\bar x,\bar x') \wedge 1$ and we finally get that $\mh{\bar{\pi},\bar Q}(\bar x,\rmd \bar x')$ is $\bar{\pi}$-reversible. Since Algorithm~\ref{alg:pseudo:mh} corresponds to applying the Markov kernel $\mh{\bar{\pi},\bar Q}$, this completes the proof. Note that the extended target distribution $\bar\pi$ has the marginal $\pi$ with respect to the first component:
 $$
 \bar{\pi}(A \times \rset^+_\star)=\int_A \int_{\rset^+_\star} w R(x,\rmd w) \mu(\rmd x)=\int_A \pi(\rmd x)=\pi(A).
 $$
-To sum up, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ produced by Algorithm~\ref{alg:pseudo:mh} is a generalized Metropolis-Hastings algorithm where the target distribution $\bar{\pi}$ admits $\pi$ as the marginal distribution on the first component.
-Note that $(X_k)_{k\in\nset}$ is not a Markov chain anymore (but $(\bar X_k)_{k\in\nset}$ is).
+To sum up, $(\bar X_k)_{k\in\nset}=(X_k,W_k)_{k\in\nset}$ produced by Algorithm~\ref{alg:pseudo:mh} is a generalized Metropolis--Hastings algorithm whose target distribution $\bar{\pi}$ admits $\pi$ as marginal distribution on the first component.
+Note that $(X_k)_{k\in\nset}$ alone is not a Markov chain anymore.
+
+\begin{example}[Latent variable models]
+\label{ex:pseudo:latent}
+Consider a Bayesian model with parameter $x$, prior density $p(x)$, latent variable $Z$ and observation $y$, with complete-data likelihood $p(y,z\mid x)$. The posterior $\pi(x)\propto p(x)\int p(y,z\mid x)\,\rmd z$ involves an intractable integral, even up to a constant. Given an importance density $g_x$ on the latent space (see Chapter~\ref{chap:smc}), draw $Z_1,\ldots,Z_n$ i.i.d. with density $g_x$ and set
+$$
+W = p(x)\frac{1}{n}\sum_{i=1}^n\frac{p(y,Z_i\mid x)}{g_x(Z_i)}\eqsp.
+$$
+Then $\PE[W] = p(x)p(y\mid x)\propto\pi(x)$, so that Algorithm~\ref{alg:pseudo:mh} targets the exact posterior, whatever $n\geq 1$. The number $n$ of samples only affects the efficiency: when the variance of $W$ is large, an overestimated $W_k$ makes the chain ``stick'' at $X_k$ for many iterations. A common rule of thumb is to choose $n$ such that the variance of $\log W$ is around $1$ \cite{doucet2015efficient}. When $Z = Z_{0:T}$ is a hidden Markov chain, the unbiased estimator of the likelihood produced by a particle filter (Chapter~\ref{chap:smc}) leads to the particle marginal Metropolis--Hastings algorithm \cite{andrieu2010particle}.
+\end{example}
+
 
 
 \subsection{Hamiltonian Monte Carlo}
-In Hamiltonian Monte Carlo (HMC), we extend the target density and construct a Markov chain on an extended space. We assume that the state space is $\rset^d$ and that  $\pi(q)\propto \rme^{-U(q)}$ (in most of the HMC literature, the state variable $x$ is replaced by $q$). A classical setting is to consider $\pi$ as the marginal of the extended target
+In Hamiltonian Monte Carlo (HMC) \cite{duane1987hybrid,neal2011mcmc}, we extend the target density and construct a Markov chain on an extended space. We assume that the state space is $\rset^d$ and that  $\pi(q)\propto \rme^{-U(q)}$ where $U$ is continuously differentiable (in most of the HMC literature, the state variable $x$ is replaced by $q$, which should not be confused with the proposal density of the previous sections). A classical setting is to consider $\pi$ as the marginal of the extended target
 \begin{equation}
 \label{eq:targ:hmc}
 \bar{\pi}(q,p) \propto \exp \lrcb{-U(q)-p^\top p/2}\eqsp, \quad p,q \in \rset^d\eqsp.
 \end{equation}
-In this straightforward setting, the extended target density can be written as the product of $\pi$ and the standard Gaussian probability density of  $\gauss(0,I_d)$. %At this stage, adding a second component in the target distribution that is completely independent of the first component and with such a classical distribution as $\gauss(0,I_d)$ does not seem to bring too much excitement in the problem but let's be patient...
+In this simple setting, the extended target density can be written as the product of $\pi$ and the standard Gaussian probability density of  $\gauss(0,I_d)$: under $\bar\pi$, $q$ and $p$ are independent.
 In what follows, we  use the following terminology, very classical in the HMC literature.
 \begin{itemize}[-]
-\item $q\in \rset^d$ is the position and $U(q)$ is the called the {\em potential energy}.
+\item $q\in \rset^d$ is the position and $U(q)$ is called the {\em potential energy}.
 \item $p\in \rset^d$ is the momentum and $K(p)=p^\top p/2$ is called the {\em kinetic energy}.
-\item $H(q,p)=U(q)+K(p)$ is called the {\em Hamiltonian}.
+\item $H(q,p)=U(q)+K(p)$ is called the {\em Hamiltonian}, so that $\bar\pi(q,p)\propto\rme^{-H(q,p)}$.
 \end{itemize}
 \index{potential energy} \index{kinetic energy} \index{Hamiltonian}
-Several versions of HMC exist. We consider in this course the Leapfrog HMC which produces a Markov chain $(X_k)_{k\in\nset}=(q_k,p_k)_{k\in\nset}$ and where a transition of this algorithm can be decomposed into two different moves.
+Several versions of HMC exist. We consider in this course the leapfrog HMC which produces a Markov chain $(X_k)_{k\in\nset}=(q_k,p_k)_{k\in\nset}$ and where a transition of this algorithm can be decomposed into two different moves.
 \begin{itemize}[-]
-\item The first transition sets $X_{k+1}^0 = (q_{k+1}^0,p_{k+1}^0)$ where the first component is freezed, i.e. $q_{k+1}^0=q_{k}$, while the second one is sampled as  $p_{k+1}^0\sim \gauss(0,I_d)$. As the standard Gaussian distribution is  the conditional law of $p$ given $q$ in \eqref{eq:targ:hmc}) this is a Gibbs move which means that the transition kernel associated with this move is $\bar{\pi}$-reversible.
-\item The second transition sets  $X_{k+1}^L = (q_{k+1}^L,p_{k+1}^L)$ deterministically from  $X_{k+1}^0$ using $L$ steps, and then  accepts or rejects the proposed candidate according to some well-chosen probability. Therefore, we need to establish how to choose the acceptance rate with deterministic moves to obtain a $\bar{\pi}$-reversible transition.
+\item The first transition sets $X_{k+1}^0 = (q_{k+1}^0,p_{k+1}^0)$ where the first component is frozen, i.e. $q_{k+1}^0=q_{k}$, while the second one is sampled as  $p_{k+1}^0\sim \gauss(0,I_d)$. As the standard Gaussian distribution is  the conditional distribution of $p$ given $q$ under \eqref{eq:targ:hmc}, this is a Gibbs move, which means that the transition kernel associated with this move is $\bar{\pi}$-reversible.
+\item The second transition sets  $X_{k+1}^L = (q_{k+1}^L,p_{k+1}^L)$ deterministically from  $X_{k+1}^0$ using $L$ steps of a numerical integrator, and then  accepts or rejects the proposed candidate according to some well-chosen probability. Therefore, we need to establish how to choose the acceptance probability with deterministic moves to obtain a $\bar{\pi}$-reversible transition.
 \end{itemize}
+Since both moves leave $\bar\pi$ invariant, so does their composition, which is however not reversible in general.
+
 %
 %\begin{algorithm}
 %\centering
@@ -913,17 +1105,16 @@ Several versions of HMC exist. We consider in this course the Leapfrog HMC which
 %Let $Q(x,\rmd y)=\delta_{\varphi(x)}(\rmd y)$ be a proposal kernel. Then $\mh{\pi,Q}(x,\rmd y)$ is reversible if and only if $\varphi \circ\varphi (x)=x$ (i.e. we then say that $\varphi$ is an involution).
 %\end{lemma}
 
-A natural question is therefore to understand if we can  construct a MH algorithm with target $\bar{\pi}$ and where the proposal candidate is deterministic: $Q(x,\rmd y)=\delta_{\varphi(x)}(\rmd y)$, where $\varphi: \mathbb{R}^d \to \mathbb{R}^d$. Due to the Dirac mass, we are not in a standard framework but we can  use the generalized version of MH algorithm as described in Section~\ref{sec:gener}. Set
+A natural question is therefore to understand whether we can construct a MH algorithm with target $\bar{\pi}$ on $\rset^{2d}$ and where the proposed candidate is deterministic: $Q(x,\rmd y)=\delta_{\varphi(x)}(\rmd y)$, where $\varphi: \mathbb{R}^{2d} \to \mathbb{R}^{2d}$ is a measurable bijection. Due to the Dirac mass, we are not in the standard framework but we can use the generalized version of the MH algorithm as described in Section~\ref{sec:gener}. Set
 $$
 \mu_0(\rmd x\rmd y)=\bar{\pi}(\rmd x)\delta_{\varphi(x)}(\rmd y) \quad \mbox{and}\quad \mu_1(\rmd x\rmd y)=\bar{\pi}(\rmd y)\delta_{\varphi(y)}(\rmd x)\eqsp,
 $$
-and write for any non-negative function $h$,
+denote by $\bar\pi\circ\varphi^{-1}$ the image measure of $\bar\pi$ by $\varphi$, assume that it is dominated by $\bar\pi$, and write for any non-negative measurable function $h$,
 \begin{multline*}
 \int h(x,y) \mu_1(\rmd x \rmd y)= \int \bar{\pi}(\rmd u) h(\underbrace{\varphi(u)}_{v},\underbrace{u}_{\varphi^{-1}(v)})\\
 =\int \bar{\pi}\circ \varphi^{-1} (\rmd v) h (v,\varphi^{-1}(v))= \int \frac{\rmd \bar{\pi}\circ \varphi^{-1}}{\rmd \bar{\pi}}(v) \bar{\pi}(\rmd v) h (v,\varphi^{-1}(v))\eqsp.
 \end{multline*}
-%Let us focus on the last term $\Pi(\rmd v) h (v,\varphi^{-1}(v))$. 
-If we want to let appear the integral of $h$ with respect to $\mu_0(\rmd x\rmd y)=\bar{\pi}(\rmd x)\delta_{\varphi(x)}(\rmd y)$, we need to assume that $\varphi^{-1}(v)=\varphi(v)$ that is $\varphi$ is an involution and in such a case:
+If we want to let appear the integral of $h$ with respect to $\mu_0(\rmd x\rmd y)=\bar{\pi}(\rmd x)\delta_{\varphi(x)}(\rmd y)$, we need to assume that $\varphi^{-1}(v)=\varphi(v)$, that is, $\varphi$ is an involution, and in such a case:
 $$
 \int h(x,y) \mu_1(\rmd x \rmd y)=\int h(x,y) \frac{\rmd \bar{\pi}\circ \varphi^{-1}}{\rmd \bar{\pi}}(x) \mu_0(\rmd x\rmd y)
 $$
@@ -931,27 +1122,24 @@ and the acceptance probability is then
 $$
 \alpha(x,y)=\frac{\rmd \mu_1}{\rmd \mu_0}(x,y) \wedge 1=\frac{\rmd \bar{\pi}\circ \varphi^{-1}}{\rmd \bar{\pi}}(x) \wedge 1\eqsp.
 $$
-A first point is that if we only use the involution, then after two steps we obtain the initial state. Therefore, this deterministic transition is often combined with another move that is not deterministic. %(In the Leapfrog, the first move is not deterministic: while we freeze the position, we refresh the momentum according to a Normal distribution).
- For any involution, we can get a Metropolis Hastings with a theoretical expression of the acceptance probability as
+A first point is that if we only use the involution, then the chain alternates between $x$ and $\varphi(x)$ (after two accepted steps we are back to the initial state), so that it cannot be irreducible. Therefore, this deterministic transition is combined with another move that is not deterministic (in HMC, the refreshment of the momentum).
+For any involution, we obtain a Metropolis--Hastings algorithm with a theoretical expression of the acceptance probability, but, in an ideal HMC, we can choose $\varphi$ so that it is equal to $1$. If $\bar{\pi}$ has a positive density with respect to the Lebesgue measure that we still denote $\bar{\pi}$ and if $\varphi$ is a $C^1$-diffeomorphism, the change of variables formula yields
 $$
-\alpha(x,y)=\frac{\rmd \bar{\pi}\circ \varphi^{-1}}{\rmd \bar{\pi}}(x)  \wedge 1
+\frac{\rmd \bar{\pi}\circ \varphi^{-1}}{\rmd \bar{\pi}}(x)=\frac{\bar{\pi}(\varphi^{-1}(x))}{\bar{\pi}(x)} \lrav{\det J_{\varphi^{-1}}(x)}\eqsp,
 $$
-but in an ideal HMC we can choose $\varphi$ so that  that this is equal to 1. If $\bar{\pi}$ has a density with respect to the Lebesgue measure that we still denote $\bar{\pi}$, we get
-$$
-\frac{\rmd \bar{\pi}\circ \varphi^{-1}}{\rmd \bar{\pi}}(x)=\frac{\bar{\pi}(\varphi^{-1}(x))}{\bar{\pi}(x)} \lrav{\frac{\partial \varphi^{-1}(x)}{\partial x}}\eqsp,
-$$
-where the second term is the Jacobian determinant of the mapping  $\varphi^{-1}=\varphi$. To get $1$ in the acceptance probability, we can impose that the two terms are equal to $1$. 
+where $J_{\varphi^{-1}}(x)$ is the Jacobian matrix of the mapping  $\varphi^{-1}=\varphi$ at $x$. To get $1$ in the acceptance probability, we can impose that the two terms are equal to $1$.
 \begin{itemize}[-]
-\item The first term $\frac{\bar{\pi}(\varphi^{-1}(x))}{\bar{\pi}(x)}$ is one if the involution stays on  the same level set (i.e. the moves according to $\varphi$ does not change the value of $\bar{\pi}$).
-\item The second term $\lrav{\frac{\partial \varphi^{-1}(x)}{\partial x}}$ is one if the involution is volume-preserving. If for example the involution only keeps the volume then the Radon Nikodym simplifies to
+\item The first term $\bar{\pi}(\varphi^{-1}(x))/\bar{\pi}(x)$ is one if the involution stays on  the same level set of $\bar\pi$ (i.e. the moves according to $\varphi$ do not change the value of $\bar{\pi}$).
+\item The second term $\lrav{\det J_{\varphi^{-1}}(x)}$ is one if the involution is volume-preserving. If the involution is only volume-preserving, then the Radon--Nikodym derivative simplifies to
 $$
-\frac{\bar{\pi}(\varphi^{-1}(x))}{\bar{\pi}(x)} =\frac{\bar{\pi}(\varphi(x))}{\bar{\pi}(x)}  \quad \mbox{since} \quad \varphi \circ \varphi=\Id\eqsp.
+\frac{\bar{\pi}(\varphi^{-1}(x))}{\bar{\pi}(x)} =\frac{\bar{\pi}(\varphi(x))}{\bar{\pi}(x)}  \quad \mbox{since} \quad \varphi \circ \varphi=\Id\eqsp,
 $$
-%MH with deterministic moves is possible but the mapping $\varphi$ should be an involution. If the mapping should stay on the same level set and is volume preserving, the acceptance probability is even exactly equal to one.
+and the acceptance probability is $\alpha(x,\varphi(x)) = 1\wedge\bar\pi(\varphi(x))/\bar\pi(x) = 1\wedge \exp\{H(x)-H(\varphi(x))\}$.
 \end{itemize}
 
+
 \subsubsection*{Hamiltonian dynamics}
-In order to propose a deterministic mapping, assume that the state depends on a real parameter $t$ and we impose to stay on a level set of $H$, we get:
+In order to propose a deterministic mapping, assume that the state depends on a real parameter $t$ and we impose to stay on a level set of $H$. We get:
 $$
 \frac{\rmd H(q_t,p_t)}{\rmd t}=0=\sum_{i=1}^d \frac{\partial H(q_t,p_t)}{\partial q_{t,i}} \frac{\rmd q_{t,i}}{\rmd t}+\frac{\partial H(q_t,p_t)}{\partial p_{t,i}} \frac{\rmd p_{t,i}}{\rmd t}\eqsp.
 $$
@@ -960,7 +1148,16 @@ This motivates the use the following dynamics: for all $1\leq i \leq d$,
 \frac{\partial H}{\partial q_{t,i}}(q_t,p_t)&=\frac{\partial U(q_t)}{\partial q_{t,i}}=-\frac{\rmd p_{t,i}}{\rmd t} \nonumber\\
 \frac{\partial H}{\partial p_{t,i}}(q_t,p_t)&=\frac{\partial K(p_t)}{\partial p_{t,i}}=p_{t,i}=\frac{\rmd q_{t,i}}{\rmd t} \eqsp.\label{eq:hamilt}
 \end{align}
-It can be shown that this Hamiltonian dynamics moves along the same level sets and that it is volume-preserving. But unfortunately, it is not an involution. However, it is not possible to compure $(q_t,p_t)$ and we need to use a discretization scheme to approximate solutions to the Hamiltonian dynamics.%That's the bad news. But there is a also a good news: we can add a flip mapping on the second component after a move so that the resulting mapping is an involution. We will see it in the next paragraph.
+Denote by $\Phi_t$ the flow of \eqref{eq:hamilt}, i.e. $\Phi_t(q_0,p_0) = (q_t,p_t)$, and by $s(q,p) = (q,-p)$ the momentum flip. The Hamiltonian flow has three fundamental properties.
+\begin{enumerate}[i)]
+\item \emph{Conservation of energy:} $H\circ\Phi_t = H$, by construction.
+\item \emph{Volume preservation (Liouville's theorem):} the vector field $F(q,p) = (\nabla_p H,-\nabla_q H)$ has zero divergence, $\sum_{i}\partial^2H/\partial q_i\partial p_i - \partial^2 H/\partial p_i\partial q_i = 0$, so that $|\det J_{\Phi_t}| = 1$.
+\item \emph{Time reversibility:} if $(q_t,p_t)_{0\leq t\leq T}$ solves \eqref{eq:hamilt}, so does $(\tilde q_t,\tilde p_t) = (q_{T-t},-p_{T-t})$. Indeed, $\rmd \tilde q_t/\rmd t = -\dot q_{T-t} = -p_{T-t} = \tilde p_t$ and $\rmd \tilde p_t/\rmd t = \dot p_{T-t} = -\nabla U(q_{T-t}) = -\nabla U(\tilde q_t)$. Since $(\tilde q_0,\tilde p_0) = s\circ\Phi_T(q_0,p_0)$ and $(\tilde q_T,\tilde p_T) = s(q_0,p_0)$, we get $\Phi_T\circ s\circ\Phi_T = s$, i.e. $s\circ\Phi_T$ is an involution.
+\end{enumerate}
+The flow $\Phi_T$ itself is not an involution, but $\varphi = s\circ\Phi_T$ is an involution which is volume-preserving and preserves $H$ (since $H\circ s = H$): the corresponding MH move is always accepted. Moreover, since the momentum is refreshed at the next iteration and $\bar\pi$ is invariant by $s$, the flip does not need to be applied in practice. Unfortunately, it is not possible to compute $(q_t,p_t)$ exactly in general, and we need to use a discretization scheme to approximate solutions to the Hamiltonian dynamics.
+
+
+
 \subsubsection*{The leapfrog integrator}
 
 %\subsubsection{Discretization and volume-preserving property}
@@ -980,7 +1177,7 @@ p^{k+1/2}&=p^k-(h/2) \nabla U(q^k) \nonumber\\
 q^{k+1}&=q^k+h p^{k+1/2}\nonumber \\
 p^{k+1}&=p^{k+1/2}-(h/2) \nabla U (q^{k+1})\eqsp. \label{eq:leap:update}
 \end{align}
-To see that it is volume-preserving, just note that a Leapfrog update can be decomposed into three mapping
+To see that it is volume-preserving, just note that a leapfrog update can be decomposed into three mappings
 \begin{equation}
 \label{eq:leap:decomp}
 (q^k,p^k) \stackrel{\varphi_1}{\longrightarrow} (q^k,p^{k+1/2}) \stackrel{\varphi_2}{\longrightarrow} (q^{k+1},p^{k+1/2}) \stackrel{\varphi_1}{\longrightarrow} (q^{k+1},p^{k+1})\eqsp,
@@ -989,7 +1186,52 @@ where
 \begin{equation}\label{eq:def:varphi}
 \varphi_1(x,y)=(x,y-(h/2)\nabla U(x))\quad \mbox{and}\quad  \varphi_2(x,y)=(x+hy,y)\eqsp.
 \end{equation}
-Each of these mappings is volume-preserving and so is the Leapfrog update. To sum-up, the Leapfrog update is an approximation of the Hamiltonian dynamics, it is a deterministic mapping that is volume-preserving which justifie the acceptance rate of the HMC algorithm.
+Each of these mappings is a shear whose Jacobian matrix is block triangular with identity diagonal blocks: it is volume-preserving and so is the leapfrog update $\Psi_h = \varphi_1\circ\varphi_2\circ\varphi_1$.
+
+The symmetric  structure $\varphi_1\circ\varphi_2\circ\varphi_1$ is what makes the leapfrog integrator reversible; the explicit Euler scheme is neither volume-preserving nor reversible. To sum up, the leapfrog update is an approximation of the Hamiltonian dynamics which, combined with a momentum flip, is a deterministic volume-preserving involution. By the previous paragraphs, the MH move with this deterministic proposal leaves $\bar\pi$ invariant when the candidate is accepted with probability
+$$
+1\wedge\exp\big\{H(q^0,p^0)-H(q^L,p^L)\big\}\eqsp,
+$$
+where we used $H(q,-p) = H(q,p)$. Contrary to the exact flow, the leapfrog integrator does not preserve $H$ exactly, so that some candidates are rejected; the energy error is of order $h^2$ over bounded time intervals for smooth $U$. The resulting algorithm is summarized in Algorithm~\ref{alg:hmc}.
+
+\begin{algorithm}
+\caption{\label{alg:hmc}Hamiltonian Monte Carlo with leapfrog integrator}
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+\Input{Initial position $q_0$, stepsize $h$, number of leapfrog steps $L$, number of iterations $n$.}
+\Output{$q_0,\ldots,q_n$.}
+\BlankLine
+\For{$k = 0$ \KwTo $n-1$}
+{
+$\bullet$ Set $q^0=q_k$ and draw $p^0\sim\gauss(0,I_d)$ independently of the past.\\
+$\bullet$ \For{$\ell=0$ \KwTo $L-1$}{
+$p^{\ell+1/2}=p^\ell-(h/2)\nabla U(q^\ell)$; \quad $q^{\ell+1}=q^\ell+hp^{\ell+1/2}$; \quad $p^{\ell+1}=p^{\ell+1/2}-(h/2)\nabla U(q^{\ell+1})$.
+}
+$\bullet$ Draw $U_{k+1}\sim\mathrm{U}(0,1)$. If $\log U_{k+1}\leq H(q^0,p^0)-H(q^L,p^L)$, set $q_{k+1}=q^L$; otherwise set $q_{k+1}=q_k$.
+}
+\end{algorithm}
+
+\begin{example}[Leapfrog for a Gaussian target]
+\label{ex:leapfrog:gauss}
+Let $d=1$ and $U(q) = q^2/2$, i.e. $\pi = \gauss(0,1)$. The exact flow is the rotation $(q_t,p_t) = (q_0\cos t+p_0\sin t, p_0\cos t - q_0\sin t)$, which preserves $H(q,p) = (q^2+p^2)/2$. One leapfrog step is the linear map
+$$
+\begin{pmatrix}q^{k+1}\\ p^{k+1}\end{pmatrix} = \begin{pmatrix}1-h^2/2 & h\\ -h(1-h^2/4) & 1-h^2/2\end{pmatrix}\begin{pmatrix}q^{k}\\ p^{k}\end{pmatrix}\eqsp,
+$$
+whose determinant is $(1-h^2/2)^2+h^2(1-h^2/4) = 1$, and whose trace is $2-h^2$. For $h<2$, its eigenvalues are complex conjugate with modulus one: the leapfrog trajectories stay on ellipses close to the circles $\{H = \mathrm{const}\}$ and the energy error remains bounded (and of order $h^2$) for all $L$. For $h>2$, one eigenvalue has modulus larger than one, trajectories diverge exponentially and almost all candidates are rejected: the stepsize must be smaller than a stability threshold related to the smallest length scale of $\pi$. By contrast, the explicit Euler map has determinant $1+h^2>1$ and $H$ is multiplied by $1+h^2$ at each step (Figure~\ref{fig:hmc}).
+\end{example}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{hmc_leapfrog}
+\caption{Left: trajectories of the explicit Euler scheme and of the leapfrog integrator for $U(q)=q^2/2$, started at $(q,p)=(1,0)$, with $h=0.2$ and $40$ steps; the exact flow is the unit circle. Right: evolution of the energy error. The leapfrog energy error oscillates with amplitude of order $h^2$, while the Euler scheme spirals out.}
+\label{fig:hmc}
+\end{figure}
+
+%\begin{remark}[Tuning HMC]
+%The stepsize $h$ and the integration time $T = Lh$ must be tuned. For product targets, \cite{beskos2013optimal} showed that $h$ should scale as $d^{-1/4}$, with an optimal acceptance rate of approximately $0.651$ (compare with $d^{-1/2}$ for RWMH and $d^{-1/6}$ for MALA, which corresponds to $L=1$). If $T$ is too small, HMC behaves like a random walk; if it is too large, trajectories may come back close to their starting point. The No-U-Turn Sampler \cite{hoffman2014no} chooses $L$ adaptively and is the default algorithm of probabilistic programming languages such as Stan. Replacing $K(p) = p^\top p/2$ by $p^\top M^{-1}p/2$, with a ``mass matrix'' $M$ approximating the inverse posterior covariance, plays the same role as preconditioning for RWMH.
+%\end{remark}
+
+
+
 
 %\paragraph{The flip operator trick and the involution}
 %Denote by $s(q,p)=(q,-p)$ the flip operator on the second component. The flip is also volume-preserving and moves along the level set so that finally, setting $f^T=s \circ \phi^T$, we obtain that $f^T$ is volume-preserving and level-set invariant. We now show that $f^T$ is an involution. Indeed, write $f^T(q,p)=(q^T,-p^T)$. To see what we obtain by applying again $f^T$, set $\tilde q^t=q^{T-t}$ and $\tilde p^t=-p^{T-t}$ so that $(\tilde q^0,\tilde p^0)=f^T(q,p)$. Then,
@@ -1015,535 +1257,6 @@ Each of these mappings is volume-preserving and so is the Leapfrog update. To su
 %\caption{The ideal HMC.}
 %\end{algorithm}
 
-
-\chapter{Expectation Maximization algorithm}
-The Expectation Maximization (EM) algorithm \cite{dempster1977maximum} is a general iterative method for maximum likelihood estimation in statistical models that involve latent (hidden) variables or missing data. When the likelihood function is difficult or impossible to optimize directly because part of the information is hidden, the EM algorithm provides a systematic way to alternate between estimating the missing information and optimizing the parameters. This algorithm is widely used in statistics, machine learning, and signal processing, especially for mixture models, clustering, density estimation, and probabilistic inference.
-\section{Introduction}
-Let $(\mathsf{X},\mathcal{X})$ be a measurable space and $\mu$ be a measure on $(\mathsf{X},\mathcal{X})$. Consider also a family $\{f_\theta\}_{\theta\in\Theta}$ of $\mu$-integrable and positive functions. Define
-$$
-L(\theta) = \int f_\theta(x)\mu(\rmd x)\eqsp.
-$$
-We aim at solving
-$$
-\widehat \theta \in\mathrm{Argmax}_{\theta\in\Theta} L(\theta)\eqsp.
-$$
-When $L$ is positive, the problem is often written:
-$$
-\widehat \theta \in\mathrm{Argmax}_{\theta\in\Theta} \,\ell(\theta) = \log L(\theta)\eqsp.
-$$
-
-
-
-\section{Algorithm}
-In the following, we write $q_\theta:x\mapsto f_\theta(x)/L(\theta)$. Solving the optimization problem is not possible in general frameworks. The Expectation Maximization (EM) algorithm computes sequentially $\{\theta_k\}_{k\geq 0}$ to estimate $\widehat \theta$. For all $\theta,\theta'\in\Theta$, we introduce the following quantity:
-$$
-Q(\theta,\theta') = \int \log f_\theta(x)q_{\theta'}(x)\mu(\rmd x) = \mathbb{E}_{\theta'}[\log f_\theta(X)]\eqsp,
-$$
-where $\mathbb{E}_{\theta}$ is a notation for the expectation under the density $q_\theta$. Then, we can write for all $\theta,\theta'\in\Theta$
-$$
-Q(\theta,\theta') = \int \log (L(\theta)q_\theta(x))q_{\theta'}(x)\mu(\rmd x) = \ell(\theta) - H(\theta,\theta')\eqsp,
-$$
-where $H(\theta,\theta') = - \int \log q_\theta(x) q_{\theta'}(x)\mu(\rmd x)$.
-
-\begin{lemma}
-\label{lem:fundEM}
-For all $\theta,\theta'\in\Theta$,
-$$
-\ell(\theta)-\ell(\theta')\geq Q(\theta,\theta')-Q(\theta',\theta')\eqsp.
-$$
-\end{lemma}
-\begin{proof}
-By definition, for all $\theta,\theta'\in\Theta$,
-\begin{align*}
-Q(\theta,\theta')-Q(\theta',\theta') &= \ell(\theta)-\ell(\theta') + H(\theta',\theta') - H(\theta,\theta')\\
-&= \ell(\theta)-\ell(\theta') + \int \log\left(\frac{q_\theta(x)}{q_{\theta'}(x)}\right)q_{\theta'}(x)\mu(\rmd x)\eqsp.
-\end{align*}
-As $\log$ is concave, by Jensen's inequality, 
-$$
-\int \log\left(\frac{q_\theta(x)}{q_{\theta'}(x)}\right)q_{\theta'}(x)\mu(\rmd x) \leq \log\int \frac{q_\theta(x)}{q_{\theta'}(x)}q_{\theta'}(x)\mu(\rmd x) = 0\eqsp,
-$$
-which concludes the proof. The inequality $\int \log(q_\theta(x))q_{\theta'}(x)\mu(\rmd x) \leq \int \log(q_{\theta'}(x))q_{\theta'}(x)\mu(\rmd x)$ is known as Gibbs' inequality.
-\end{proof}
-By Lemma~\ref{lem:fundEM}, starting from a parameter estimate $\theta_k$, $k\geq 0$, a direct solution to obtain a parameter $\theta$ such that $\ell(\theta) \geq \ell(\theta_k)$ is to choose $\theta$ such that $Q(\theta,\theta_k)\geq Q(\theta_k,\theta_k)$. This result motivates the Expectation Maximization (EM) algorithm given in Algorithm~\ref{alg:EM} and introduced in \cite{dempster1977maximum}.
-
-\begin{algorithm}
-\caption{A generic EM algorithm}\label{alg:EM}
-\KwData{Initial parameter estimate $\theta_0$.}
-\KwResult{A sequence of parameter estimate $\{\theta_k\}_{k\geq 0}$.}
-\For{$k \geq 0$}{
-  Compute the E-step: $\theta\mapsto Q(\theta,\theta_k)$.
-
- Compute the M-step: $\theta_{k+1}\in \mathrm{Argmax}_{\theta\in\Theta}Q(\theta,\theta_k)$.
-}
-\end{algorithm}
-
-%The most common setting in which the EM algorithm is used is the case of Example~\ref{ex:EM}. 
-
-
-
-\section{Convergence properties}
-
-The first theoretical guarantees for the EM algorithm were provided in \cite{wu1983convergence}. Given $k\geq 0$ and $\theta_k\in\Theta$, the EM update is
-\[
-\theta_{k+1} \in M(\theta_k),
-\quad \text{where} \quad
-M(\theta') = \arg\max_{\theta \in \Theta} Q(\theta,\theta').
-\]
-Therefore, $M$ is a  map from points of $\Theta$ to subsets of $\Theta$ and is referred to as a point-to-set map on $\Theta$. This map is said to be closed at $\eta_*\in\Theta$ if for all sequence $\{\eta_k\}_{k\geq 0 }$ such that $\eta_k$ converges to $\eta_*$ as $k \to \infty$, if for all $k\geq 0$, $y_k\in M(\eta_k)$ and  $\{y_k\}_{k\geq 0 }$ converges to $y_*\in\Theta$ as $k \to \infty$, then $y_* \in M(\eta_*)$. Convergence of the EM algorithm relies on a more general convergence theorem for point-to-set map.
-
-
-\begin{theorem}
-\label{th:zangwill:conv}
-Assume that  $\Theta \subset \mathbb{R}^m$ and let $M$ be a point-to-set map defined on $\Theta$.
-Consider a sequence $\{\theta_k\}_{k\geq 0}$ such that for all $k\geq 1$,
-\[
-\theta_{k+1} \in M(\theta_k)\eqsp.
-\]
- and let $\mathcal{S} \subset \Theta$
-denote the set of solution points. Assume that the sequence  $\{\theta_k\}_{k\geq 0}$ is contained in a compact subset of $\Theta$ and that $M$ is closed at all points $\theta \in \Theta \setminus \mathcal{S}$. Assume also that there exists $\alpha : \Theta \to \mathbb{R}$ a continuous function, such that for all $\theta \in \Theta$,  if $\theta\in\Theta\setminus \mathcal{S}$ then for all $y \in M(\theta)$, $\alpha(y) > \alpha(\theta)$ and if $\theta\in \mathcal{S}$, then $ \alpha(y) \ge \alpha(\theta)$ for all $y \in M(\theta)$. Then, every accumulation point of the sequence $\{\theta_k\}_{k\geq 0}$ belongs to the solution set $\mathcal{S}$.
-\end{theorem}
-
-\begin{proof}
-The proof can be found in \cite{zangwill1969convergence}.
-\end{proof}
-
-\begin{hypH}
-\label{hyp:compactness}
-The level set
-\[
-\{ \theta \in \Theta : \ell(\theta) \ge \ell(\theta_0) \}\eqsp.
-\]
-is compact.
-\end{hypH}
-By Lemma~\ref{lem:fundEM}, the sequence $\{\ell(\theta_k)\}_{k\geq 0}$ is non-decreasing. Therefore, by H\ref{hyp:compactness} this sequence converges to some limit point $\ell_*$. However, there is no guarantee that $\ell_*$ is the global maximum of $\ell$. Assumptions H\ref{hyp:compactness} ensures that $\{\theta_k\}_{k\geq 0}$ is contained in a compact subset of $\Theta$.
-
-
-%\begin{hypH}
-%\label{hyp:continuity}
-%The functions $(\theta,\theta')\mapsto Q(\theta, \theta')$ and $\theta\mapsto\ell(\theta)$ are continuous.
-%\end{hypH}
-
-%\begin{hypH}
-%The set-valued mapping $M(\cdot)$ is upper semicontinuous and has nonempty values.
-%\end{hypH}
-
-\begin{hypH}
-\label{hyp:diff}
-The functions $(\theta,\theta')\mapsto Q(\theta, \theta')$ and  $\theta\mapsto \ell(\theta)$ are continuously differentiable, and differentiation under the integral sign is valid.
-\end{hypH}
-Convergence of the EM algorithm is a specific application of Theorem~\ref{th:zangwill:conv} as stated in Theorem~\ref{th:conv:EM:zangwill}
-\begin{theorem}
-\label{th:conv:EM:zangwill}
-Assume that H\ref{hyp:compactness} holds. Let $\{\theta_p\}_{p\geq 0}$ be a sequence generated by the EM algorithm:
-\[
-\theta_{p+1} \in M(\theta_p),
-\]
-and suppose that there exists a set $S$ such that:
-\begin{enumerate}
-    \item[(i)] $M$ is a closed point-to-set mapping over the complement of $S$;
-    \item[(ii)] for all $p\geq 0$, $L(\theta_{p+1}) > L(\theta_p)$ if $\theta_p \notin S$.
-\end{enumerate}
-Then, all limit points of $\{\theta_p\}_{p\geq 0}$ are stationary points (local maxima) of $L$, and
-\[
-\lim_{p\to \infty}L(\theta_p)  = L(\theta^*)
-\quad \text{for some } \theta^* \in S\eqsp.
-\]
-\end{theorem}
-\noindent By assumption H\ref{hyp:diff}, we can define the set of stationary points of the log-likelihood:
-$$
-\mathcal{S} = \left\{\theta\in\Theta\,,\, \nabla \ell(\theta_*)\right\}\eqsp.
-$$
-%We can also choose $\alpha$ as the log-likelihood function $\ell$.
-
-\begin{theorem}
-Assume that H\ref{hyp:compactness}-\ref{hyp:diff} hold. 
-Then, all limit points of any EM sequence $\{\theta_p\}_{p\geq 0}$ are stationary points of $L$, and
-\[
-\lim_{p\to \infty}L(\theta_p)  = L(\theta^*)
-\quad \text{for some stationary point } \theta^*\eqsp.
-\]
-\end{theorem}
-
-\begin{proof}
-The proof is a consequence of Theorem~\ref{th:conv:EM:zangwill}.  By H\ref{hyp:diff}, $M$ is closed at all points $\theta\in \theta \in \Theta \setminus \mathcal{S}$, and for all limit point $\theta^*$ of  $\{\theta_k\}_{k\geq 0}$, $\theta^* \in M(\theta^*)$. By Lemma~\ref{lem:fundEM}, and the definition of $M$, for all $\theta \in \Theta$,  if $\theta\in \mathcal{S}$ then for all $y \in M(\theta)$, $\alpha(y) \geq \alpha(\theta)$. % It remains to prove that for all $\theta \in \Theta$,  if $\theta\in\Theta\setminus \mathcal{S}$ then for all $y \in M(\theta)$, $\alpha(y) > \alpha(\theta)$. 
-Let $p\geq 0$ and $\theta_p\in\Theta\setminus \mathcal{S}$. By definition of $\theta_p$, 
-$$
-\nabla \ell(\theta_p) = \nabla_\theta Q(\theta, \theta_p) \big|_{\theta=\theta_p}\eqsp.
-$$
-Therefore, if $\theta_p\notin \mathcal{S}$, $\nabla \ell(\theta_p)\neq 0$ and $\theta_p$ is not a local maximum of $\theta\mapsto Q(\theta, \theta_p)$ which implies that $Q(\theta_{p+1}, \theta_p)>Q(\theta_p, \theta_p)$ and $L(\theta_{p+1}) > L(\theta_p)$. This concludes the frist part of the proof. Since $\theta^*$ maximizes $\theta\mapsto Q(\theta, \theta^*)$,
-\[
-\nabla_\theta Q(\theta, \theta^*) \big|_{\theta=\theta^*} = 0\eqsp.
-\]
-Under the differentiability assumption, 
-\[
-\nabla_\theta Q(\theta, \theta^*) \big|_{\theta=\theta^*} = \nabla \ell(\theta^*)\eqsp,
-\]
-which proves the result.
-\end{proof}
-
-
-
-\section{Application to latent data models}
- Let $(X,Y)$ in $(\mathsf{X}\times\mathsf{Y}, \mathcal{X}\otimes\mathcal{Y})$ be two random variables where $Y$ is observed and $X$ is not observed. The measurable space $(\mathsf{X}\times\mathsf{Y}, \mathcal{X}\otimes\mathcal{Y})$ is endowed with the product measure $\mu\otimes \lambda$. A very popular setting for the EM algorithm is when $f_\theta: x \mapsto p_\theta(x,Y)$ where for all $\theta\in\Theta$, $p_\theta$ is a joint probability density function with respect to $\mu\otimes \lambda$  used to model the joint distribution of $(X,Y)$. Assuming that the random variable $Y$ is observed and that $X$ is not observed, we consider the likelihood function
-$$
-L(\theta) = \int f_\theta(x,Y)\mu(\rmd x)\eqsp,
-$$
-which is a random variable depending on $Y$. This is the marginal density of $Y$ when the parameter is $\theta$. In this setting, $f_\theta(X,Y)/L(\theta)$ is the probability density of the conditional distribution of $X$ given $Y$.  
-
-Solving $\widehat \theta \in\mathrm{Argmax}_{\theta\in\Theta} L(\theta)$ amounts to solving the maximum likelihood estimation problem. However, in this setting, as in many other settings, the integral is intractable and the optimization problem cannot be solved directly. We have
-$$
-Q(\theta,\theta') = \int \log p_\theta(x,Y)p_{\theta'}(x|Y)\mu(\rmd x) = \mathbb{E}_{\theta'}[\log p_\theta(X,Y)|Y]\eqsp.
-$$
-Therefore, the E-step of the EM algorithm amounts to computing the conditional expectation given $Y$ of the complete data (joint) loglikelihood. 
-
-If $\{(X_i,Y_i)\}_{1\leq i  \leq n}$ are i.i.d we write $Y = (Y_1,\ldots,Y_n)$ and $X = (X_1,\ldots,X_n)$. In this case, the intermediate quantity of the EM algorithm is
-$$
-Q(\theta,\theta') = \sum_{i=1}^n \mathbb{E}_{\theta'}[\log p_\theta(X_i,Y_i)|Y_i]\eqsp.
-$$
-
-\subsubsection*{Curved exponential families}
-We may further restrict the analysis to the case where the complete-data likelihood
-$p_\theta$ belongs to the class of curved exponential family densities. This setting
-covers a wide range of practical models. We now introduce a set of assumptions
-that are satisfied in many scenarios. Let $\phi : \Theta \to \mathbb{R}$, $\psi : \Theta \to \mathbb{R}^q$, $h : \mathsf{X}\times \mathsf{Y} \to \mathbb{R}^*_+$ and
-$S : \mathsf{X}\times \mathsf{Y} \to  \mathbb{R}^q$. Assume then that the complete-data likelihood may be written:
-\[
-p_\theta(x,y) = h(x,y)\mathrm{exp}\left\{\phi(\theta) + \langle S(x,y); \psi(\theta)\rangle \right\}\eqsp.
-\]
-Therefore, the intermediate quantity of the EM algorithm is given by
-$$
-Q(\theta,\theta') = \int \log p_\theta(x,Y)p_{\theta'}(x|Y)\mu(\rmd x) = \mathbb{E}_{\theta'}[\log h(X,Y)|Y] + \phi(\theta) +  \mathbb{E}_{\theta'}[\langle S(X,Y); \psi(\theta)\rangle|Y] \eqsp.
-$$
-If $p\geq 0 $ and $\theta_p$ is the current parameter estimate, $\theta_{p+1}$ may be computed by solving
-$$
-\theta_{p+1} \in  \arg\max_{\theta \in \Theta} \;\left\{ \phi(\theta) +  \left\langle \mathbb{E}_{\theta_p}[S(X,Y)|Y]; \psi(\theta)\right\rangle \right\}\eqsp.
-$$
-
-
-
-%\paragraph{Assumption M2.}
-%The following conditions hold:
-%\begin{enumerate}
-%  \item The functions $\phi$ and $\psi$ are continuous on $\Theta$, and the
-%  sufficient statistic $S$ is continuous on $\mathcal{X}$.
-%  \item For all $\theta \in \Theta$, the expectation
-%  $\bar{S}(\theta) := \pi_\theta(S)$ is finite and continuous in $\theta$.
-%  \item There exists a continuous mapping $\hat{\theta} : \mathcal{S} \to \Theta$
-%  such that, for all $s \in \mathcal{S}$,
-%  \[
-%  L(s; \hat{\theta}(s)) = \sup_{\theta \in \Theta} L(s; \theta).
-%  \]
-%  \item The function $g$ is positive, finite, and continuous on $\Theta$, and for
-%  any $M > 0$, the level set
-%  \[
-%  \{ \theta \in \Theta : g(\theta) \ge M \}
-%  \]
-%  is compact.
-%\end{enumerate}
-
-\section{Example: mixture of Gaussian distributions}
-In this example, we assume that the joint distribution of $(X,Y)$ belongs to a family of distributions parametrized by a vector $\theta$ with real components. For $k\in\{1,\ldots,M\}$, write $\pi_k = \mathbb{P}_\theta(X = k)$. Assume that conditionally on the event $\{X = k\}$, $Z$ has a Gaussian distribution with mean $\mu_k \in\rset^d$ and covariance matrix $\Sigma\in \rset^{d\times d}$. The probability density of this conditional distribution is written $g_k^\theta$, where the parameter $\theta=(\{\pi_k\}_{1\leq k \leq K}, \{\mu_k\}_{1\leq k \leq K}, \Sigma)$ belongs to the set $\Theta= \mathbb{S}_K \times (\rset^d)^K  \times \rset^{d \times d}$ with $\mathbb{S}_K = \{(\pi_1,\ldots,\pi_K)\in[0,1]^K\;;\; \sum_{k=1}^K \pi_k=1\}$. For all $1\leq k \leq K$, the explicit computation of $\mathbb{P}_\theta(X=k | Y)$ writes
-$$
-\mathbb{P}_\theta\left(X=k\middle | Y\right) = \frac{\pi_kg^{\theta}_k(Y)}{\sum_{\ell=1}^{K}\pi_\ell g^{\theta}_\ell(Y)}\eqsp. % \frac{1}{1 + \frac{\pi_{-1}g_{-1}(X)}{\pi_1g_1(X)}} = \sigma\left(\log(\pi_1/\pi_{-1}) + \log(g_1(X)/g_{-1}(X)\right)\,,
-$$
-%where $\sigma: x\mapsto (1 + \mathrm{e}^{-x})^{-1}$ is the sigmoid function. Then,
-%\begin{equation}
-%\label{eq:prob:lda}
-%\mathbb{P}_\theta\left(Z=1\middle | X\right) = \sigma\left( X^\top\omega+ b\right)\eqsp,
-%\end{equation}
-%where
-%$$
-%\omega =  \Sigma^{-1}\left(\mu_{1} - \mu_{-1}\right)\,,
-%b = \log(\pi_1/\pi_{-1}) +  \frac{1}{2}\left(\mu_{1}+\mu_{-1}\right)^\top\Sigma^{-1}\left(\mu_{-1}-\mu_{1}\right)\eqsp.
-%$$
-Assume that $\{(X_i,Y_i)\}_{1\leq i\leq n}$ are i.i.d. with this distribution parameterized by $\theta\in\Theta$. Then, the complete-data loglikelihood writes
-$$
-\log p_\theta (X_{1:n},Y_{1:n}) = \sum_{i=1}^n \sum_{k=1}^K \mathds{1}_{X_i = k}\left\{\log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma) -\frac{1}{2}(Y_i - \mu_{k})^\top \Sigma^{-1}(Y_i - \mu_{k})  \right\}\eqsp.%\\
-%\left.+ \mathds{1}_{Z_i = 1}\left(\log(\pi_1) -\frac{1}{2}(X_i - \mu_{1})^\top \Sigma^{-1}(X_i - \mu_{1})\right)\right\} \eqsp.
-$$
-Therefore, the intermediate quantity of the EM algorithm is given, for all $\theta,\theta' \in\Theta$, by
-\begin{align*}
-Q(\theta,\theta') &= \mathbb{E}_{\theta'} \left[\log p_\theta (X_{1:n},Y_{1:n}) \middle | X_{1:n}\right]\eqsp,\\
-&= \sum_{i=1}^n \sum_{k=1}^K \left\{ \mathbb{P}_{\theta'}(X_i = k|Y_i)\left( \log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma)  -\frac{1}{2}(Y_i - \mu_{k})^\top \Sigma^{-1}(Y_i - \mu_{k})\right) \right\} \eqsp.%\\
-%& \left. \hspace{2cm}+ \mathbb{P}_{\theta'}(Z_i = 1|X_i)\left( \log(\pi_1) -\frac{1}{2}(X_i - \mu_{1})^\top \Sigma^{-1}(X_i - \mu_{1})\right) \right\} \eqsp.
-\end{align*}
-The algorithm is initialized by choosing $\theta^{(0)}$ randomly. Then, for each iteration $p\geq 0$, the current parameter estimate is written
-$$
-\theta^{(p)} = \left\{\{\pi^{(p)}_k\}_{1\leq k \leq K}, \{\mu^{(p)}_k\}_{1\leq k \leq K}, \Sigma^{(p)}\right\}\eqsp,
-$$
-and the update is decomposed into two steps.
-\begin{enumerate}
-\item Compute $\mathbb{P}_{\theta^{(p)}}(X_i = k|Y_i)$ for all $1\leq i \leq n$, $1\leq k \leq K$:
-$$
-\mathbb{P}_{\theta^{(p)}}(X_i = k|Y_i) = \frac{\pi^{(p)}_kg^{\theta^{(p)}}_k(Y)}{\sum_{\ell=1}^{K}\pi^{(p)}_\ell g^{\theta^{(p)}}_\ell(Y)} = \omega_{i,k}^{(p)}\eqsp.
-$$
-\item Update the parameter estimate by computing:
-$$
-\theta^{(p+1)} \in \mathrm{Argmax}_{\theta\in\Theta} Q(\theta,\theta^{(p)})\eqsp.
-$$
-\end{enumerate}
-The intermediate quantity is given, for all $\theta$, by:
-$$
-Q(\theta,\theta^{(p)}) = \sum_{i=1}^n \sum_{k=1}^K \left\{ \omega_{i,k}^{(p)}\left( \log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma) -\frac{1}{2}(Y_i - \mu_{k})^\top \Sigma^{-1}(Y_i - \mu_{k})\right) \right\} \eqsp.
-$$
-By Lemma~\ref{lem:matrix:calculus}, and using that $\pi_K = 1-\sum_{k=1}^{K-1}\pi_k$, for all $1\leq k \leq K-1$,
-$$
-\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \pi_k} = \left(\sum_{i=1}^n\omega_{i,k}^{(p)}\right)\frac{1}{\pi_k} - \left(\sum_{i=1}^n\omega_{i,K}^{(p)}\right)\frac{1}{\pi_K}\eqsp.
-$$
-In addition, for all $1\leq k \leq K$,
-$$
-\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \mu_k} = \sum_{i=1}^n \omega_{i,k}^{(p)} \left(2\Sigma^{-1}Y_i - 2\Sigma^{-1}\mu_{k}\right)\eqsp,
-$$
-and
-$$
-%\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \mu_{-1}} &= \sum_{i=1}^n\1_{Y_i=-1}\left(2\Sigma^{-1}X_i - 2\Sigma^{-1}\mu_{-1}\right)\eqsp,\\
-\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \Sigma^{-1}} = \frac{n}{2}\Sigma -  \frac{1}{2}\sum_{i=1}^n\sum_{k=1}^K \omega_{i,k}^{(p)}\left(Y_i - \mu_{k}\right)\left(Y_i - \mu_{k}\right)^\top \eqsp.
-$$
-The maximum likelihood estimator is defined as the only parameter $\widehat \theta^{(p+1)}$ such that all these equations are set to 0. 
-We can note that there exists $c>0$ such that for all $k\in\{1,\ldots,K\}$, $\pi_k = c\sum_{i=1}^n\omega_{i,k}^{(p)}$. Computing the sum for $k=1$ to $k=K$ yields $c=n$. For $k\in\{1,\ldots,K\}$,  it is given by
-\begin{align*}
-\pi_k^{(p+1)} &= \frac{1}{n}\sum_{i=1}^n\omega_{i,k}^{(p)}\eqsp,\\
-\mu_k^{(p+1)} &= \frac{1}{\sum_{i=1}^n\omega_{i,k}^{(p)}}\sum_{i=1}^n\omega_{i,k}^{(p)}\,Y_i\eqsp,\\
-\Sigma^{(p+1)} &= \frac{1}{n}\sum_{i=1}^n\sum_{k=1}^K\omega_{i,k}^{(p)}\left(Y_i - \mu_{k}^{(p+1)}\right)\left(Y_i - \mu_{k}^{(p+1)}\right)^\top\eqsp.
-\end{align*}
-\begin{remark}
-Note that the computation of $\mathbb{P}_{\theta^{(p)}}(X_i = k|Y_i) $ is explicit. The fact that the conditional expectation (and therefore $Q(\theta,\theta^{(p)})$) can be computed explicitly is a consequence of the fact that $X_i$ is a discrete random variable. In other cases, $Q(\theta,\theta^{(p)})$ is likely to be unavailable explicitly and is often replaced by Monte Carlo estimators. In the setting of Gaussian mixtures, the computation of $\theta^{(p+1)}$ is also explicit. The M-step is often replaced by simply choosing an estimator $\theta^{(p+1)}$ such that $Q(\theta^{(p+1)},\theta^{(p)}) > Q(\theta^{(p)},\theta^{(p)})$  which is tractable in many cases and yields the Generalized EM algorithm.
-\end{remark}
-
-\begin{lemma}
-\label{lem:matrix:calculus}
-Let $\Sigma$ be a symmetric and invertible  matrix in $\rset^{d\times d}$.
-\begin{enumerate}[(i)]
-\item The derivative of the real valued function $\Sigma \mapsto \log\mathrm{det}(\Sigma)$ defined on $\rset^{d\times d}$ is given by:
-\[
-\partial_{\Sigma}\{\log\mathrm{det}(\Sigma)\}= \Sigma^{-1}\eqsp,
-\]
-where, for all real valued function $f$ defined on $\rset^{d\times d}$, $\partial_{\Sigma}f(\Sigma)$ denotes the $\rset^{d\times d}$ matrix such that for all $1\leqslant i,j\leqslant d$, $\{\partial_{\Sigma}f(\Sigma)\}_{i,j}$ is the partial derivative of $f$ with respect to $\Sigma_{i,j}$.
-\item The derivative of the real valued  function  $x\mapsto x^\top\Sigma x$ defined on $\rset^d$ is given by:
-\[
-\partial_{x}\{x^\top\Sigma x\} = 2 \Sigma x\eqsp.
-\]
-\end{enumerate}
-\end{lemma}
-\begin{proof}
-  \begin{enumerate}[(i)]
-    \item Recall that for all $i \in \{1,\ldots,d\}$ we have
-      $\det(\Sigma)=\sum_{k=1}^d \Sigma_{i,k} \Delta_{i,k}$ where
-      $\Delta_{i,j}$ is the $(i,j)$-cofactor associated with
-      $\Sigma$. For any fixed $i,j$, the component $\Sigma_{i,j}$ does not appear in anywhere in
-      the decomposition $\sum_{k=1}^d \Sigma_{i,k} \Delta_{i,k}$,
-      except for the term $k=j$. This implies
-      $$
-      \frac{\partial \log \det(\Sigma)}{\partial \Sigma_{i,j}}=
-      \frac{1}{\det \Sigma}\frac{\partial  \det(\Sigma)}{\partial
-        \Sigma_{i,j}}=\frac{\Delta_{i,j}}{\det  \Sigma}
-      $$
-      Recalling the identity $\Sigma\; [\Delta_{j,i}]_{1\leq i,j \leq d}=(\det
-      \Sigma)\; I_d$ so that $\Sigma^{-1}=\frac{[\Delta_{j,i}]_{1\leq i,j \leq d}^\top}{\det
-      \Sigma}$, we finally get
-      $$
-\lrb{\frac{\partial \log \det(\Sigma)}{\partial \Sigma_{i,j}}}_{1\leq
-  i,j  \leq d}=(\Sigma^{-1})^\top=\Sigma^{-1}
-$$
-where the last equality follows from the fact that $\Sigma$ is
-symmetric.
-\item Define $\varphi(x)=x^\top\Sigma x$. Then, by straightforward
-  algebra, $\varphi(x+h)=\varphi(x)+2h^\top\Sigma
-  x+\varphi(h)=\varphi(x)+2h^\top\Sigma x+o(\|h\|)$, which concludes the
-  proof.
-  \end{enumerate}
-\end{proof}
-
-\section{Monte Carlo EM  in the curved exponential family setting}
-Assume that the complete-data log-likelihood belongs to a curved exponential family,
-i.e.,
-\[
-\log p_\theta(X,Y)= \log h(x,y) +  \phi(\theta) + \langle S(X,Y), \psi(\theta)\rangle,
-\]
-where $S(X,Y)\in\mathbb{R}_+^*$,  $S(X,Y)\in\mathbb{R}^q$, $\phi:\Theta\to\mathbb{R}$,
-$\psi:\Theta\to\mathbb{R}^q$. In this case,
-\[
-Q(\theta,\theta^{(k)})
-= \phi(\theta) + \mathbb{E}_{\theta^{(k)}}[\log h(X,Y)\mid Y]+ \left\langle 
-\mathbb{E}_{\theta^{(k)}}[S(X,Y)\mid Y],\ \psi(\theta)
-\right\rangle.
-\]
-Hence, the E-step reduces to computing the conditional expectation of the sufficient
-statistics, and the M-step consists in solving
-\[
-\theta^{(k+1)} = \arg\max_{\theta\in\Theta}\left\{
-\phi(\theta) + \left\langle \bar S(\theta^{(k)}),\ \psi(\theta)\right\rangle
-\right\},
-\qquad
-\bar S(\theta^{(k)}) := \mathbb{E}_{\theta^{(k)}}[S(X,Y)\mid Y].
-\]
-When $\bar S(\theta^{(k)})$ is not available in closed form, the Monte Carlo EM (MCEM)
-algorithm estimates it with a simulation-based approximation. At iteration $k$, let
-\[
-X_{k,1},\ldots,X_{k,M_k} \sim p_{\theta^{(k)}}(X | Y)
-\]
-be (approximately) independent draws from the conditional distribution of $X$ given
-$Y$ under $\theta^{(k)}$. Define the Monte Carlo estimate
-\[
-\widehat S^{(k)}(\theta^{(k)}) := \frac{1}{M_k}\sum_{m=1}^{M_k} S\!\left(X_{k,m},Y\right).
-\]
-The corresponding %Monte Carlo surrogate of the EM auxiliary function is
-%\[
-%Q_{M_k}(\theta,\theta^{(k)})
-%= \phi(\theta) + \left\langle \widehat S^{(k)},\ \psi(\theta)\right\rangle,
-%\]
-update is obtained by the approximate M-step
-\[
-\theta^{(k+1)} \in \arg\max_{\theta\in\Theta}\left\{
-\phi(\theta) + \left\langle \widehat S^{(k)}(\theta^{(k)}),\ \psi(\theta)\right\rangle
-\right\}.
-\]
-Under standard regularity conditions, $\widehat S^{(k)}$ converges
-almost surely to $\mathbb{E}_{\theta^{(k)}}[S(X,Y)\mid Y]$ as $M_k\to\infty$, and convergence to a
-stationary point of the observed-data log-likelihood can be ensured when the number of Monte
-Carlo samples $M_k$ increases sufficiently with $k$. Convergence rates of the MCEM algorithm can be obtained when nonasymptotic controls of the Monte Carlo estimation $\widehat S^{(k)}$ can be derived, see for instance \cite{fort2003convergence}.
-
-%\subsection{MCMC-EM: approximating the E-step using MCMC}
-
-In many models, direct sampling from $p_{\theta^{(k)}}(X\mid Y)$ is not feasible but $p_{\theta^{(k)}}(X\mid Y)$  is known up to a normalizing constant. A common alternative is to approximate the conditional expectation in the E-step using
-a Markov chain Monte Carlo (MCMC) method targeting $p_{\theta^{(k)}}(X\mid Y)$. Specifically, at iteration $k$, let $\{X_{k,t}\}_{p\ge 1}$ be a Markov chain with
-invariant distribution $p_{\theta^{(k)}}(X\mid Y)$ (e.g., a Metropolis--Hastings or
-Gibbs sampler). After a burn-in period $B_k$, an ergodic average yields
-\[
-\widehat S^{(k)}_{\mathrm{MCMC}}(\theta^{(k)})
-:= \frac{1}{M_k}\sum_{p=B_k+1}^{B_k+M_k} S\!\left(X_{k,p},Y\right),
-\]
-which replaces $\bar S(\theta^{(k)})$ in the E-step. The resulting MCMC-EM update is
-\[
-\theta^{(k+1)} \in \arg\max_{\theta\in\Theta}\left\{
-\phi(\theta) + \left\langle \widehat S^{(k)}_{\mathrm{MCMC}}(\theta^{(k)}),\ \psi(\theta)\right\rangle
-\right\}.
-\]
-Compared to MCEM with independent samples, the estimator
-$\widehat S^{(k)}_{\mathrm{MCMC}}$ is typically correlated due to the Markov
-dependence, but consistency follows from the ergodic theorem under standard
-assumptions (irreducibility, aperiodicity, and geometric ergodicity). In practice,
-the accuracy of the E-step approximation can be controlled by the burn-in length
-$B_k$, the chain length $M_k$.
-
-
-
-\begin{example}
-Assume that we observe independent data $Y = (Y_1,\ldots,Y_n)$
-where for all $1\leq i \leq n$,
-\[
-Y_i \sim \text{Poisson}(\lambda_i)
-\]
-and
-\[
-\lambda_i = \exp(\beta + X_i)\eqsp,
-\]
-with independent latent variables $X=(X_1,\ldots,X_n)$ such that for all $1\leq i \leq n$,
-\[
-X_i \sim \mathcal{N}(0,\sigma^2)\eqsp.
-\]
-The unknown parameter is $\theta = (\beta,\sigma^2)$. The complete-data likelihood is given by
-\[
-p_\theta(X,Y)
-=
-\prod_{i=1}^n
-p_\theta(Y_i|X_i)\,p_\theta(X_i)\eqsp.
-\]
-The conditional distribution of the observations is
-\[
-p_\theta(Y_i|X_i)
-=
-\frac{\exp(-\exp(\beta+X_i))\exp(Y_i(\beta+X_i))}{Y_i!}
-\]
-and the prior distribution of the latent variable is
-\[
-p_\theta(X_i)
-=
-(2\pi\sigma^2)^{-1/2}
-\exp\left(-\frac{X_i^2}{2\sigma^2}\right)\eqsp.
-\]
-Therefore, the complete-data loglikelihood is 
-\[
-\log p_\theta(X,Y) = \sum_{i=1}^n \Big[ Y_i(\beta+X_i)-\exp(\beta+X_i)\Big]-\sum_{i=1}^n\frac{X_i^2}{2\sigma^2}
--
-\frac{n}{2}\log\sigma^2 + C\eqsp,
-\]
-where $C$ is a constant that does not depend on $\theta$. Then, at iteration $k\geq 0$ of the algorithm, the intermediate quantity of the EM algorithm is 
-\[
-Q(\theta,\theta^{(k)})
-=
-\sum_{i=1}^n \mathbb{E}_{\theta^{(k)}}
-\left[
-  Y_i(\beta+X_i)-\exp(\beta+X_i)- \frac{X_i^2}{2\sigma^2}
- \middle| Y_i
-\right]  -
-\frac{n}{2}\log\sigma^2 + C\eqsp.
-\]
-However the conditional distribution $p_{\theta^{(k)}}(X_i|Y_i)$ does not have a closed form. However, we can write
-\[
-p_{\theta^{(k)}}(X_i|Y_i)
-\propto
-p_{\theta^{(k)}}(Y_i|X_i)p_{\theta^{(k)}}(X_i)\eqsp.
-\]
-Therefore, the intermediate quantity  cannot be computed analytically. 
-Since direct sampling from \(p_{\theta^{(k)}}(X_i|Y_i)\) is not possible but this distribution is known up to a multiplicative constant, we may use any MCMC method  (Random Walk Metropolis Hastings, MALA, HMC) to approximate the intermediate quantity. Let $\{X^{(k)}_{p}\}_{p\geq 0}$ be the Markov chain generated by the chosen MCMC algorithm with target distribution $p_{\theta^{(k)}}(X|Y)$.  The parameters are updated by maximizing the Monte Carlo approximation
-\[
-\theta^{(k+1)}
-=
-\arg\max_{\theta}
-\frac{1}{M_k}
-\sum_{p=B_k+1}^{B_k+M_k}
-\log p_\theta(X^{(k)}_{p},Y)\eqsp.
-\]
-%and 
-%\[
-%\beta^{(k+1)}
-%=
-%\arg\max_{\beta}
-%\sum_{p=B_k+1}^{M_k+B_k}
-%\sum_{i=1}^n
-%\Big[
-%Y_i(\beta+X_p^{(k)})
-%-
-%\exp(\beta+X_p^{(k)})
-%\Big]\eqsp.
-%\]
-%This maximization can be performed numerically.
-%
-%
-%\[
-%\sigma^{2(t+1)}
-%=
-%\frac{1}{nM}
-%\sum_{m=1}^M
-%\sum_{i=1}^n
-%\left(X_i^{(m)}\right)^2.
-%\]
-%
-%
-%\begin{enumerate}
-%\item Initialize $\theta^{(0)}$.
-%\item For $t=0,1,2,\ldots$
-%\begin{enumerate}
-%\item Run an MCMC chain targeting $p(X|Y,\theta^{(t)})$.
-%\item Obtain samples $X^{(1)},\ldots,X^{(M)}$.
-%\item Approximate
-%\[
-%Q(\theta|\theta^{(t)})
-%\approx
-%\frac{1}{M}
-%\sum_{m=1}^M
-%\log p(Y,X^{(m)}|\theta).
-%\]
-%\item Update
-%\[
-%\theta^{(t+1)}
-%=
-%\arg\max_{\theta} Q(\theta|\theta^{(t)}).
-%\]
-%\end{enumerate}
-%\end{enumerate}
-\end{example}
 
 
 
@@ -2595,6 +2308,537 @@ where
 $$
 A(\eta) = \log\left(\int h(x)\exp\left(\langle \eta;T(x)\rangle \right)\mu(\rmd x)\right)\eqsp.
 $$
+
+\chapter{Expectation Maximization algorithm}
+The Expectation Maximization (EM) algorithm \cite{dempster1977maximum} is a general iterative method for maximum likelihood estimation in statistical models that involve latent (hidden) variables or missing data. When the likelihood function is difficult or impossible to optimize directly because part of the information is hidden, the EM algorithm provides a systematic way to alternate between estimating the missing information and optimizing the parameters. This algorithm is widely used in statistics, machine learning, and signal processing, especially for mixture models, clustering, density estimation, and probabilistic inference.
+\section{Introduction}
+Let $(\mathsf{X},\mathcal{X})$ be a measurable space and $\mu$ be a measure on $(\mathsf{X},\mathcal{X})$. Consider also a family $\{f_\theta\}_{\theta\in\Theta}$ of $\mu$-integrable and positive functions. Define
+$$
+L(\theta) = \int f_\theta(x)\mu(\rmd x)\eqsp.
+$$
+We aim at solving
+$$
+\widehat \theta \in\mathrm{Argmax}_{\theta\in\Theta} L(\theta)\eqsp.
+$$
+When $L$ is positive, the problem is often written:
+$$
+\widehat \theta \in\mathrm{Argmax}_{\theta\in\Theta} \,\ell(\theta) = \log L(\theta)\eqsp.
+$$
+
+
+
+\section{Algorithm}
+In the following, we write $q_\theta:x\mapsto f_\theta(x)/L(\theta)$. Solving the optimization problem is not possible in general frameworks. The Expectation Maximization (EM) algorithm computes sequentially $\{\theta_k\}_{k\geq 0}$ to estimate $\widehat \theta$. For all $\theta,\theta'\in\Theta$, we introduce the following quantity:
+$$
+Q(\theta,\theta') = \int \log f_\theta(x)q_{\theta'}(x)\mu(\rmd x) = \mathbb{E}_{\theta'}[\log f_\theta(X)]\eqsp,
+$$
+where $\mathbb{E}_{\theta}$ is a notation for the expectation under the density $q_\theta$. Then, we can write for all $\theta,\theta'\in\Theta$
+$$
+Q(\theta,\theta') = \int \log (L(\theta)q_\theta(x))q_{\theta'}(x)\mu(\rmd x) = \ell(\theta) - H(\theta,\theta')\eqsp,
+$$
+where $H(\theta,\theta') = - \int \log q_\theta(x) q_{\theta'}(x)\mu(\rmd x)$.
+
+\begin{lemma}
+\label{lem:fundEM}
+For all $\theta,\theta'\in\Theta$,
+$$
+\ell(\theta)-\ell(\theta')\geq Q(\theta,\theta')-Q(\theta',\theta')\eqsp.
+$$
+\end{lemma}
+\begin{proof}
+By definition, for all $\theta,\theta'\in\Theta$,
+\begin{align*}
+Q(\theta,\theta')-Q(\theta',\theta') &= \ell(\theta)-\ell(\theta') + H(\theta',\theta') - H(\theta,\theta')\\
+&= \ell(\theta)-\ell(\theta') + \int \log\left(\frac{q_\theta(x)}{q_{\theta'}(x)}\right)q_{\theta'}(x)\mu(\rmd x)\eqsp.
+\end{align*}
+As $\log$ is concave, by Jensen's inequality, 
+$$
+\int \log\left(\frac{q_\theta(x)}{q_{\theta'}(x)}\right)q_{\theta'}(x)\mu(\rmd x) \leq \log\int \frac{q_\theta(x)}{q_{\theta'}(x)}q_{\theta'}(x)\mu(\rmd x) = 0\eqsp,
+$$
+which concludes the proof. The inequality $\int \log(q_\theta(x))q_{\theta'}(x)\mu(\rmd x) \leq \int \log(q_{\theta'}(x))q_{\theta'}(x)\mu(\rmd x)$ is known as Gibbs' inequality.
+\end{proof}
+By Lemma~\ref{lem:fundEM}, starting from a parameter estimate $\theta_k$, $k\geq 0$, a direct solution to obtain a parameter $\theta$ such that $\ell(\theta) \geq \ell(\theta_k)$ is to choose $\theta$ such that $Q(\theta,\theta_k)\geq Q(\theta_k,\theta_k)$. This result motivates the Expectation Maximization (EM) algorithm given in Algorithm~\ref{alg:EM} and introduced in \cite{dempster1977maximum}.
+
+\begin{algorithm}
+\caption{A generic EM algorithm}\label{alg:EM}
+\KwData{Initial parameter estimate $\theta_0$.}
+\KwResult{A sequence of parameter estimate $\{\theta_k\}_{k\geq 0}$.}
+\For{$k \geq 0$}{
+  Compute the E-step: $\theta\mapsto Q(\theta,\theta_k)$.
+
+ Compute the M-step: $\theta_{k+1}\in \mathrm{Argmax}_{\theta\in\Theta}Q(\theta,\theta_k)$.
+}
+\end{algorithm}
+
+%The most common setting in which the EM algorithm is used is the case of Example~\ref{ex:EM}. 
+
+
+
+\section{Convergence properties}
+
+The first theoretical guarantees for the EM algorithm were provided in \cite{wu1983convergence}. Given $k\geq 0$ and $\theta_k\in\Theta$, the EM update is
+\[
+\theta_{k+1} \in M(\theta_k),
+\quad \text{where} \quad
+M(\theta') = \arg\max_{\theta \in \Theta} Q(\theta,\theta').
+\]
+Therefore, $M$ is a  map from points of $\Theta$ to subsets of $\Theta$ and is referred to as a point-to-set map on $\Theta$. This map is said to be closed at $\eta_*\in\Theta$ if for all sequence $\{\eta_k\}_{k\geq 0 }$ such that $\eta_k$ converges to $\eta_*$ as $k \to \infty$, if for all $k\geq 0$, $y_k\in M(\eta_k)$ and  $\{y_k\}_{k\geq 0 }$ converges to $y_*\in\Theta$ as $k \to \infty$, then $y_* \in M(\eta_*)$. Convergence of the EM algorithm relies on a more general convergence theorem for point-to-set map.
+
+
+\begin{theorem}
+\label{th:zangwill:conv}
+Assume that  $\Theta \subset \mathbb{R}^m$ and let $M$ be a point-to-set map defined on $\Theta$.
+Consider a sequence $\{\theta_k\}_{k\geq 0}$ such that for all $k\geq 1$,
+\[
+\theta_{k+1} \in M(\theta_k)\eqsp.
+\]
+ and let $\mathcal{S} \subset \Theta$
+denote the set of solution points. Assume that the sequence  $\{\theta_k\}_{k\geq 0}$ is contained in a compact subset of $\Theta$ and that $M$ is closed at all points $\theta \in \Theta \setminus \mathcal{S}$. Assume also that there exists $\alpha : \Theta \to \mathbb{R}$ a continuous function, such that for all $\theta \in \Theta$,  if $\theta\in\Theta\setminus \mathcal{S}$ then for all $y \in M(\theta)$, $\alpha(y) > \alpha(\theta)$ and if $\theta\in \mathcal{S}$, then $ \alpha(y) \ge \alpha(\theta)$ for all $y \in M(\theta)$. Then, every accumulation point of the sequence $\{\theta_k\}_{k\geq 0}$ belongs to the solution set $\mathcal{S}$.
+\end{theorem}
+
+\begin{proof}
+The proof can be found in \cite{zangwill1969convergence}.
+\end{proof}
+
+\begin{hypH}
+\label{hyp:compactness}
+The level set
+\[
+\{ \theta \in \Theta : \ell(\theta) \ge \ell(\theta_0) \}\eqsp.
+\]
+is compact.
+\end{hypH}
+By Lemma~\ref{lem:fundEM}, the sequence $\{\ell(\theta_k)\}_{k\geq 0}$ is non-decreasing. Therefore, by H\ref{hyp:compactness} this sequence converges to some limit point $\ell_*$. However, there is no guarantee that $\ell_*$ is the global maximum of $\ell$. Assumptions H\ref{hyp:compactness} ensures that $\{\theta_k\}_{k\geq 0}$ is contained in a compact subset of $\Theta$.
+
+
+%\begin{hypH}
+%\label{hyp:continuity}
+%The functions $(\theta,\theta')\mapsto Q(\theta, \theta')$ and $\theta\mapsto\ell(\theta)$ are continuous.
+%\end{hypH}
+
+%\begin{hypH}
+%The set-valued mapping $M(\cdot)$ is upper semicontinuous and has nonempty values.
+%\end{hypH}
+
+\begin{hypH}
+\label{hyp:diff}
+The functions $(\theta,\theta')\mapsto Q(\theta, \theta')$ and  $\theta\mapsto \ell(\theta)$ are continuously differentiable, and differentiation under the integral sign is valid.
+\end{hypH}
+Convergence of the EM algorithm is a specific application of Theorem~\ref{th:zangwill:conv} as stated in Theorem~\ref{th:conv:EM:zangwill}
+\begin{theorem}
+\label{th:conv:EM:zangwill}
+Assume that H\ref{hyp:compactness} holds. Let $\{\theta_p\}_{p\geq 0}$ be a sequence generated by the EM algorithm:
+\[
+\theta_{p+1} \in M(\theta_p),
+\]
+and suppose that there exists a set $S$ such that:
+\begin{enumerate}
+    \item[(i)] $M$ is a closed point-to-set mapping over the complement of $S$;
+    \item[(ii)] for all $p\geq 0$, $L(\theta_{p+1}) > L(\theta_p)$ if $\theta_p \notin S$.
+\end{enumerate}
+Then, all limit points of $\{\theta_p\}_{p\geq 0}$ are stationary points (local maxima) of $L$, and
+\[
+\lim_{p\to \infty}L(\theta_p)  = L(\theta^*)
+\quad \text{for some } \theta^* \in S\eqsp.
+\]
+\end{theorem}
+\noindent By assumption H\ref{hyp:diff}, we can define the set of stationary points of the log-likelihood:
+$$
+\mathcal{S} = \left\{\theta\in\Theta\,,\, \nabla \ell(\theta_*)\right\}\eqsp.
+$$
+%We can also choose $\alpha$ as the log-likelihood function $\ell$.
+
+\begin{theorem}
+Assume that H\ref{hyp:compactness}-\ref{hyp:diff} hold. 
+Then, all limit points of any EM sequence $\{\theta_p\}_{p\geq 0}$ are stationary points of $L$, and
+\[
+\lim_{p\to \infty}L(\theta_p)  = L(\theta^*)
+\quad \text{for some stationary point } \theta^*\eqsp.
+\]
+\end{theorem}
+
+\begin{proof}
+The proof is a consequence of Theorem~\ref{th:conv:EM:zangwill}.  By H\ref{hyp:diff}, $M$ is closed at all points $\theta\in \theta \in \Theta \setminus \mathcal{S}$, and for all limit point $\theta^*$ of  $\{\theta_k\}_{k\geq 0}$, $\theta^* \in M(\theta^*)$. By Lemma~\ref{lem:fundEM}, and the definition of $M$, for all $\theta \in \Theta$,  if $\theta\in \mathcal{S}$ then for all $y \in M(\theta)$, $\alpha(y) \geq \alpha(\theta)$. % It remains to prove that for all $\theta \in \Theta$,  if $\theta\in\Theta\setminus \mathcal{S}$ then for all $y \in M(\theta)$, $\alpha(y) > \alpha(\theta)$. 
+Let $p\geq 0$ and $\theta_p\in\Theta\setminus \mathcal{S}$. By definition of $\theta_p$, 
+$$
+\nabla \ell(\theta_p) = \nabla_\theta Q(\theta, \theta_p) \big|_{\theta=\theta_p}\eqsp.
+$$
+Therefore, if $\theta_p\notin \mathcal{S}$, $\nabla \ell(\theta_p)\neq 0$ and $\theta_p$ is not a local maximum of $\theta\mapsto Q(\theta, \theta_p)$ which implies that $Q(\theta_{p+1}, \theta_p)>Q(\theta_p, \theta_p)$ and $L(\theta_{p+1}) > L(\theta_p)$. This concludes the frist part of the proof. Since $\theta^*$ maximizes $\theta\mapsto Q(\theta, \theta^*)$,
+\[
+\nabla_\theta Q(\theta, \theta^*) \big|_{\theta=\theta^*} = 0\eqsp.
+\]
+Under the differentiability assumption, 
+\[
+\nabla_\theta Q(\theta, \theta^*) \big|_{\theta=\theta^*} = \nabla \ell(\theta^*)\eqsp,
+\]
+which proves the result.
+\end{proof}
+
+
+
+\section{Application to latent data models}
+ Let $(X,Y)$ in $(\mathsf{X}\times\mathsf{Y}, \mathcal{X}\otimes\mathcal{Y})$ be two random variables where $Y$ is observed and $X$ is not observed. The measurable space $(\mathsf{X}\times\mathsf{Y}, \mathcal{X}\otimes\mathcal{Y})$ is endowed with the product measure $\mu\otimes \lambda$. A very popular setting for the EM algorithm is when $f_\theta: x \mapsto p_\theta(x,Y)$ where for all $\theta\in\Theta$, $p_\theta$ is a joint probability density function with respect to $\mu\otimes \lambda$  used to model the joint distribution of $(X,Y)$. Assuming that the random variable $Y$ is observed and that $X$ is not observed, we consider the likelihood function
+$$
+L(\theta) = \int f_\theta(x,Y)\mu(\rmd x)\eqsp,
+$$
+which is a random variable depending on $Y$. This is the marginal density of $Y$ when the parameter is $\theta$. In this setting, $f_\theta(X,Y)/L(\theta)$ is the probability density of the conditional distribution of $X$ given $Y$.  
+
+Solving $\widehat \theta \in\mathrm{Argmax}_{\theta\in\Theta} L(\theta)$ amounts to solving the maximum likelihood estimation problem. However, in this setting, as in many other settings, the integral is intractable and the optimization problem cannot be solved directly. We have
+$$
+Q(\theta,\theta') = \int \log p_\theta(x,Y)p_{\theta'}(x|Y)\mu(\rmd x) = \mathbb{E}_{\theta'}[\log p_\theta(X,Y)|Y]\eqsp.
+$$
+Therefore, the E-step of the EM algorithm amounts to computing the conditional expectation given $Y$ of the complete data (joint) loglikelihood. 
+
+If $\{(X_i,Y_i)\}_{1\leq i  \leq n}$ are i.i.d we write $Y = (Y_1,\ldots,Y_n)$ and $X = (X_1,\ldots,X_n)$. In this case, the intermediate quantity of the EM algorithm is
+$$
+Q(\theta,\theta') = \sum_{i=1}^n \mathbb{E}_{\theta'}[\log p_\theta(X_i,Y_i)|Y_i]\eqsp.
+$$
+
+\subsubsection*{Curved exponential families}
+We may further restrict the analysis to the case where the complete-data likelihood
+$p_\theta$ belongs to the class of curved exponential family densities. This setting
+covers a wide range of practical models. We now introduce a set of assumptions
+that are satisfied in many scenarios. Let $\phi : \Theta \to \mathbb{R}$, $\psi : \Theta \to \mathbb{R}^q$, $h : \mathsf{X}\times \mathsf{Y} \to \mathbb{R}^*_+$ and
+$S : \mathsf{X}\times \mathsf{Y} \to  \mathbb{R}^q$. Assume then that the complete-data likelihood may be written:
+\[
+p_\theta(x,y) = h(x,y)\mathrm{exp}\left\{\phi(\theta) + \langle S(x,y); \psi(\theta)\rangle \right\}\eqsp.
+\]
+Therefore, the intermediate quantity of the EM algorithm is given by
+$$
+Q(\theta,\theta') = \int \log p_\theta(x,Y)p_{\theta'}(x|Y)\mu(\rmd x) = \mathbb{E}_{\theta'}[\log h(X,Y)|Y] + \phi(\theta) +  \mathbb{E}_{\theta'}[\langle S(X,Y); \psi(\theta)\rangle|Y] \eqsp.
+$$
+If $p\geq 0 $ and $\theta_p$ is the current parameter estimate, $\theta_{p+1}$ may be computed by solving
+$$
+\theta_{p+1} \in  \arg\max_{\theta \in \Theta} \;\left\{ \phi(\theta) +  \left\langle \mathbb{E}_{\theta_p}[S(X,Y)|Y]; \psi(\theta)\right\rangle \right\}\eqsp.
+$$
+
+
+
+%\paragraph{Assumption M2.}
+%The following conditions hold:
+%\begin{enumerate}
+%  \item The functions $\phi$ and $\psi$ are continuous on $\Theta$, and the
+%  sufficient statistic $S$ is continuous on $\mathcal{X}$.
+%  \item For all $\theta \in \Theta$, the expectation
+%  $\bar{S}(\theta) := \pi_\theta(S)$ is finite and continuous in $\theta$.
+%  \item There exists a continuous mapping $\hat{\theta} : \mathcal{S} \to \Theta$
+%  such that, for all $s \in \mathcal{S}$,
+%  \[
+%  L(s; \hat{\theta}(s)) = \sup_{\theta \in \Theta} L(s; \theta).
+%  \]
+%  \item The function $g$ is positive, finite, and continuous on $\Theta$, and for
+%  any $M > 0$, the level set
+%  \[
+%  \{ \theta \in \Theta : g(\theta) \ge M \}
+%  \]
+%  is compact.
+%\end{enumerate}
+
+\section{Example: mixture of Gaussian distributions}
+In this example, we assume that the joint distribution of $(X,Y)$ belongs to a family of distributions parametrized by a vector $\theta$ with real components. For $k\in\{1,\ldots,M\}$, write $\pi_k = \mathbb{P}_\theta(X = k)$. Assume that conditionally on the event $\{X = k\}$, $Z$ has a Gaussian distribution with mean $\mu_k \in\rset^d$ and covariance matrix $\Sigma\in \rset^{d\times d}$. The probability density of this conditional distribution is written $g_k^\theta$, where the parameter $\theta=(\{\pi_k\}_{1\leq k \leq K}, \{\mu_k\}_{1\leq k \leq K}, \Sigma)$ belongs to the set $\Theta= \mathbb{S}_K \times (\rset^d)^K  \times \rset^{d \times d}$ with $\mathbb{S}_K = \{(\pi_1,\ldots,\pi_K)\in[0,1]^K\;;\; \sum_{k=1}^K \pi_k=1\}$. For all $1\leq k \leq K$, the explicit computation of $\mathbb{P}_\theta(X=k | Y)$ writes
+$$
+\mathbb{P}_\theta\left(X=k\middle | Y\right) = \frac{\pi_kg^{\theta}_k(Y)}{\sum_{\ell=1}^{K}\pi_\ell g^{\theta}_\ell(Y)}\eqsp. % \frac{1}{1 + \frac{\pi_{-1}g_{-1}(X)}{\pi_1g_1(X)}} = \sigma\left(\log(\pi_1/\pi_{-1}) + \log(g_1(X)/g_{-1}(X)\right)\,,
+$$
+%where $\sigma: x\mapsto (1 + \mathrm{e}^{-x})^{-1}$ is the sigmoid function. Then,
+%\begin{equation}
+%\label{eq:prob:lda}
+%\mathbb{P}_\theta\left(Z=1\middle | X\right) = \sigma\left( X^\top\omega+ b\right)\eqsp,
+%\end{equation}
+%where
+%$$
+%\omega =  \Sigma^{-1}\left(\mu_{1} - \mu_{-1}\right)\,,
+%b = \log(\pi_1/\pi_{-1}) +  \frac{1}{2}\left(\mu_{1}+\mu_{-1}\right)^\top\Sigma^{-1}\left(\mu_{-1}-\mu_{1}\right)\eqsp.
+%$$
+Assume that $\{(X_i,Y_i)\}_{1\leq i\leq n}$ are i.i.d. with this distribution parameterized by $\theta\in\Theta$. Then, the complete-data loglikelihood writes
+$$
+\log p_\theta (X_{1:n},Y_{1:n}) = \sum_{i=1}^n \sum_{k=1}^K \mathds{1}_{X_i = k}\left\{\log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma) -\frac{1}{2}(Y_i - \mu_{k})^\top \Sigma^{-1}(Y_i - \mu_{k})  \right\}\eqsp.%\\
+%\left.+ \mathds{1}_{Z_i = 1}\left(\log(\pi_1) -\frac{1}{2}(X_i - \mu_{1})^\top \Sigma^{-1}(X_i - \mu_{1})\right)\right\} \eqsp.
+$$
+Therefore, the intermediate quantity of the EM algorithm is given, for all $\theta,\theta' \in\Theta$, by
+\begin{align*}
+Q(\theta,\theta') &= \mathbb{E}_{\theta'} \left[\log p_\theta (X_{1:n},Y_{1:n}) \middle | X_{1:n}\right]\eqsp,\\
+&= \sum_{i=1}^n \sum_{k=1}^K \left\{ \mathbb{P}_{\theta'}(X_i = k|Y_i)\left( \log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma)  -\frac{1}{2}(Y_i - \mu_{k})^\top \Sigma^{-1}(Y_i - \mu_{k})\right) \right\} \eqsp.%\\
+%& \left. \hspace{2cm}+ \mathbb{P}_{\theta'}(Z_i = 1|X_i)\left( \log(\pi_1) -\frac{1}{2}(X_i - \mu_{1})^\top \Sigma^{-1}(X_i - \mu_{1})\right) \right\} \eqsp.
+\end{align*}
+The algorithm is initialized by choosing $\theta^{(0)}$ randomly. Then, for each iteration $p\geq 0$, the current parameter estimate is written
+$$
+\theta^{(p)} = \left\{\{\pi^{(p)}_k\}_{1\leq k \leq K}, \{\mu^{(p)}_k\}_{1\leq k \leq K}, \Sigma^{(p)}\right\}\eqsp,
+$$
+and the update is decomposed into two steps.
+\begin{enumerate}
+\item Compute $\mathbb{P}_{\theta^{(p)}}(X_i = k|Y_i)$ for all $1\leq i \leq n$, $1\leq k \leq K$:
+$$
+\mathbb{P}_{\theta^{(p)}}(X_i = k|Y_i) = \frac{\pi^{(p)}_kg^{\theta^{(p)}}_k(Y)}{\sum_{\ell=1}^{K}\pi^{(p)}_\ell g^{\theta^{(p)}}_\ell(Y)} = \omega_{i,k}^{(p)}\eqsp.
+$$
+\item Update the parameter estimate by computing:
+$$
+\theta^{(p+1)} \in \mathrm{Argmax}_{\theta\in\Theta} Q(\theta,\theta^{(p)})\eqsp.
+$$
+\end{enumerate}
+The intermediate quantity is given, for all $\theta$, by:
+$$
+Q(\theta,\theta^{(p)}) = \sum_{i=1}^n \sum_{k=1}^K \left\{ \omega_{i,k}^{(p)}\left( \log(\pi_k) -\frac{1}{2}\log \mathrm{det}(2\pi \Sigma) -\frac{1}{2}(Y_i - \mu_{k})^\top \Sigma^{-1}(Y_i - \mu_{k})\right) \right\} \eqsp.
+$$
+By Lemma~\ref{lem:matrix:calculus}, and using that $\pi_K = 1-\sum_{k=1}^{K-1}\pi_k$, for all $1\leq k \leq K-1$,
+$$
+\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \pi_k} = \left(\sum_{i=1}^n\omega_{i,k}^{(p)}\right)\frac{1}{\pi_k} - \left(\sum_{i=1}^n\omega_{i,K}^{(p)}\right)\frac{1}{\pi_K}\eqsp.
+$$
+In addition, for all $1\leq k \leq K$,
+$$
+\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \mu_k} = \sum_{i=1}^n \omega_{i,k}^{(p)} \left(2\Sigma^{-1}Y_i - 2\Sigma^{-1}\mu_{k}\right)\eqsp,
+$$
+and
+$$
+%\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \mu_{-1}} &= \sum_{i=1}^n\1_{Y_i=-1}\left(2\Sigma^{-1}X_i - 2\Sigma^{-1}\mu_{-1}\right)\eqsp,\\
+\frac{\partial Q(\theta,\theta^{(p)}) }{\partial \Sigma^{-1}} = \frac{n}{2}\Sigma -  \frac{1}{2}\sum_{i=1}^n\sum_{k=1}^K \omega_{i,k}^{(p)}\left(Y_i - \mu_{k}\right)\left(Y_i - \mu_{k}\right)^\top \eqsp.
+$$
+The maximum likelihood estimator is defined as the only parameter $\widehat \theta^{(p+1)}$ such that all these equations are set to 0. 
+We can note that there exists $c>0$ such that for all $k\in\{1,\ldots,K\}$, $\pi_k = c\sum_{i=1}^n\omega_{i,k}^{(p)}$. Computing the sum for $k=1$ to $k=K$ yields $c=n$. For $k\in\{1,\ldots,K\}$,  it is given by
+\begin{align*}
+\pi_k^{(p+1)} &= \frac{1}{n}\sum_{i=1}^n\omega_{i,k}^{(p)}\eqsp,\\
+\mu_k^{(p+1)} &= \frac{1}{\sum_{i=1}^n\omega_{i,k}^{(p)}}\sum_{i=1}^n\omega_{i,k}^{(p)}\,Y_i\eqsp,\\
+\Sigma^{(p+1)} &= \frac{1}{n}\sum_{i=1}^n\sum_{k=1}^K\omega_{i,k}^{(p)}\left(Y_i - \mu_{k}^{(p+1)}\right)\left(Y_i - \mu_{k}^{(p+1)}\right)^\top\eqsp.
+\end{align*}
+\begin{remark}
+Note that the computation of $\mathbb{P}_{\theta^{(p)}}(X_i = k|Y_i) $ is explicit. The fact that the conditional expectation (and therefore $Q(\theta,\theta^{(p)})$) can be computed explicitly is a consequence of the fact that $X_i$ is a discrete random variable. In other cases, $Q(\theta,\theta^{(p)})$ is likely to be unavailable explicitly and is often replaced by Monte Carlo estimators. In the setting of Gaussian mixtures, the computation of $\theta^{(p+1)}$ is also explicit. The M-step is often replaced by simply choosing an estimator $\theta^{(p+1)}$ such that $Q(\theta^{(p+1)},\theta^{(p)}) > Q(\theta^{(p)},\theta^{(p)})$  which is tractable in many cases and yields the Generalized EM algorithm.
+\end{remark}
+
+\begin{lemma}
+\label{lem:matrix:calculus}
+Let $\Sigma$ be a symmetric and invertible  matrix in $\rset^{d\times d}$.
+\begin{enumerate}[(i)]
+\item The derivative of the real valued function $\Sigma \mapsto \log\mathrm{det}(\Sigma)$ defined on $\rset^{d\times d}$ is given by:
+\[
+\partial_{\Sigma}\{\log\mathrm{det}(\Sigma)\}= \Sigma^{-1}\eqsp,
+\]
+where, for all real valued function $f$ defined on $\rset^{d\times d}$, $\partial_{\Sigma}f(\Sigma)$ denotes the $\rset^{d\times d}$ matrix such that for all $1\leqslant i,j\leqslant d$, $\{\partial_{\Sigma}f(\Sigma)\}_{i,j}$ is the partial derivative of $f$ with respect to $\Sigma_{i,j}$.
+\item The derivative of the real valued  function  $x\mapsto x^\top\Sigma x$ defined on $\rset^d$ is given by:
+\[
+\partial_{x}\{x^\top\Sigma x\} = 2 \Sigma x\eqsp.
+\]
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+  \begin{enumerate}[(i)]
+    \item Recall that for all $i \in \{1,\ldots,d\}$ we have
+      $\det(\Sigma)=\sum_{k=1}^d \Sigma_{i,k} \Delta_{i,k}$ where
+      $\Delta_{i,j}$ is the $(i,j)$-cofactor associated with
+      $\Sigma$. For any fixed $i,j$, the component $\Sigma_{i,j}$ does not appear in anywhere in
+      the decomposition $\sum_{k=1}^d \Sigma_{i,k} \Delta_{i,k}$,
+      except for the term $k=j$. This implies
+      $$
+      \frac{\partial \log \det(\Sigma)}{\partial \Sigma_{i,j}}=
+      \frac{1}{\det \Sigma}\frac{\partial  \det(\Sigma)}{\partial
+        \Sigma_{i,j}}=\frac{\Delta_{i,j}}{\det  \Sigma}
+      $$
+      Recalling the identity $\Sigma\; [\Delta_{j,i}]_{1\leq i,j \leq d}=(\det
+      \Sigma)\; I_d$ so that $\Sigma^{-1}=\frac{[\Delta_{j,i}]_{1\leq i,j \leq d}^\top}{\det
+      \Sigma}$, we finally get
+      $$
+\lrb{\frac{\partial \log \det(\Sigma)}{\partial \Sigma_{i,j}}}_{1\leq
+  i,j  \leq d}=(\Sigma^{-1})^\top=\Sigma^{-1}
+$$
+where the last equality follows from the fact that $\Sigma$ is
+symmetric.
+\item Define $\varphi(x)=x^\top\Sigma x$. Then, by straightforward
+  algebra, $\varphi(x+h)=\varphi(x)+2h^\top\Sigma
+  x+\varphi(h)=\varphi(x)+2h^\top\Sigma x+o(\|h\|)$, which concludes the
+  proof.
+  \end{enumerate}
+\end{proof}
+
+\section{Monte Carlo EM  in the curved exponential family setting}
+Assume that the complete-data log-likelihood belongs to a curved exponential family,
+i.e.,
+\[
+\log p_\theta(X,Y)= \log h(x,y) +  \phi(\theta) + \langle S(X,Y), \psi(\theta)\rangle,
+\]
+where $S(X,Y)\in\mathbb{R}_+^*$,  $S(X,Y)\in\mathbb{R}^q$, $\phi:\Theta\to\mathbb{R}$,
+$\psi:\Theta\to\mathbb{R}^q$. In this case,
+\[
+Q(\theta,\theta^{(k)})
+= \phi(\theta) + \mathbb{E}_{\theta^{(k)}}[\log h(X,Y)\mid Y]+ \left\langle 
+\mathbb{E}_{\theta^{(k)}}[S(X,Y)\mid Y],\ \psi(\theta)
+\right\rangle.
+\]
+Hence, the E-step reduces to computing the conditional expectation of the sufficient
+statistics, and the M-step consists in solving
+\[
+\theta^{(k+1)} = \arg\max_{\theta\in\Theta}\left\{
+\phi(\theta) + \left\langle \bar S(\theta^{(k)}),\ \psi(\theta)\right\rangle
+\right\},
+\qquad
+\bar S(\theta^{(k)}) := \mathbb{E}_{\theta^{(k)}}[S(X,Y)\mid Y].
+\]
+When $\bar S(\theta^{(k)})$ is not available in closed form, the Monte Carlo EM (MCEM)
+algorithm estimates it with a simulation-based approximation. At iteration $k$, let
+\[
+X_{k,1},\ldots,X_{k,M_k} \sim p_{\theta^{(k)}}(X | Y)
+\]
+be (approximately) independent draws from the conditional distribution of $X$ given
+$Y$ under $\theta^{(k)}$. Define the Monte Carlo estimate
+\[
+\widehat S^{(k)}(\theta^{(k)}) := \frac{1}{M_k}\sum_{m=1}^{M_k} S\!\left(X_{k,m},Y\right).
+\]
+The corresponding %Monte Carlo surrogate of the EM auxiliary function is
+%\[
+%Q_{M_k}(\theta,\theta^{(k)})
+%= \phi(\theta) + \left\langle \widehat S^{(k)},\ \psi(\theta)\right\rangle,
+%\]
+update is obtained by the approximate M-step
+\[
+\theta^{(k+1)} \in \arg\max_{\theta\in\Theta}\left\{
+\phi(\theta) + \left\langle \widehat S^{(k)}(\theta^{(k)}),\ \psi(\theta)\right\rangle
+\right\}.
+\]
+Under standard regularity conditions, $\widehat S^{(k)}$ converges
+almost surely to $\mathbb{E}_{\theta^{(k)}}[S(X,Y)\mid Y]$ as $M_k\to\infty$, and convergence to a
+stationary point of the observed-data log-likelihood can be ensured when the number of Monte
+Carlo samples $M_k$ increases sufficiently with $k$. Convergence rates of the MCEM algorithm can be obtained when nonasymptotic controls of the Monte Carlo estimation $\widehat S^{(k)}$ can be derived, see for instance \cite{fort2003convergence}.
+
+%\subsection{MCMC-EM: approximating the E-step using MCMC}
+
+In many models, direct sampling from $p_{\theta^{(k)}}(X\mid Y)$ is not feasible but $p_{\theta^{(k)}}(X\mid Y)$  is known up to a normalizing constant. A common alternative is to approximate the conditional expectation in the E-step using
+a Markov chain Monte Carlo (MCMC) method targeting $p_{\theta^{(k)}}(X\mid Y)$. Specifically, at iteration $k$, let $\{X_{k,t}\}_{p\ge 1}$ be a Markov chain with
+invariant distribution $p_{\theta^{(k)}}(X\mid Y)$ (e.g., a Metropolis--Hastings or
+Gibbs sampler). After a burn-in period $B_k$, an ergodic average yields
+\[
+\widehat S^{(k)}_{\mathrm{MCMC}}(\theta^{(k)})
+:= \frac{1}{M_k}\sum_{p=B_k+1}^{B_k+M_k} S\!\left(X_{k,p},Y\right),
+\]
+which replaces $\bar S(\theta^{(k)})$ in the E-step. The resulting MCMC-EM update is
+\[
+\theta^{(k+1)} \in \arg\max_{\theta\in\Theta}\left\{
+\phi(\theta) + \left\langle \widehat S^{(k)}_{\mathrm{MCMC}}(\theta^{(k)}),\ \psi(\theta)\right\rangle
+\right\}.
+\]
+Compared to MCEM with independent samples, the estimator
+$\widehat S^{(k)}_{\mathrm{MCMC}}$ is typically correlated due to the Markov
+dependence, but consistency follows from the ergodic theorem under standard
+assumptions (irreducibility, aperiodicity, and geometric ergodicity). In practice,
+the accuracy of the E-step approximation can be controlled by the burn-in length
+$B_k$, the chain length $M_k$.
+
+
+
+\begin{example}
+Assume that we observe independent data $Y = (Y_1,\ldots,Y_n)$
+where for all $1\leq i \leq n$,
+\[
+Y_i \sim \text{Poisson}(\lambda_i)
+\]
+and
+\[
+\lambda_i = \exp(\beta + X_i)\eqsp,
+\]
+with independent latent variables $X=(X_1,\ldots,X_n)$ such that for all $1\leq i \leq n$,
+\[
+X_i \sim \mathcal{N}(0,\sigma^2)\eqsp.
+\]
+The unknown parameter is $\theta = (\beta,\sigma^2)$. The complete-data likelihood is given by
+\[
+p_\theta(X,Y)
+=
+\prod_{i=1}^n
+p_\theta(Y_i|X_i)\,p_\theta(X_i)\eqsp.
+\]
+The conditional distribution of the observations is
+\[
+p_\theta(Y_i|X_i)
+=
+\frac{\exp(-\exp(\beta+X_i))\exp(Y_i(\beta+X_i))}{Y_i!}
+\]
+and the prior distribution of the latent variable is
+\[
+p_\theta(X_i)
+=
+(2\pi\sigma^2)^{-1/2}
+\exp\left(-\frac{X_i^2}{2\sigma^2}\right)\eqsp.
+\]
+Therefore, the complete-data loglikelihood is 
+\[
+\log p_\theta(X,Y) = \sum_{i=1}^n \Big[ Y_i(\beta+X_i)-\exp(\beta+X_i)\Big]-\sum_{i=1}^n\frac{X_i^2}{2\sigma^2}
+-
+\frac{n}{2}\log\sigma^2 + C\eqsp,
+\]
+where $C$ is a constant that does not depend on $\theta$. Then, at iteration $k\geq 0$ of the algorithm, the intermediate quantity of the EM algorithm is 
+\[
+Q(\theta,\theta^{(k)})
+=
+\sum_{i=1}^n \mathbb{E}_{\theta^{(k)}}
+\left[
+  Y_i(\beta+X_i)-\exp(\beta+X_i)- \frac{X_i^2}{2\sigma^2}
+ \middle| Y_i
+\right]  -
+\frac{n}{2}\log\sigma^2 + C\eqsp.
+\]
+However the conditional distribution $p_{\theta^{(k)}}(X_i|Y_i)$ does not have a closed form. However, we can write
+\[
+p_{\theta^{(k)}}(X_i|Y_i)
+\propto
+p_{\theta^{(k)}}(Y_i|X_i)p_{\theta^{(k)}}(X_i)\eqsp.
+\]
+Therefore, the intermediate quantity  cannot be computed analytically. 
+Since direct sampling from \(p_{\theta^{(k)}}(X_i|Y_i)\) is not possible but this distribution is known up to a multiplicative constant, we may use any MCMC method  (Random Walk Metropolis Hastings, MALA, HMC) to approximate the intermediate quantity. Let $\{X^{(k)}_{p}\}_{p\geq 0}$ be the Markov chain generated by the chosen MCMC algorithm with target distribution $p_{\theta^{(k)}}(X|Y)$.  The parameters are updated by maximizing the Monte Carlo approximation
+\[
+\theta^{(k+1)}
+=
+\arg\max_{\theta}
+\frac{1}{M_k}
+\sum_{p=B_k+1}^{B_k+M_k}
+\log p_\theta(X^{(k)}_{p},Y)\eqsp.
+\]
+%and 
+%\[
+%\beta^{(k+1)}
+%=
+%\arg\max_{\beta}
+%\sum_{p=B_k+1}^{M_k+B_k}
+%\sum_{i=1}^n
+%\Big[
+%Y_i(\beta+X_p^{(k)})
+%-
+%\exp(\beta+X_p^{(k)})
+%\Big]\eqsp.
+%\]
+%This maximization can be performed numerically.
+%
+%
+%\[
+%\sigma^{2(t+1)}
+%=
+%\frac{1}{nM}
+%\sum_{m=1}^M
+%\sum_{i=1}^n
+%\left(X_i^{(m)}\right)^2.
+%\]
+%
+%
+%\begin{enumerate}
+%\item Initialize $\theta^{(0)}$.
+%\item For $t=0,1,2,\ldots$
+%\begin{enumerate}
+%\item Run an MCMC chain targeting $p(X|Y,\theta^{(t)})$.
+%\item Obtain samples $X^{(1)},\ldots,X^{(M)}$.
+%\item Approximate
+%\[
+%Q(\theta|\theta^{(t)})
+%\approx
+%\frac{1}{M}
+%\sum_{m=1}^M
+%\log p(Y,X^{(m)}|\theta).
+%\]
+%\item Update
+%\[
+%\theta^{(t+1)}
+%=
+%\arg\max_{\theta} Q(\theta|\theta^{(t)}).
+%\]
+%\end{enumerate}
+%\end{enumerate}
+\end{example}
+
+
 
 \bibliographystyle{apalike}
 \bibliography{csbib}
