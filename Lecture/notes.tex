@@ -263,6 +263,7 @@
 \tableofcontents
 
 \chapter{Markov chain Monte Carlo}
+\label{chap:mcmc}
 
 \section{Introduction}
 This chapter aims at designing algorithms to obtain samples from a complex distribution $\pi$ defined on a measurable space $(\mathsf{X},\mathcal{X})$. Such algorithms can be applied in many situations, and the target distribution can have several forms depending on the context. In many areas of statistics and machine learning, we are interested in drawing samples from $\pi$ although $\pi$ is known only up to a normalizing constant. Such situations arise naturally in a wide variety of contexts, for example, in Bayesian inference, where $\pi$ represents a posterior distribution over parameters given data, or in energy-based models, where $\pi$ is a probability distribution defined through an energy function.
@@ -1054,7 +1055,7 @@ Consider a Bayesian model with parameter $x$, prior density $p(x)$, latent varia
 $$
 W = p(x)\frac{1}{n}\sum_{i=1}^n\frac{p(y,Z_i\mid x)}{g_x(Z_i)}\eqsp.
 $$
-Then $\PE[W] = p(x)p(y\mid x)\propto\pi(x)$, so that Algorithm~\ref{alg:pseudo:mh} targets the exact posterior, whatever $n\geq 1$. The number $n$ of samples only affects the efficiency: when the variance of $W$ is large, an overestimated $W_k$ makes the chain ``stick'' at $X_k$ for many iterations. A common rule of thumb is to choose $n$ such that the variance of $\log W$ is around $1$ \cite{doucet2015efficient}. When $Z = Z_{0:T}$ is a hidden Markov chain, the unbiased estimator of the likelihood produced by a particle filter (Chapter~\ref{chap:smc}) leads to the particle marginal Metropolis--Hastings algorithm \cite{andrieu2010particle}.
+Then $\PE[W] = p(x)p(y\mid x)\propto\pi(x)$, so that Algorithm~\ref{alg:pseudo:mh} targets the exact posterior, whatever $n\geq 1$. The number $n$ of samples only affects the efficiency: when the variance of $W$ is large, an overestimated $W_k$ makes the chain ``stick'' at $X_k$ for many iterations. %A common rule of thumb is to choose $n$ such that the variance of $\log W$ is around $1$ \cite{doucet2015efficient}. %When $Z = Z_{0:T}$ is a hidden Markov chain, the unbiased estimator of the likelihood produced by a particle filter (Chapter~\ref{chap:smc}) leads to the particle marginal Metropolis--Hastings algorithm \cite{andrieu2010particle}.
 \end{example}
 
 
@@ -1264,28 +1265,30 @@ whose determinant is $(1-h^2/2)^2+h^2(1-h^2/4) = 1$, and whose trace is $2-h^2$.
 \chapter{Variational inference and autoencoders}
 
 
-\section{Evidence Lower Bound}
-In this chapter, we consider models with latent (unobserved) data. Let $(Z,X)$ be random variables in $\mathbb{R}^d\times \mathbb{R}^m$. We assume that the law of $(Z,X)$ has a density $(z,x)\mapsto p(z,x)$ with respect to a reference measure. In this setting, we write
+\section{Evidence lower bound}
+\label{sec:elbo}
+In this chapter, we consider models with latent (unobserved) data. Let $(Z,X)$ be random variables in $\mathbb{R}^d\times \mathbb{R}^m$. We assume that the law of $(Z,X)$ has a density $(z,x)\mapsto p(z,x)$ with respect to the Lebesgue measure (all the results of this chapter hold with a general dominating measure, replacing $\rmd z$ by $\lambda(\rmd z)$; for discrete latent variables, integrals are replaced by sums). In this setting, we write
 $$
 (z,x)\mapsto p(z,x) = p(z)p(x|z)\,,
 $$
-where $z\mapsto p(z)$ is a prior density for $Z$ and $x \mapsto p(x|z)$ is the conditional density (likelihood) of $X$ given $Z$. We do not have access to the conditional density of $Z$ given $X$, since this density is given by:
+where $z\mapsto p(z)$ is a prior density for $Z$ and $x \mapsto p(x|z)$ is the conditional density (likelihood) of $X$ given $Z$. The conditional density of $Z$ given $X$ cannot be computed in general, since it is given by
 $$
 z\mapsto p(z|x) = \frac{p(z)p(x|z)}{p(x)}\propto p(z)p(x|z)\,, 
 $$
-where $p(x) = \int p(z)p(x|z) \mathrm{d} z$ is an intractable integral. The conditional law of latent variables given observations is of utmost importance in many machine learning approaches. For instance, in the E-step of the EM algorithm, the intermediate quantity requires to compute an expecation under such a distribution. In most situations, this distribution cannot be sampled from easily. Standard solutions to sample approximately from $p(z|x)$ include Markov Chain (or Sequential) Monte Carlo methods. In this chapter, we focus on variational approaches where $p(z|x)$ is replaced by a simpler distribution obtained by solving an optimization problem. 
+where $p(x) = \int p(z)p(x|z) \mathrm{d} z$ is an intractable integral. The conditional law of latent variables given observations is of utmost importance in many machine learning approaches. For instance, in the E-step of the EM algorithm, the intermediate quantity requires the computation of an expectation under such a distribution. In most situations, this distribution cannot be sampled from easily. Standard solutions to sample approximately from $p(z|x)$ include Markov chain Monte Carlo (Chapter~\ref{chap:mcmc}) or sequential Monte Carlo (Chapter~\ref{chap:smc}) methods. In this chapter, we focus on variational approaches where $p(z|x)$ is replaced by a simpler distribution obtained by solving an optimization problem.
 
 \medskip
 
 In variational inference, we introduce a variational family i.e. a family of densities to  approximate $z\mapsto p(z|x)$. Let $\mathcal{D}$ be such a family, where the densities $q(\cdot|x) \in\mathcal{D}$ satisfy the two following assumptions.
 \begin{itemize}
 \item For all $q(\cdot|x)\in \mathcal{D}$, $z\mapsto q(z|x)$ is easy to evaluate.
-\item For all $q(\cdot|x)\in \mathcal{D}$, $Z\sim q(\cdot|x)$ is easy to sample from.
+\item For all $q(\cdot|x)\in \mathcal{D}$, it is easy to sample $Z\sim q(\cdot|x)$.
 \end{itemize}
+The notation $q(\cdot|x)$ only emphasizes that the approximation is designed for a given observation $x$; at this stage, $q(\cdot|x)$ is simply a probability density on $\rset^d$.
 
 \medskip
 
-Then, for all $x$ and all $q(\cdot|x)\in \mathcal{D}$, writing $\mathrm{KL}$ the Kullback-Leibler divergence between two probability distributions,
+Then, for all $x$ such that $p(x)>0$ and all $q(\cdot|x)\in \mathcal{D}$ such that the following quantities are finite, writing $\mathrm{KL}$ for the Kullback--Leibler divergence between two probability distributions,
 \begin{align*}
 \mathrm{KL}\left(q(\cdot|x)\|p(\cdot|x)\right) = \int q(z|x) \log \frac{q(z|x)}{p(z|x)} \mathrm{d}z&= \mathbb{E}_{q(\cdot|x)}[\log q(Z|x)] - \mathbb{E}_{q(\cdot|x)}[\log p(Z|x)]\,,\\
  &= \mathbb{E}_{q(\cdot|x)}[\log q(Z|x)] - \mathbb{E}_{q(\cdot|x)}[\log p(Z,x)]+\log p(x)\,,\\
@@ -1295,145 +1298,211 @@ where
 $$
 \mathcal{L}(q(\cdot|x)) = \mathbb{E}_{q(\cdot|x)}\left[\log \frac{p(Z,x)}{q(Z|x)}\right]\,.
 $$
-Using Jensen's inequality, we obtain $\mathrm{KL}\left(q(\cdot|x)\|p(\cdot|x)\right) \geq 0$ so that
+In other words,
+\begin{equation}
+\label{eq:elbo:gap}
+\log p(x) = \mathcal{L}(q(\cdot|x)) + \mathrm{KL}\left(q(\cdot|x)\|p(\cdot|x)\right)\eqsp.
+\end{equation}
+Using Jensen's inequality, we obtain $\mathrm{KL}\left(q(\cdot|x)\|p(\cdot|x)\right) \geq 0$, with equality if and only if $q(\cdot|x)=p(\cdot|x)$ almost everywhere, so that
 $$
-\mathcal{L}(q(\cdot|x))\leq \log p(x)\,.
+\mathcal{L}(q(\cdot|x))\leq \log p(x)\eqsp.
 $$
-This inequality justifies the name Evidence Lower BOund for $\mathcal{L}(q(\cdot|x)) = \mathbb{E}_{q(\cdot|x)}[\log (p(Z,x)/q(Z|x))]$. In variational inference, we then aim to approximate  $p(\cdot|x)$ by $q_{*}(\cdot|x)$ where:
+This inequality justifies the name evidence lower bound (ELBO) for $\mathcal{L}(q(\cdot|x))$, the evidence being the marginal likelihood $p(x)$. Since $\log p(x)$ does not depend on $q$, \eqref{eq:elbo:gap} shows that maximizing the ELBO is equivalent to minimizing $\mathrm{KL}(q(\cdot|x)\|p(\cdot|x))$, a quantity which cannot be computed, whereas the ELBO only involves the joint density $p(z,x)$, which is explicit. In variational inference, we then aim to approximate  $p(\cdot|x)$ by $q_{*}(\cdot|x)$ where:
 $$
 q_*(\cdot|x) \in \mathrm{argmax}_{q\in \mathcal{D}}\;\mathcal{L}(q(\cdot|x))\,.
 $$
 
+\begin{remark}
+\begin{enumerate}[i)]
+\item \emph{Reconstruction and regularization.} Since $p(z,x) = p(z)p(x|z)$,
+\begin{equation}
+\label{eq:elbo:rec:kl}
+\mathcal{L}(q(\cdot|x)) = \mathbb{E}_{q(\cdot|x)}[\log p(x|Z)] - \mathrm{KL}\left(q(\cdot|x)\|p\right)\eqsp,
+\end{equation}
+where $p$ denotes the prior. The first term favors distributions $q(\cdot|x)$ putting mass on latent values which explain the observation well, the second one keeps $q(\cdot|x)$ close to the prior. This decomposition is central for variational autoencoders (Section~\ref{sec:vae}).
+\item \emph{Energy and entropy.} $\mathcal{L}(q(\cdot|x)) = \mathbb{E}_{q(\cdot|x)}[\log p(Z,x)] + \mathrm{H}(q(\cdot|x))$, where $\mathrm{H}(q) = -\int q\log q$ is the (differential) entropy. This is the form used in statistical physics (the ELBO is the opposite of the variational free energy).
+\end{enumerate}
+\end{remark}
+
+\begin{remark}
+When the model depends on a parameter $\theta$, $\mathcal{L}(q,\theta) = \mathbb{E}_{q}[\log (p_\theta(Z,x)/q(Z))]$ is a lower bound on $\log p_\theta(x)$ for all $q$ and $\theta$. Maximizing alternately in $q$ \emph{without restriction on the family} and in $\theta$ is exactly the EM algorithm: by \eqref{eq:elbo:gap}, the maximum in $q$ is attained at $q = p_{\theta}(\cdot|x)$ (E-step), and maximizing $\theta\mapsto\mathcal{L}(q,\theta) = \mathbb{E}_{q}[\log p_\theta(Z,x)] + \mathrm{H}(q)$ is the M-step \cite{neal1998view}. Variational inference restricts $q$ to a tractable family $\mathcal{D}$ when the E-step is not feasible; variational EM and variational autoencoders (Section~\ref{sec:vae}) are built on this remark.
+\end{remark}
+
+The direction of the divergence is dictated by computability: $\mathrm{KL}(q\|p(\cdot|x))$ only requires expectations under $q$, which can be sampled, while $\mathrm{KL}(p(\cdot|x)\|q)$ requires expectations under the intractable posterior. This choice has qualitative consequences. Since $q\log(q/p)$ is large where $q>0$ and $p\approx 0$, minimizing $\mathrm{KL}(q\|p)$ forces $q$ to vanish where $p$ vanishes: it is \emph{zero-forcing} (or mode-seeking) and tends to underestimate the spread of $p$. On the contrary, $\mathrm{KL}(p\|q)$ is \emph{mass-covering}: it penalizes heavily the regions where $p>0$ and $q\approx0$. See Example~\ref{ex:mf:gauss} and Figure~\ref{fig:kl:directions}.
+
 \section{Coordinate ascent variational inference}
-The most straightforward approach to solve the optimization problem is to consider a mean-field variational family  i.e. to choose $\mathcal{D}$ such that: 
+\label{sec:cavi}
+The most straightforward approach to solve the optimization problem is to consider a mean-field variational family, i.e. to choose $\mathcal{D}$ such that
 $$
-\mathcal{D} = \left\{z\mapsto q(z|x) = \prod_{j=1}^dq_j(z_j|x)\;;\; q_j(\cdot|x) \,\mbox{is\, a\, density} \right\}\,.
+\mathcal{D} = \left\{z\mapsto q(z|x) = \prod_{j=1}^dq_j(z_j|x)\;;\; \mbox{for all $1\leq j\leq d$, } q_j(\cdot|x) \,\mbox{is\, a\, probability density on } \rset \right\}\eqsp.
 $$
-Even when considering a simple variational family such as $\mathcal{D}$, it is not possible to maximize the ELBO explicitly. Assume therefore that we want to optimize $\mathrm{ELBO}(q(\cdot|x)) $ on $q_j(\cdot|x)$ only for some $1\leq j \leq d$, the other densities $(q_\ell(\cdot|x))_{\ell\neq j}$ being kept fixed.
-Write $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$, and for all $q(\cdot|x)\in \mathcal{D}$,  $q_{-j}(z_{-j}|x) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell}|x)$. Then,
+Under $q\in\mathcal{D}$, the components of $Z$ are independent, but no parametric form is imposed on the factors $q_j$. More generally, $z$ can be split into blocks $z = (z_1,\ldots,z_J)$ of arbitrary dimensions; all the computations below hold verbatim.
+Even when considering a simple variational family such as $\mathcal{D}$, it is not possible to maximize the ELBO explicitly in general. Assume therefore that we want to optimize $\mathcal{L}(q(\cdot|x))$ with respect to $q_j(\cdot|x)$ only, for some $1\leq j \leq d$, the other densities $(q_\ell(\cdot|x))_{\ell\neq j}$ being kept fixed.
+Write $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$ and, for all $q(\cdot|x)\in \mathcal{D}$,  $q_{-j}(z_{-j}|x) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell}|x)$. Then, since $p(z,x) = p(z_{-j},x)p(z_j|z_{-j},x)$,
 \begin{align*}
-\mathcal{L}(q(\cdot|x)) &= \int \left\{\prod_{\ell=1}^dq_\ell(z_\ell|x)\right\} \left\{\log (p(z_{-j},x)p(z_j|z_{-j},x)) - \sum_{\ell=1}^d\log q_\ell(z_\ell|x)\right\}\rmd z_1\ldots \rmd z_d\,,\\
-&= \int q_j(z_j|x)\int \left\{\prod_{\ell=1, \ell\neq j}^dq_\ell(z_\ell|x)\right\} \left\{\log (p(z_{-j},x)p(z_j|z_{-j},x))\rmd z_{-j}\right\}\rmd z_j \\
-&\hspace{3cm}- \sum_{\ell=1}^d\int q_\ell(z_\ell|x)\log q_\ell(z_\ell|x)\rmd z_\ell  \,\\
-&= \mathbb{E}_{q_j(\cdot|x)}\left[\mathbb{E}_{q_{-j}(\cdot|x)}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j(\cdot|x)}\left[\log q_j(Z_j|x)\right]  + \mathrm{C}
+\mathcal{L}(q(\cdot|x)) &= \int \left\{\prod_{\ell=1}^dq_\ell(z_\ell|x)\right\} \left\{\log (p(z_{-j},x)p(z_j|z_{-j},x)) - \sum_{\ell=1}^d\log q_\ell(z_\ell|x)\right\}\rmd z_1\ldots \rmd z_d\\
+&= \int q_j(z_j|x)\left\{\int \left\{\prod_{\ell=1, \ell\neq j}^dq_\ell(z_\ell|x)\right\} \log p(z_j|z_{-j},x)\,\rmd z_{-j}\right\}\rmd z_j \\
+&\hspace{1cm}+\int q_{-j}(z_{-j}|x)\log p(z_{-j},x)\,\rmd z_{-j}- \sum_{\ell=1}^d\int q_\ell(z_\ell|x)\log q_\ell(z_\ell|x)\rmd z_\ell \\
+&= \mathbb{E}_{q_j(\cdot|x)}\left[\mathbb{E}_{q_{-j}(\cdot|x)}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j(\cdot|x)}\left[\log q_j(Z_j|x)\right]  + \mathrm{C}\eqsp,
 \end{align*}
-%\begin{align*}
-%\mathcal{L}_x(q) &= \mathbb{E}_{q}\left[\log \frac{p(Z_1,\ldots,Z_d,x)}{\prod_{j=1}^dq_j(Z_j)}\right]\,,\\
-%&= \mathbb{E}_{q_j}\left[\mathbb{E}_{q_{-j}}\left[\log p(Z_j | Z_{-j},x)\right]\right] - \mathbb{E}_{q_j}\left[\log q_j(Z_j)\right]  + \mathrm{C}
-%\end{align*}
-where $\mathrm{C}$ does not depend on $q_j(\cdot|x)$. %,  $z_{-j} = (z_\ell)_{1\leq \ell \leq d; \ell \neq j}$ and $q_{-j}(z_{-j}) = \prod_{1\leq \ell \leq d; \ell \neq j}q_{\ell}(z_{\ell})$.  
+where $\mathrm{C}$ does not depend on $q_j(\cdot|x)$.
 Consider the density $\tilde q_j(\cdot|x)$ such that
 $$
-\tilde q_j(z_j|x) \propto \exp\left(\mathbb{E}_{q_{-j}(\cdot|x)}\left[\log p(z_j | Z_{-j},x)\right]\right)\,,
+\tilde q_j(z_j|x) \propto \exp\left(\mathbb{E}_{q_{-j}(\cdot|x)}\left[\log p(z_j | Z_{-j},x)\right]\right)\eqsp,
 $$
-i.e. the density given by $\tilde q_j(z_j|x)= \exp(\mathbb{E}_{q_{-j}(\cdot|x)}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$ ($C_j$ is the normalizing constant to obtain a density). Therefore,
+i.e. the density given by $\tilde q_j(z_j|x)= \exp(\mathbb{E}_{q_{-j}(\cdot|x)}[\log p(z_j | Z_{-j},x)])/C_j$ where $C_j$ does not depend on $z_j$ ($C_j$ is the normalizing constant to obtain a density, assumed to be finite). Therefore,
 $$
-\mathcal{L}(q(\cdot|x)) = -\mathbb{E}_{q_j(\cdot|x)}\left[\log \frac{q_j(Z_j)}{\tilde q_j(Z_j|x) }\right]  + \mathrm{C} + \log C_j = -\mathrm{KL}(q_j(\cdot|x)\|\tilde q_j(\cdot|x))  + \mathrm{C} + \log C_j\,.
+\mathcal{L}(q(\cdot|x)) = -\mathbb{E}_{q_j(\cdot|x)}\left[\log \frac{q_j(Z_j|x)}{\tilde q_j(Z_j|x) }\right]  + \mathrm{C} + \log C_j = -\mathrm{KL}(q_j(\cdot|x)\|\tilde q_j(\cdot|x))  + \mathrm{C} + \log C_j\eqsp.
 $$
-Therefore, optimizing  $\mathcal{L}(q(\cdot|x)) $ on $q_j(\cdot|x)$ only, the other densities $(q_\ell(\cdot|x))_{\ell\neq j}$ being kept fixed, yields an optimum given by $\tilde q_j(\cdot|x)$.
-The algorithm Coordinate Ascent Variational Inference (CAVI) proposes therefore to sequentially update  $q_j(\cdot|x)$, $1\leq j \leq d$ until a stopping criterion is met. In Algorithm~\ref{alg:CAVI}, we propose a version of the algorithm where the variational distribution of only one component of $Z$ is updated at each iteration, of course many alternatives can be considered. A standard alternative is to update each variational distribution at each iteration.
 
-\begin{algorithm}[H] \label{alg:CAVI}
-    \KwData{Observation $x$, initial variational distribution $\{q_j^{(0)}(\cdot|x)\}_{1\leq j \leq d}$, maximum number of iteration $N$}
+Therefore, optimizing $\mathcal{L}(q(\cdot|x)) $ with respect to $q_j(\cdot|x)$ only, the other densities $(q_\ell(\cdot|x))_{\ell\neq j}$ being kept fixed, yields a unique optimum given by $\tilde q_j(\cdot|x)$. Since $\log p(z_j|z_{-j},x) = \log p(z_j,z_{-j},x) - \log p(z_{-j},x)$ and the second term does not depend on $z_j$, the update can equivalently be written
+\begin{equation}
+\label{eq:cavi:update}
+\tilde q_j(z_j|x) \propto \exp\left(\mathbb{E}_{q_{-j}(\cdot|x)}\left[\log p(z_j, Z_{-j},x)\right]\right)\eqsp,
+\end{equation}
+which is often more convenient since the joint density is explicit.
+The coordinate ascent variational inference (CAVI) algorithm therefore proposes to update sequentially $q_j(\cdot|x)$, $1\leq j \leq d$, until a stopping criterion is met. In Algorithm~\ref{alg:CAVI}, we propose a version of the algorithm where the variational distribution of only one component of $Z$, chosen at random, is updated at each iteration; of course many alternatives can be considered. A standard alternative is to update all the factors in turn at each iteration (systematic scan), as in Algorithm~\ref{alg:CAVI:mixtureGauss}.
+
+
+\begin{algorithm}[H]
+    \KwData{Observation $x$, initial variational distribution $\{q_j^{(0)}(\cdot|x)\}_{1\leq j \leq d}$, maximum number of iterations $N$.}
     \KwResult{A variational distribution for each coordinate of $Z$, $q^{(N)}_j(\cdot|x)$, $1\leq j\leq d$.}
     \For {$ k= 1 \to N$}{
-        Draw $j\in\{1,\ldots,d\}$ uniformly at random;
-
-        Set $q^{(k)}_\ell(\cdot|x) = q^{(k-1)}_\ell(\cdot|x)$ for all $1\leq \ell \leq d$, $\ell \neq j$ and $q^{(k)}_{-j}(\cdot|x) = \prod_{1\leq \ell \leq d, \ell\neq j} q^{(k)}_{\ell}(\cdot|x)$;
-
-        Set $q^{(k)}_j(z_j|x) \propto \exp\left(\mathbb{E}_{q_{-j}^{(k)}(\cdot|x)}\left[\log p(z_j | Z_{-j},x)\right]\right)$;
-
-
+        Draw $j\in\{1,\ldots,d\}$ uniformly at random\;
+        Set $q^{(k)}_\ell(\cdot|x) = q^{(k-1)}_\ell(\cdot|x)$ for all $1\leq \ell \leq d$, $\ell \neq j$, and $q^{(k)}_{-j}(\cdot|x) = \prod_{1\leq \ell \leq d, \ell\neq j} q^{(k)}_{\ell}(\cdot|x)$\;
+        Set $q^{(k)}_j(z_j|x) \propto \exp\left(\mathbb{E}_{q_{-j}^{(k)}(\cdot|x)}\left[\log p(z_j | Z_{-j},x)\right]\right)$\;
 }
+\caption{Coordinate ascent variational inference (random scan).}
+\label{alg:CAVI}
 \end{algorithm}
 
-\section{Application to a mixture of Gaussian distributions}
-This example can be found in  \cite{blei2017variational}. Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance 1. The variables  $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ are  i.i.d. Gaussian with mean 0 and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group the $i$-th observation belongs to. The variables $\mu$ and $c$ are not observed.  The random variables $c= (c_i)_{1\leq i\leq n}$ are independent of  $\mu$ and are independent with multinomial distribution with parameters $\{\omega_1,\ldots,\omega_K\}$, where $\sum_{k=1}^K\omega_k = 1$.  
+The CAVI algorithm has several key properties.
+\begin{enumerate}[i)]
+\item \emph{Monotonicity.} Each update maximizes $\mathcal{L}$ with respect to one factor, so that $k\mapsto\mathcal{L}(q^{(k)}(\cdot|x))$ is nondecreasing. Since it is bounded by $\log p(x)$, the sequence of ELBO values converges. Monitoring the ELBO is therefore a natural stopping criterion, and a decrease of the ELBO reveals an error in the implementation (see Figure~\ref{fig:cavi:mixture}).
+\item \emph{Local optima.} The ELBO is not concave in general: CAVI converges to a local maximum (or a stationary point) which depends on the initialization, and several initializations are usually compared through their final ELBO.
+\item \emph{Conditionally conjugate models.} If the full conditional $p(z_j|z_{-j},x)$ belongs to an exponential family, $p(z_j|z_{-j},x) = h(z_j)\exp\{\eta_j(z_{-j},x)^\top T(z_j) - A(\eta_j(z_{-j},x))\}$, then $\tilde q_j(z_j|x)\propto h(z_j)\exp\{\mathbb{E}_{q_{-j}}[\eta_j(Z_{-j},x)]^\top T(z_j)\}$: the optimal factor belongs to the same family, with natural parameter $\mathbb{E}_{q_{-j}}[\eta_j(Z_{-j},x)]$ \cite{blei2017variational}. CAVI then reduces to fixed-point updates of finite-dimensional parameters.
+\end{enumerate}
 
-Conditionally on  $\mu$ and $c$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are independent and $X_i$ has a Gaussian distribution with mean $\mu_{c_i}$ and variance $1$. Marginalizing on $c$, conditionally on  $\mu$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are i.i.d. and the conditional probability density of $X_1$ is:
+\begin{example}[Mean-field approximation of a Gaussian distribution]
+\label{ex:mf:gauss}
+Let $p(\cdot|x) = \gauss(\mu,\Lambda^{-1})$ on $\rset^d$, where the precision matrix $\Lambda$ is positive definite. Since $\log p(z|x) = -\frac12(z-\mu)^\top\Lambda(z-\mu) + \mathrm{const}$, as a function of $z_j$,
 $$
-x\mapsto p(x|\mu) = \sum_{k=1}^K \omega_k \varphi_{\mu_k,1}(x)\,,
+\log p(z|x) = -\frac{\Lambda_{jj}}{2}z_j^2 + z_j\Big(\Lambda_{jj}\mu_j - \sum_{\ell\neq j}\Lambda_{j\ell}(z_\ell-\mu_\ell)\Big) + \mathrm{const}\eqsp.
 $$
-where $\varphi_{\mu_k,\eta^2}$ the Gaussian probability density function with mean $\mu_k$ and  variance $\eta^2$. The joint likelihood is therefore:
+By \eqref{eq:cavi:update}, the optimal factor is Gaussian, $q_j = \gauss(m_j,\Lambda_{jj}^{-1})$, with $m_j = \mu_j - \Lambda_{jj}^{-1}\sum_{\ell\neq j}\Lambda_{j\ell}(m_\ell-\mu_\ell)$. The unique fixed point is $m=\mu$ (the means are exact), but the variances are $\Lambda_{jj}^{-1}\leq (\Lambda^{-1})_{jj}$ (the conditional variance is smaller than the marginal variance): \emph{mean-field VI underestimates marginal variances}. For $d=2$, unit variances and correlation $\rho$, $\Lambda_{jj}^{-1} = 1-\rho^2$, which goes to $0$ as $|\rho|\to1$ while the marginal variances remain equal to $1$. By contrast, minimizing $\mathrm{KL}(p\|q)$ over product densities gives $q_j = p_j$, the exact marginals: indeed, $\mathrm{KL}(p\|\prod_j q_j) = -\mathrm{H}(p) - \sum_j\mathbb{E}_p[\log q_j(Z_j)]$ and each term $-\mathbb{E}_{p_j}[\log q_j(Z_j)]$ is minimal for $q_j = p_j$. Both approximations are displayed in Figure~\ref{fig:kl:directions}, together with a bimodal example where the reverse KL locks onto one mode while the forward KL covers both modes with a single wide Gaussian.
+\end{example}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{vi_kl_directions}
+\caption{Left: level sets ($2$ standard deviations) of a correlated Gaussian target and of its best mean-field approximations for $\mathrm{KL}(q\|p)$ (variances $1-\rho^2$) and $\mathrm{KL}(p\|q)$ (exact marginals). Right: bimodal target $0.5\gauss(-2,0.6^2)+0.5\gauss(2,0.6^2)$ and its best Gaussian approximations; minimizing $\mathrm{KL}(q\|p)$ (computed by quadrature) selects one mode, minimizing $\mathrm{KL}(p\|q)$ matches the mean and the variance of $p$.}
+\label{fig:kl:directions}
+\end{figure}
+
+\begin{example}[Normal model with unknown mean and precision]
+\label{ex:cavi:normal}
+Consider the model where $Y_1,\ldots,Y_n$ are i.i.d. $\gauss(m,1/\kappa)$ given $(m,\kappa)$, with independent priors $m\sim\gauss(m_0,1/\kappa_0)$ and $\kappa\sim\mathrm{Gamma}(a_0,b_0)$, and the mean-field family $q(m,\kappa) = q_1(m)q_2(\kappa)$. Up to additive constants,
+$$
+\log p(m,\kappa,y_{1:n}) = -\frac{\kappa_0}{2}(m-m_0)^2 + \Big(a_0+\frac n2-1\Big)\log\kappa - b_0\kappa - \frac\kappa2\sum_{i=1}^n(y_i-m)^2\eqsp.
+$$
+Taking expectations with respect to $q_2$ (resp. $q_1$) in \eqref{eq:cavi:update} yields $q_1 = \gauss(m_N,\lambda_N^{-1})$ and $q_2 = \mathrm{Gamma}(a_N,b_N)$ with
+$$
+\lambda_N = \kappa_0+n\,\mathbb{E}_{q_2}[\kappa]\eqsp,\quad m_N = \frac{\kappa_0m_0+\mathbb{E}_{q_2}[\kappa]\sum_{i=1}^ny_i}{\lambda_N}\eqsp,
+$$
+$$
+a_N = a_0+\frac n2\eqsp,\quad b_N = b_0+\frac12\Big(\sum_{i=1}^n(y_i-m_N)^2+\frac{n}{\lambda_N}\Big)\eqsp,
+$$
+where $\mathbb{E}_{q_2}[\kappa] = a_N/b_N$ and we used $\mathbb{E}_{q_1}[(y_i-m)^2] = (y_i-m_N)^2+\lambda_N^{-1}$.  Figure~\ref{fig:cavi:normal} compares the result with the exact posterior: the mean-field approximation is accurate around the mode but cannot reproduce the dependence between $m$ and $\kappa$ (the posterior of $m$ is wider when $\kappa$ is small) and is too concentrated.
+\end{example}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.75\textwidth]{cavi_normal}
+\caption{Exact posterior (computed on a grid) and mean-field CAVI approximation for the normal model of Example~\ref{ex:cavi:normal}, with $n=10$ observations drawn from $\gauss(1,1)$, $m_0=0$, $\kappa_0=0.1$, $a_0=b_0=1$. The contours correspond to the same density levels relative to the mode.}
+\label{fig:cavi:normal}
+\end{figure}
+
+
+\section{Application to a mixture of Gaussian distributions}
+
+This example can be found in \cite{blei2017variational}. Consider a mixture of $K$ Gaussian distributions with means $\mu = (\mu_k)_{1\leqslant k \leqslant K}$ and variance $1$. The variables $\mu_1,\ldots,\mu_K$ are i.i.d. Gaussian with mean $0$ and variance $\sigma^2$. For all $1\leq i\leq n$, we denote by $c_i\in\{1, \ldots, K\}$ the group the $i$-th observation belongs to. The variables $\mu$ and $c$ are not observed. The random variables $c= (c_i)_{1\leq i\leq n}$ are independent of $\mu$, and are i.i.d. with categorical distribution with parameters $(\omega_1,\ldots,\omega_K)$, i.e. $\PP(c_i = k) = \omega_k$, where $\sum_{k=1}^K\omega_k = 1$ and the weights $\omega_k$ are known.
+
+Conditionally on $\mu$ and $c$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are independent and $X_i$ has a Gaussian distribution with mean $\mu_{c_i}$ and variance $1$. Marginalizing over $c$, conditionally on $\mu$, the observations $(X_i)_{1\leqslant i\leqslant n}$ are i.i.d. and the conditional probability density of $X_1$ is
+$$
+x\mapsto p(x|\mu) = \sum_{k=1}^K \omega_k \varphi_{\mu_k,1}(x)\eqsp,
+$$
+where $\varphi_{\mu_k,\eta^2}$ is the Gaussian probability density function with mean $\mu_k$ and variance $\eta^2$. The marginal likelihood (evidence) is therefore
 $$
 p(x_{1:n}) = \int p(x_{1:n}|\mu) p(\mu) \mathrm{d} \mu = \int \prod_{i=1}^n p(x_i|\mu) p(\mu) \mathrm{d} \mu = \int \prod_{i=1}^n \left(\sum_{k=1}^K \omega_k \varphi_{\mu_k,1}(x_i)\right) p(\mu) \mathrm{d} \mu\eqsp.
 $$
-Writing $z = (\mu,c)$ and $x = x_{1:n}$, our objective is to estimate $p(\mu,c|x)$ where $c = (c_1,\cdots,c_n)$ are the components of the observations. Consider the following initialization of the CAVI algorithm:
+Expanding the product yields a sum of $K^n$ Gaussian integrals, one for each configuration of $c$, which is not computable as soon as $n$ is moderately large. Writing $z = (\mu,c)$ and $x = x_{1:n}$, our objective is to approximate $p(\mu,c|x)$, where $c = (c_1,\cdots,c_n)$ are the labels of the observations. Consider the following mean-field variational family:
 $$
-q(\mu,c|x) = \prod_{k=1}^K \varphi_{m_k,s_k}(\mu_k)\prod_{i=1}^n \mathrm{Cat}_{\phi_i}(c_i)\,, 
+q(\mu,c|x) = \prod_{k=1}^K \varphi_{m_k,s_k}(\mu_k)\prod_{i=1}^n \mathrm{Cat}_{\phi_i}(c_i)\eqsp,
 $$
 which means that under $q(\cdot|x)$:
 \begin{itemize}
-\item $\mu$ and  $c$ are independent.
+\item $\mu$ and $c$ are independent.
 \item $(\mu_{k})_{1\leqslant k \leqslant K}$ are independent Gaussian random variables with means $(m_{k})_{1\leqslant k \leqslant K}$ and variances $(s_{k})_{1\leqslant k \leqslant K}$.
-\item $(c_{i})_{1\leqslant i \leqslant n}$ are independent with  multinomial distributions with parameters  $(\phi_i)_{1\leqslant i \leqslant n}$.%: $q(c_i=k) = \phi_i(k)$ for $1\leqslant k \leqslant K$. 
+\item $(c_{i})_{1\leqslant i \leqslant n}$ are independent with categorical distributions with parameters $(\phi_i)_{1\leqslant i \leqslant n}$: $q(c_i=k|x) = \phi_i(k)$ for $1\leqslant k \leqslant K$.
 \end{itemize}
-%Write $\mathcal{D}$ this family where the means $(m_{k})_{1\leqslant k \leqslant K}\in \mathbb{R}^K$, and variances $(s_{k})_{1\leqslant k \leqslant K}\in (\mathbb{R}_+^*)^K$ and the parameters  $(\phi_i)_{1\leqslant i \leqslant n}\in \mathbb{S}_K^n$ where $\mathbb{S}_K$ is the simplex of dimension $K$.  Then, we aim at solving the optimization problem:
-%$$
-%q^* = \mathrm{Argmin}_{q\in\mathcal{D}}\; \mathrm{KL}\left(q\|p(\cdot|x)\right)\,.
-%$$
-Note that
-\begin{align*}
-\mathrm{KL}\left(q(\cdot|x)\|p(\cdot|x)\right) &= \mathbb{E}_{q(\cdot|x)}[\log q(\mu,c|x)] - \mathbb{E}_{q(\cdot|x)}[\log p(\mu,c|x)]\,,\\
- &= \mathbb{E}_{q(\cdot|x)}[\log q(\mu,c|x)] - \mathbb{E}_{q(\cdot|x)}[\log p(\mu,c,x)]+\log p(x)\,,\\
-&= -\mathcal{L}(q(\cdot|x))+\log p(x)\,,
-\end{align*}
+The Gaussian form of the factors is not an assumption: by \eqref{eq:cavi:update}, it is the form of the optimal factors in the mean-field family $q(\mu,c|x) = \prod_k q_k(\mu_k)\prod_i q_i(c_i)$, as shown by the computations below. As in Section~\ref{sec:elbo},
+$$
+\mathrm{KL}\left(q(\cdot|x)\|p(\cdot|x)\right) = -\mathcal{L}(q(\cdot|x))+\log p(x)\eqsp,
+$$
 where
 $$
-\mathcal{L}(q(\cdot|x))= -\mathbb{E}_{q(\cdot|x)}[\log q(\mu,c|x)] + \mathbb{E}_{q(\cdot|x)}[\log p(\mu,c,x)] \,.
+\mathcal{L}(q(\cdot|x))= \mathbb{E}_{q(\cdot|x)}[\log p(\mu,c,x)] - \mathbb{E}_{q(\cdot|x)}[\log q(\mu,c|x)] \eqsp.
 $$
-CAVI algorithm computes iteratively $1\leqslant k \leqslant K$,
+The CAVI algorithm computes iteratively, for $1\leqslant k \leqslant K$,
 $$
 q(\mu_k|x) \propto \mathrm{exp}\left(\mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log p(\mu_k|x,c,\mu_{-k})]\right)
 $$
-and for all $1\leqslant i \leqslant n$,
+and, for all $1\leqslant i \leqslant n$,
 $$
-q(c_i|x) \propto \mathrm{exp}\left(\mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log p(c_i|x,c_{-i},\mu)]\right)\,,
+q(c_i|x) \propto \mathrm{exp}\left(\mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log p(c_i|x,c_{-i},\mu)]\right)\eqsp,
 $$
-where $\mu_{-k} = (\mu_j)_{1\leq j \leq K, j\neq k}$, $c_{-i} = (c_j)_{1\leq j \leq n, j\neq i}$, and  $\mathbb{E}_{\tilde q_z(\cdot|x)}$ is the expectation under the variational distribution of all variables except $z$. 
-%\begin{itemize}
-%\item $\tilde p_i(c_i|x)$ is the conditional distribution of $c_i$ given the observations and the other parameters  and $\tilde p_k(\mu_k|x)$ is the conditional distribution of $\mu_k$ given the observations and the other parameters.
-%\item $\mathbb{E}_{\tilde q_z}$ is the expectation under the variational distribution of all variables except $z$.
-%\end{itemize}
-\subsubsection*{Update of the variaitonal distribution of $c_i$, $1\leq i \leq n$}
+where $\mu_{-k} = (\mu_j)_{1\leq j \leq K, j\neq k}$, $c_{-i} = (c_j)_{1\leq j \leq n, j\neq i}$, and $\mathbb{E}_{\tilde q_z(\cdot|x)}$ is the expectation under the variational distribution of all variables except $z$.
+
+\subsubsection*{Update of the variational distribution of $c_i$, $1\leq i \leq n$}
 Note that
 $$
 p(c_i|x,c_{-i},\mu) \propto p(c_i)p(x_i|c_i,\mu) \propto p(c_i)\prod_{k=1}^K \left(\varphi_{\mu_k,1}(x_i)\right)^{1_{c_i=k}}\,. 
 $$
 Then,
 $$
-\mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log p(c_i|x,c_{-i},\mu)] = \log p(c_i) + \sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log \varphi_{\mu_k,1}(x_i)]
+\mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log p(c_i|x,c_{-i},\mu)] = \log p(c_i) + \sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log \varphi_{\mu_k,1}(x_i)] + \mathrm{const}\eqsp,
 $$
 and
 \begin{align*}
 \mathrm{exp}\left(\mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log p(c_i|x,c_{-i},\mu)]\right) &\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
 &\propto p(c_i) \mathrm{exp}\left(\sum_{k=1}^K 1_{c_i=k} \mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[-(x_i-\mu_k)^2/2]\right)\,.
 \end{align*}
-The update writes:
+Since $\mathbb{E}_{\tilde q_{c_i}(\cdot|x)}[(x_i-\mu_k)^2] = x_i^2 - 2x_im_k + m_k^2+s_k$ and $x_i^2$ does not depend on $k$, the update writes:
 $$
-\phi_i(k) \propto \omega_k\mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\,.
+\phi_i(k) \propto \omega_k\mathrm{exp}\left(m_k x_i - \frac{m^2_k + s_k}{2}\right)\eqsp.
 $$
 
-\subsubsection*{Update of the variaitonal distribution of $\mu_k$, $1\leq k \leq K$}
+\subsubsection*{Update of the variational distribution of $\mu_k$, $1\leq k \leq K$}
 On the other hand,
 $$
 p(\mu_k|x,c,\mu_{-k}) \propto p(\mu_k)\prod_{i=1}^np(x_i|c_i,\mu) \,. 
 $$
 Then,
 $$
-\mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log p(\mu_k|x,c,\mu_{-k})] = \log p(\mu_k) + \sum_{i=1}^n \mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log p(x_i|\mu,c_i)]
+\mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log p(\mu_k|x,c,\mu_{-k})] = \log p(\mu_k) + \sum_{i=1}^n \mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log p(x_i|\mu,c_i)] + \mathrm{const}\eqsp,
 $$
-and
+and, since the terms with $\ell\neq k$ do not depend on $\mu_k$ and $\mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\1_{c_i=k}] = \phi_i(k)$,
 \begin{align*}
 \mathrm{exp}\left(\mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log p(\mu_k|x,c,\mu_{-k})]\right) &\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n\sum_{\ell=1}^K  \mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[1_{c_i=\ell}\log \varphi_{\mu_\ell,1}(x_i)]\right)\,\\
 &\propto p(\mu_k) \mathrm{exp}\left(\sum_{i=1}^n \phi_i(k) \mathbb{E}_{\tilde q_{\mu_k}(\cdot|x)}[\log \varphi_{\mu_k,1}(x_i)]\right)\,\\
 &\propto \mathrm{exp}\left(-\frac{\mu_k^2}{2\sigma^2}-\frac{1}{2}\sum_{i=1}^n \phi_i(k)(x_i-\mu_k)^2\right)\,,\\
 &\propto \mathrm{exp}\left(-\frac{\mu_k^2}{2\sigma^2}+\sum_{i=1}^n \phi_i(k)x_i\mu_k - \frac{1}{2}\sum_{i=1}^n \phi_i(k)\mu^2_k\right)\,.
 \end{align*}
-The update writes therefore,
+This is a Gaussian density, and the update writes therefore
 $$
 m_k = \frac{\sum_{i=1}^n \phi_i(k)x_i}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\quad\mathrm{and}\quad s_k = \frac{1}{1/\sigma^2 + \sum_{i=1}^n \phi_i(k)}\,. 
 $$
+The mean $m_k$ is a weighted average of the observations, with weights given by the probabilities $\phi_i(k)$ that observation $i$ belongs to group $k$, shrunk towards the prior mean $0$.
 
 \begin{algorithm}[H] \label{alg:CAVI:mixtureGauss}
     \KwData{Observations $x= (x_1,\ldots,x_n)$, initial values of $\phi_i(k)$, $m_k$ and $s_k$, $1\leq k \leq K$, $1\leq i \leq n$, maximum number of iteration $N$}
@@ -1457,49 +1526,121 @@ $$;
 \caption{A version of CAVI algorithm for a Bayesian mixture of Gaussian distributions.}
 \end{algorithm}
 
-\section{Variational Autoencoders}
-Variational Auto-Encoders (VAE) are very popular approaches to introduce approximations of a target conditional distribution in the context of latent data models. Assume that $(X_1,\ldots,X_n)$ are i.i.d. random variables in $\mathsf{X}$ with unknown probability distribution function $\pi_{\mathrm{data}}$. We consider a family of joint probability distributions $\{(z,x) \mapsto  p_{\theta}(z,x)\}_{\theta\in\Theta}$ on $(\mathsf{Z}\times \mathsf{X}, \mathcal{Z}\times \mathcal{X})$ where $Z$ is a latent variable and $X$ is the observation. In this setting, we often write, for all $\theta\in\Theta$, $x\in\mathsf{X}$, $z\in\mathsf{Z}$,
+To monitor the convergence, the ELBO is available in closed form: using the expectations above and the entropies of the Gaussian and categorical distributions,
+\begin{multline*}
+\mathcal{L}(q(\cdot|x)) = \sum_{k=1}^K\Big\{-\frac12\log(2\pi\sigma^2) - \frac{m_k^2+s_k}{2\sigma^2} + \frac12\log(2\pi\rme\, s_k)\Big\}\\
++ \sum_{i=1}^n\sum_{k=1}^K\phi_i(k)\Big\{\log\omega_k - \frac12\log(2\pi) - \frac{(x_i-m_k)^2+s_k}{2} - \log\phi_i(k)\Big\}\eqsp.
+\end{multline*}
+Figure~\ref{fig:cavi:mixture} displays the result of Algorithm~\ref{alg:CAVI:mixtureGauss} on simulated data and the evolution of the ELBO, which is nondecreasing as expected.
+
+\paragraph{Label switching.} The posterior distribution is invariant by any permutation of the labels $\{1,\ldots,K\}$ (when the weights $\omega_k$ are equal), so that it has (at least) $K!$ symmetric modes and the posterior means of the $\mu_k$ are all equal. Mean-field VI, being mode-seeking, selects one of these modes depending on the initialization: different initializations in Figure~\ref{fig:cavi:mixture} reach the same ELBO with permuted components. This is harmless for clustering, but shows that the variational approximation describes one mode of the posterior and not the posterior itself. An MCMC sampler would face the opposite difficulty: it should visit all the modes, which rarely happens in practice.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{cavi_mixture}
+\caption{CAVI for a mixture of $K=3$ unit-variance Gaussian distributions ($n=300$, true means $-4$, $0.5$ and $5$, $\sigma^2=10$, equal weights). Left: data and fitted components. Right: ELBO along the iterations for three random initializations, which converge (in a few iterations) to the same ELBO up to a permutation of the labels.}
+\label{fig:cavi:mixture}
+\end{figure}
+
+
+\section{Variational autoencoders}
+\label{sec:vae}
+Variational autoencoders (VAE) \cite{kingma2013auto,rezende2014stochastic} are very popular approaches to introduce approximations of a target conditional distribution in the context of latent data models. Assume that $(X_1,\ldots,X_n)$ are i.i.d. random variables in $\mathsf{X}$ with unknown probability distribution $\pi_{\mathrm{data}}$. We consider a family of joint probability densities $\{(z,x) \mapsto  p_{\theta}(z,x)\}_{\theta\in\Theta}$ on $(\mathsf{Z}\times \mathsf{X}, \mathcal{Z}\otimes \mathcal{X})$ where $Z$ is a latent variable and $X$ is the observation. In this setting, we often write, for all $\theta\in\Theta$, $x\in\mathsf{X}$, $z\in\mathsf{Z}$,
 $$
 p_{\theta}(z,x) = p_{\theta}(z)p_{\theta}(x|z)\eqsp.
 $$
-The latent variable generative model defines a joint density $(z,x)\mapsto p_\theta(x, z)$  on $(\mathsf{Z}\times \mathsf{X}, \mathcal{Z}\times \mathcal{X})$  by specifying a prior $z\mapsto p_{\theta}(z)$ over the latent variable $Z$ and a conditional density $x\mapsto p_\theta(x|z)$ also referred to as the decoder.  The normalized loglikelihood is therefore given by
+The latent variable generative model defines a joint density $(z,x)\mapsto p_\theta(z,x)$ on $(\mathsf{Z}\times \mathsf{X}, \mathcal{Z}\otimes \mathcal{X})$ by specifying a prior $z\mapsto p_{\theta}(z)$ over the latent variable $Z$ and a conditional density $x\mapsto p_\theta(x|z)$, also referred to as the decoder. Typically, $p_\theta(z)$ is a fixed standard Gaussian density and $p_\theta(x|z)$ is a Gaussian (or Bernoulli) density whose parameters are the output of a neural network with input $z$ and weights $\theta$. New data are generated by drawing $Z\sim p_\theta(\cdot)$ and then $X\sim p_\theta(\cdot|Z)$. The normalized log-likelihood is given by
 $$
 \ell_n(\theta) = \frac{1}{n}\sum_{i=1}^n \log p_{\theta}(X_i) = \frac{1}{n}\sum_{i=1}^n \log \int p_{\theta}(z)p_{\theta}(X_i|z)\rmd z\eqsp,
 $$
-and the conditional distribution $p_{\theta}(z|x)\propto p_{\theta}(z)p_{\theta}(x|z)$. In most cases, maximizing the average
-marginal log-likelihood of the data is not possible, as the marginal likelihood functions $p_{\theta}(X_i)$, $1\leqslant i \leqslant n$, are not vailable explicitly as the integral for marginalizing the latent variable is intractable.  Since a maximum likelihood estimator cannot be computed simply, VAEs introduce a variational approach wich aims at simultaneously providing a parameter estimate  and an approximation of the conditional distribution of the latent variable given the observation.  Consider a family of probability density functions $\{(z,x) \mapsto q_{\varphi}(z|x)\}_{\varphi\in\Phi}$. Then, we can write, for all $\varphi\in\Phi,\theta\in\Theta$, $x\in\mathsf{X}$,
+and the conditional distribution of the latent variable is $p_{\theta}(z|x)\propto p_{\theta}(z)p_{\theta}(x|z)$. In most cases, maximizing the average
+marginal log-likelihood of the data is not possible, as the marginal likelihood functions $p_{\theta}(X_i)$, $1\leqslant i \leqslant n$, are not available explicitly since the integral used to marginalize the latent variable is intractable. Since a maximum likelihood estimator cannot be computed simply, VAEs introduce a variational approach which aims at simultaneously providing a parameter estimate and an approximation of the conditional distribution of the latent variable given the observation. Consider a family of conditional probability density functions $\{(z,x) \mapsto q_{\varphi}(z|x)\}_{\varphi\in\Phi}$, referred to as the encoder. Then, we can write, for all $\varphi\in\Phi,\theta\in\Theta$, $x\in\mathsf{X}$,
 \begin{align*}
 \log p_\theta(x) = \int \log p_\theta(x) q_{\varphi}(z|x) \rmd z &= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\log p_\theta(x)\right] \\
 &= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\log \frac{p_\theta(Z,x)}{p_\theta(Z|x)}\right] \\
 &= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\log \frac{q_{\varphi}(Z|x)}{p_\theta(Z|x)}\right]  + \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\log \frac{p_\theta(Z,x)}{q_{\varphi}(Z|x)}\right] .
 \end{align*}
-The first term of the right-hand-side is the Kullback-Leibler divergence between $q_{\varphi}(\cdot|x)$ and $p_\theta(\cdot|x)$, so that $\log p_\theta(x)\geq \mathcal{L}(\theta,\varphi,x)$, where
+The first term of the right-hand side is the Kullback--Leibler divergence between $q_{\varphi}(\cdot|x)$ and $p_\theta(\cdot|x)$, so that $\log p_\theta(x)\geq \mathcal{L}(\theta,\varphi;x)$, where
 $$
-\mathcal{L}(\theta,\varphi,x) = \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\log \frac{p_\theta(Z,x)}{q_{\varphi}(Z|x)}\right]
+\mathcal{L}(\theta,\varphi;x) = \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\log \frac{p_\theta(Z,x)}{q_{\varphi}(Z|x)}\right]
 $$
-is the Evidence Lower BOund (ELBO). 
+is the evidence lower bound (ELBO).
+
+In Section~\ref{sec:cavi}, a variational distribution is optimized separately for each observation (or dataset) $x$. In a VAE, the map $x\mapsto q_\varphi(\cdot|x)$ is a neural network shared by all observations: the cost of inference is \emph{amortized}, since approximating $p_\theta(\cdot|x)$ for a new $x$ only requires a forward pass of the encoder. The price to pay is an additional approximation error, the \emph{amortization gap} \cite{cremer2018inference}: $\mathcal{L}(\theta,\varphi;x)$ may be smaller than the best ELBO achievable by a distribution of the same parametric family optimized for $x$ only. Figure~\ref{fig:vae} summarizes a Gaussian VAE architecture.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[node distance=0.55cm and 1.05cm, >=stealth,
+  box/.style={draw, rounded corners, minimum height=0.9cm, align=center, font=\small},
+  var/.style={circle, draw, minimum size=0.8cm, font=\small}]
+\node[var] (x) {$x$};
+\node[box, right=of x] (enc) {encoder\\ $q_\varphi(z|x)$};
+\node[box, right=of enc] (lat) {$z=\mu_\varphi(x)+\sigma_\varphi(x)\odot\varepsilon$\\ $\varepsilon\sim\gauss(0,I_d)$};
+\node[box, right=of lat] (dec) {decoder\\ $p_\theta(x|z)$};
+\node[var, right=of dec] (xh) {$\hat x$};
+\draw[->] (x) -- (enc);
+\draw[->] (enc) -- node[above, font=\scriptsize]{$\mu_\varphi,\sigma_\varphi$} (lat);
+\draw[->] (lat) -- node[above, font=\scriptsize]{$z$} (dec);
+\draw[->] (dec) -- (xh);
+\node[box, below=0.7cm of lat, dashed] (prior) {prior $p(z)=\gauss(0,I_d)$};
+\draw[<->, dashed] (prior) -- node[right, font=\scriptsize]{$-\mathrm{KL}(q_\varphi(\cdot|x)\|p)$} (lat);
+\draw[<->, dashed] (x.north) to[bend left=18] node[above, font=\scriptsize]{reconstruction $\mathbb{E}_{q_\varphi}[\log p_\theta(x|Z)]$} (xh.north);
+\end{tikzpicture}
+\caption{Architecture of a Gaussian VAE. The encoder outputs the parameters of $q_\varphi(\cdot|x)$, a latent sample is obtained with the reparameterization $z = \mu_\varphi(x)+\sigma_\varphi(x)\odot\varepsilon$, and the decoder outputs the parameters of $p_\theta(\cdot|z)$. The two terms of the ELBO \eqref{eq:elbo:rec:kl} are indicated with dashed arrows.}
+\label{fig:vae}
+\end{figure}
+
+\begin{example}[Gaussian VAE]
+\label{ex:gaussian:vae}
+Let $p(z) = \gauss(0,I_d)$, $p_\theta(x|z) = \gauss(\mu_\theta(z),\eta^2I_m)$ and $q_\varphi(z|x) = \gauss(\mu_\varphi(x),\mathrm{diag}(\sigma^2_\varphi(x)))$, where $\mu_\theta$, $\mu_\varphi$ and $\sigma_\varphi$ are neural networks. By \eqref{eq:elbo:rec:kl},
+$$
+\mathcal{L}(\theta,\varphi;x) = \mathbb{E}_{q_\varphi(\cdot|x)}[\log p_\theta(x|Z)] - \mathrm{KL}(q_\varphi(\cdot|x)\|\gauss(0,I_d))\eqsp,
+$$
+where the KL term is explicit:
+$$
+\mathrm{KL}\big(\gauss(\mu,\mathrm{diag}(\sigma^2))\|\gauss(0,I_d)\big) = \frac12\sum_{j=1}^d\big(\mu_j^2+\sigma_j^2-1-\log\sigma_j^2\big)\eqsp,
+$$
+and the reconstruction term is
+$$
+\mathbb{E}_{q_\varphi(\cdot|x)}[\log p_\theta(x|Z)] = -\frac{1}{2\eta^2}\mathbb{E}_{q_\varphi(\cdot|x)}\big[\|x-\mu_\theta(Z)\|^2\big] - \frac m2\log(2\pi\eta^2)\eqsp.
+$$
+Only the reconstruction term requires a Monte Carlo approximation. With one sample per observation, the negative ELBO is a squared reconstruction error penalized by the KL term; the ratio between the two terms is governed by $\eta^2$. For binary data, a Bernoulli decoder replaces the squared error by a cross-entropy.
+\end{example}
+
+\begin{example}[Linear Gaussian model: probabilistic PCA]
+\label{ex:ppca}
+Let $p(z) = \gauss(0,I_d)$ and $p_\theta(x|z) = \gauss(Wz+b,\eta^2I_m)$ with $\theta = (W,b,\eta^2)$, $W\in\rset^{m\times d}$. Everything is explicit in this model \cite{tipping1999probabilistic}: $p_\theta(x) = \gauss(b,WW^\top+\eta^2I_m)$, and, with $M = W^\top W+\eta^2I_d$,
+$$
+p_\theta(z|x) = \gauss\big(M^{-1}W^\top(x-b),\,\eta^2M^{-1}\big)\eqsp.
+$$
+Hence, for a Gaussian encoder whose mean is an affine function of $x$ and whose covariance does not depend on $x$, the variational family contains the exact posterior, the ELBO is tight at the optimum, and maximizing it in $(\theta,\varphi)$ yields the maximum likelihood estimator, whose columns of $W$ span the principal subspace of the empirical covariance matrix. A VAE can thus be seen as a nonlinear generalization of PCA, and this model is a useful test case to check an implementation, since $\log p_\theta(x)$ can be compared with the ELBO.
+\end{example}
+
 %In order to approximate $z\mapsto p_\theta(z|x)$, VAE propose to solve the optimization problem:
 %$$
 %\widehat \varphi \in \mathrm{argmin}_{\varphi\in\Phi} \mathcal{L}(\theta,\varphi,x)\eqsp.
 %$$
-This motivates the introduction of the following loss function:
+
+This motivates the introduction of the following loss function, the negative expected ELBO:
 $$
-\mathcal{L}(\theta,\varphi) = \mathbb{E}_{\pi_{\mathrm{data}}}[-\mathcal{L}(\theta,\varphi,X)] = \mathbb{E}_{\pi_{\mathrm{data}}}\left[\mathbb{E}_{q_{\varphi}(\cdot|X)}\left[\log \frac{q_{\varphi}(Z|X)}{p_\theta(Z,X)}\right]\right]\eqsp.
+\mathcal{J}(\theta,\varphi) = \mathbb{E}_{\pi_{\mathrm{data}}}[-\mathcal{L}(\theta,\varphi;X)] = \mathbb{E}_{\pi_{\mathrm{data}}}\left[\mathbb{E}_{q_{\varphi}(\cdot|X)}\left[\log \frac{q_{\varphi}(Z|X)}{p_\theta(Z,X)}\right]\right]\eqsp.
 $$
 The empirical loss is then given by
 $$
-\mathcal{L}_n(\theta,\varphi) = \frac{1}{n}\sum_{i=1}^n\mathbb{E}_{q_{\varphi}(\cdot|X_i)}\left[\log \frac{q_{\varphi}(Z|X_i)}{p_\theta(Z,X_i)}\right]\eqsp,
+\mathcal{J}_n(\theta,\varphi) = \frac{1}{n}\sum_{i=1}^n\mathbb{E}_{q_{\varphi}(\cdot|X_i)}\left[\log \frac{q_{\varphi}(Z|X_i)}{p_\theta(Z,X_i)}\right]\eqsp,
 $$
 where $(X_1,\ldots,X_n)$ are i.i.d. with distribution $\pi_{\mathrm{data}}$, and we aim at solving the optimization problem:
 \begin{equation}
 \label{eq:optim:ELBO}
-(\widehat \theta_n,\widehat \varphi_n) \in \mathrm{Argmax}_{\theta\in\Theta,\varphi\in\Phi}\eqsp \mathcal{L}_n(\theta,\varphi) \eqsp.
+(\widehat \theta_n,\widehat \varphi_n) \in \mathrm{Argmin}_{\theta\in\Theta,\varphi\in\Phi}\eqsp \mathcal{J}_n(\theta,\varphi) \eqsp.
 \end{equation}
-The joint optimization of $\theta$ and $\varphi$ is a complex problem both for practical and theoretical reasons and many research works have been devoted to this problem in the past few years. In most cases, $\mathcal{L}_n(\theta,\varphi)$ cannot be computed explicitly since expectations under the variational distribution are not explicit. Therefore, $\mathcal{L}_n(\theta,\varphi) $ is replaced by a Monte Carlo estimate $\widehat{\mathcal{L}}_n(\theta,\varphi)$:
+Since $\mathcal{J}_n(\theta,\varphi)\geq -\ell_n(\theta)$, minimizing $\mathcal{J}_n$ amounts to maximizing a lower bound of the log-likelihood; the gap $n^{-1}\sum_{i}\mathrm{KL}(q_\varphi(\cdot|X_i)\|p_\theta(\cdot|X_i))$ also depends on $\theta$, so that $\widehat\theta_n$ differs from the maximum likelihood estimator in general (the model is biased towards parameters for which the posterior is easy to approximate).
+The joint optimization of $\theta$ and $\varphi$ is a complex problem both for practical and theoretical reasons, and many research works have been devoted to this problem in the past few years. In most cases, $\mathcal{J}_n(\theta,\varphi)$ cannot be computed explicitly since expectations under the variational distribution are not explicit. Therefore, $\mathcal{J}_n(\theta,\varphi) $ is replaced by a Monte Carlo estimate $\widehat{\mathcal{J}}_n(\theta,\varphi)$:
 $$
-\widehat{\mathcal{L}}_n(\theta,\varphi) =  \frac{1}{n}\sum_{i=1}^n\frac{1}{M}\sum_{j=1}^M\log \frac{q_{\varphi}(Z_{i,j}|X_i)}{p_\theta(Z_{i,j},X_i)}\eqsp,
-$$ 
-where for all $1\leqslant i \leqslant n$, $(Z_{i,1},\ldots,Z_{i,M})_{1\leqslant j\leqslant M}$ are i.i.d. with distribution $q_{\varphi}(\cdot|X_i)$.
+\widehat{\mathcal{J}}_n(\theta,\varphi) =  \frac{1}{n}\sum_{i=1}^n\frac{1}{M}\sum_{j=1}^M\log \frac{q_{\varphi}(Z_{i,j}|X_i)}{p_\theta(Z_{i,j},X_i)}\eqsp,
+$$
+where for all $1\leqslant i \leqslant n$, $Z_{i,1},\ldots,Z_{i,M}$ are i.i.d. with distribution $q_{\varphi}(\cdot|X_i)$.
+
 \begin{figure}
 \centering
 \includegraphics[scale=0.9]{vae.png}
@@ -1507,79 +1648,98 @@ where for all $1\leqslant i \leqslant n$, $(Z_{i,1},\ldots,Z_{i,M})_{1\leqslant 
 \label{fig:vae}
 \end{figure}
 
+The ELBO can be tightened with importance sampling (see Chapter~\ref{chap:smc}). Let $w_{\theta,\varphi}(x,z) = p_\theta(z,x)/q_\varphi(z|x)$, so that $\mathbb{E}_{q_\varphi(\cdot|x)}[w_{\theta,\varphi}(x,Z)] = p_\theta(x)$. For $K\geq1$, the importance weighted ELBO \cite{burda2016importance} is
+$$
+\mathcal{L}_K(\theta,\varphi;x) = \mathbb{E}\left[\log\frac1K\sum_{k=1}^Kw_{\theta,\varphi}(x,Z_k)\right]\eqsp,\qquad Z_1,\ldots,Z_K\iid q_\varphi(\cdot|x)\eqsp.
+$$
+\begin{proposition}
+\label{prop:iwae}
+$\mathcal{L}_1(\theta,\varphi;x) = \mathcal{L}(\theta,\varphi;x)$ and, for all $K\geq1$, $\mathcal{L}_K(\theta,\varphi;x)\leq\mathcal{L}_{K+1}(\theta,\varphi;x)\leq\log p_\theta(x)$.
+\end{proposition}
+\begin{proof}
+The first statement is the definition of the ELBO and the upper bound follows from Jensen's inequality, since the empirical mean of the weights is an unbiased estimator of $p_\theta(x)$. Write $w_k = w_{\theta,\varphi}(x,Z_k)$ and let $I$ be uniformly distributed over the subsets of $\{1,\ldots,K+1\}$ with $K$ elements, independent of $(Z_k)$. Since each index belongs to $I$ with probability $K/(K+1)$,
+$$
+\frac{1}{K+1}\sum_{k=1}^{K+1}w_k = \mathbb{E}_I\left[\frac{1}{K}\sum_{k\in I}w_k\right]\eqsp,
+$$
+where $\mathbb{E}_I$ is the expectation with respect to $I$ only. By concavity of the logarithm,
+$$
+\log\frac{1}{K+1}\sum_{k=1}^{K+1}w_k\geq\mathbb{E}_I\left[\log\frac{1}{K}\sum_{k\in I}w_k\right]\eqsp,
+$$
+and taking expectations, since $(w_k)_{k\in I}$ has the same distribution as $(w_1,\ldots,w_K)$, $\mathcal{L}_{K+1}\geq\mathcal{L}_K$.
+\end{proof}
+If the weights are bounded, the strong law of large numbers and dominated convergence show that $\mathcal{L}_K(\theta,\varphi;x)\to\log p_\theta(x)$ as $K\to\infty$. The importance weighted autoencoder (IWAE) replaces $\mathcal{L}$ by $\mathcal{L}_K$ in the loss; the encoder then plays the role of an importance (proposal) distribution rather than of an approximation of the posterior.
+
 \section{Gradient-based optimization}
-In order to solve \eqref{eq:optim:ELBO}, we need to compute the gradient of the loss function. Under classical regularity assumptions:
+\label{sec:vi:gradients}
+In order to solve \eqref{eq:optim:ELBO}, we need to compute the gradient of the loss function. Under classical regularity assumptions allowing to differentiate under the integral sign:
 $$
-\nabla_{\theta} \mathcal{L}(\theta, \varphi) = -\mathbb{E}_{\pi_{\mathrm{data}}} \left[\mathbb{E}_{q_{\varphi}(\cdot|X)}\left[ \nabla_{\theta} \log p_{\theta}(X, Z)\right]\right]\eqsp.
+\nabla_{\theta} \mathcal{J}(\theta, \varphi) = -\mathbb{E}_{\pi_{\mathrm{data}}} \left[\mathbb{E}_{q_{\varphi}(\cdot|X)}\left[ \nabla_{\theta} \log p_{\theta}(Z,X)\right]\right]\eqsp.
 $$
-This gradient can be estimated using samples from $\pi_{\mathrm{data}}$. Given a batch of i.i.d. observations $(X_1,\ldots,X_n)_{1\leqslant i \leqslant B}$ with distribution $\pi_{\mathrm{data}}$, an estimator of $\nabla_{\theta} \mathcal{L}(\theta, \varphi)$  can be computed as follows:
+This gradient can be estimated using samples from $\pi_{\mathrm{data}}$. Given a mini-batch of i.i.d. observations $(X_1,\ldots,X_B)$ with distribution $\pi_{\mathrm{data}}$ (in practice, drawn from the training set), an unbiased estimator of $\nabla_{\theta} \mathcal{J}(\theta, \varphi)$ can be computed as follows:
 $$
 S_{\theta}(\theta, \varphi;\{X_i\}_{i=1}^B) = -\frac{1}{B}\sum_{i=1}^B\frac{1}{M}\sum_{j=1}^M \nabla_\theta \log p_\theta(Z_{i,j},X_i)\eqsp,
 $$
-where for all $1\leqslant i \leqslant B$, $(Z_{i,1},\ldots, Z_{i,M})_{1\leqslant j\leqslant M}$ are i.i.d. with distribution $q_{\varphi}(\cdot|X_i)$.
-Computing the gradient with respect to the variational parameter $\varphi$ is more challenging since the inner expectation depends on  $q_{\varphi}$. There are two common methods for computing this gradient. 
+where for all $1\leqslant i \leqslant B$, $Z_{i,1},\ldots, Z_{i,M}$ are i.i.d. with distribution $q_{\varphi}(\cdot|X_i)$.
+Computing the gradient with respect to the variational parameter $\varphi$ is more challenging since the distribution of the integration variable depends on $\varphi$: the gradient of an expectation under $q_\varphi$ is not the expectation of the gradient. There are two common methods for computing this gradient.
 
-\subsection{Pathwise Gradient}
-The reparametrization trick involves expressing variational distribution using a deterministic transform $ g(\varepsilon, \varphi)$, where $\varepsilon$ is an auxiliary independent random variable drawn from a known probability density function $p_\varepsilon$.
+\subsection{Pathwise gradient}
+The reparameterization trick consists in expressing the variational distribution through a deterministic transform $g(\varepsilon, \varphi;x)$, where $\varepsilon$ is an auxiliary random variable, independent of $\varphi$, drawn from a known probability density function $p_\varepsilon$: if $\varepsilon\sim p_\varepsilon$, then $g(\varepsilon,\varphi;x)\sim q_\varphi(\cdot|x)$. To simplify notation, we write $g(\varepsilon,\varphi)$ when $x$ is fixed.
 Using this trick, the ELBO can be expressed as:
-$$ \mathcal{L}(\theta, \varphi, x) = \mathbb{E}_{p_\varepsilon}\left[ \log w_{\theta, \varphi}(x, g(\varepsilon,\varphi)) \right]\eqsp,$$
-where $w_{\theta, \varphi}(x,z) = p_{\theta}(x, z)/q_{\varphi}(z|x)$ the unnormalized importance weights and $\mathbb{E}_{p_\varepsilon}$ is the expectation under the law of $\varepsilon$ when $\varepsilon \sim p_\varepsilon$. The pathwise gradient \cite{kingma2013auto, rezende2014stochastic} of the ELBO is given by:
-\begin{equation*}
-\nabla^{}_{\varphi} \mathcal{L}(\theta, \varphi; x) =  \mathbb{E}_{p_\varepsilon}\left[ \nabla_z \log w_{\theta, \varphi}(x,z) \nabla_{\varphi} g(\varepsilon, \varphi) \right]  - \mathbb{E}_{p_\varepsilon}\left[\nabla_{\varphi} \log q_{\varphi}(g(\varepsilon, \varphi) | x) \right]\eqsp.
-\end{equation*}
-The gradient estimator with respect to $\varphi$ of the ELBO can be estimated using samples from the dataset. Let  $(X_1,\ldots,X_B)_{1\leqslant i \leqslant B}$ be i.i.d. with distribution $\pi_{\mathrm{data}}$. Then, an estimator of $\nabla_{\varphi} \mathcal{L}(\theta, \varphi)$  can be computed as follows:
+$$ \mathcal{L}(\theta, \varphi; x) = \mathbb{E}_{p_\varepsilon}\left[ \log w_{\theta, \varphi}(x, g(\varepsilon,\varphi)) \right]\eqsp,$$
+where $w_{\theta, \varphi}(x,z) = p_{\theta}(z,x)/q_{\varphi}(z|x)$ are the unnormalized importance weights and $\mathbb{E}_{p_\varepsilon}$ is the expectation when $\varepsilon \sim p_\varepsilon$. Now the integration variable $\varepsilon$ does not depend on $\varphi$, and the chain rule yields the pathwise gradient \cite{kingma2013auto,rezende2014stochastic} of the ELBO:
+\begin{equation}
+\label{eq:pathwise}
+\nabla^{}_{\varphi} \mathcal{L}(\theta, \varphi; x) =  \mathbb{E}_{p_\varepsilon}\left[ J_\varphi g(\varepsilon, \varphi)^\top\nabla_z \log w_{\theta, \varphi}(x,z)_{|z=g(\varepsilon,\varphi)} \right]  - \mathbb{E}_{p_\varepsilon}\left[\nabla_{\varphi} \log q_{\varphi}(z | x)_{|z=g(\varepsilon, \varphi)} \right]\eqsp,
+\end{equation}
+where $J_\varphi g$ is the Jacobian matrix of $\varphi\mapsto g(\varepsilon,\varphi)$ and, in the second term, the gradient is taken with respect to $\varphi$ at fixed $z$ (this term accounts for the explicit dependence of $w_{\theta,\varphi}$ on $\varphi$).
+The gradient with respect to $\varphi$ of the loss can be estimated using samples from the dataset. Let $(X_1,\ldots,X_B)$ be i.i.d. with distribution $\pi_{\mathrm{data}}$. Then, an estimator of $\nabla_{\varphi} \mathcal{J}(\theta, \varphi)$ can be computed as follows:
 \begin{multline} \label{eq:grad_estimator_phi}
-S_{\varphi}(\theta, \varphi; \{X_i\}_{i=1}^B) \\= -\frac{1}{B} \sum_{i=1}^{B} \frac{1}{M} \sum_{j=1}^{M} \left\{\nabla_z \log \frac{p_{\theta}(X_i, g(\varepsilon_{i,j}, \varphi))}{q_{\varphi}(g(\varepsilon_{i,j}, \varphi) | x_i)} \nabla_{\varphi} g(\varepsilon_{i,j}, \varphi) - \nabla_{\varphi} \log q_{\varphi}(g(\varepsilon_{i,j}, \varphi) | X_i)\right\}\eqsp,
+S_{\varphi}(\theta, \varphi; \{X_i\}_{i=1}^B) \\= -\frac{1}{B} \sum_{i=1}^{B} \frac{1}{M} \sum_{j=1}^{M} \left\{J_\varphi g(\varepsilon_{i,j}, \varphi;X_i)^\top\nabla_z \log \frac{p_{\theta}(z,X_i)}{q_{\varphi}(z | X_i)}_{|z=Z_{i,j}} - \nabla_{\varphi} \log q_{\varphi}(z | X_i)_{|z=Z_{i,j}}\right\}\eqsp,
 \end{multline}
-%where $K$ denotes the number of samples drawn from the latent space.
-%\begin{align} \label{eq:grad_estimator_PW}
-%\tilde{g}^{}_{i,\ell} = \left( \nabla_{\theta} \log \frac{p_{\theta}(x_i, g(\varepsilon_i^{(\ell)}, \varphi))}{q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)}, \nabla_z \log \frac{p_{\theta}(x_i, g(\varepsilon_i^{(\ell)}, \varphi))}{q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)} \nabla_{\varphi} g(\varepsilon_i^{(\ell)}, \varphi) - \nabla_{\phi} \log q_{\varphi}(g(\varepsilon_i^{(\ell)}, \varphi) | x_i)\right)^\top\eqsp,
-%\end{align}
-where, for all $1 \leq i \leq B$, $(\varepsilon_{i,1},\ldots,\varepsilon_{i,M})$ are independent samples from $p_{\varepsilon}$.
+where, for all $1 \leq i \leq B$, $\varepsilon_{i,1},\ldots,\varepsilon_{i,M}$ are independent samples from $p_{\varepsilon}$ and $Z_{i,j} = g(\varepsilon_{i,j}, \varphi;X_i)$. In practice, \eqref{eq:grad_estimator_phi} is not coded by hand: it is obtained by automatic differentiation of the Monte Carlo estimate of the loss written as a function of $(\theta,\varphi)$ with the $\varepsilon_{i,j}$ held fixed.
 
-\begin{example}
-In a context of deep Gaussian models, $q_{\varphi}(\cdot|x)$ is a Gaussian probability density function with mean $\mu_{\varphi}(x)\in\rset^d$ and variance $\mathrm{diag}(\sigma_{\varphi}^2(x))\in\rset^{d\times d}$ where $(\mu_{\varphi}(x),\sigma_{\varphi}^2(x))$ is the output of a neural network with input $x$. Then, if $z = \mu_{\varphi}(x) + \mathrm{diag}(\sigma_{\varphi}(x))\varepsilon$ with $\varepsilon \sim \mathcal{N}(0,\Id_d)$, $z\sim q_{\varphi}(\cdot|x)$. Writing $g(\varepsilon, \varphi) = \mu_{\varphi}(x) + \sigma_{\varphi}(x)\varepsilon$, the Jacobian of $g$ with respect to $\varepsilon$ is
+\begin{example}[Gaussian encoder]
+In a context of deep Gaussian models, $q_{\varphi}(\cdot|x)$ is a Gaussian probability density function with mean $\mu_{\varphi}(x)\in\rset^d$ and covariance matrix $\mathrm{diag}(\sigma_{\varphi}^2(x))\in\rset^{d\times d}$ where $(\mu_{\varphi}(x),\sigma_{\varphi}^2(x))$ is the output of a neural network with input $x$. Then, if $z = \mu_{\varphi}(x) + \mathrm{diag}(\sigma_{\varphi}(x))\varepsilon$ with $\varepsilon \sim \mathcal{N}(0,I_d)$, $z\sim q_{\varphi}(\cdot|x)$. Writing $g(\varepsilon, \varphi;x) = \mu_{\varphi}(x) + \sigma_{\varphi}(x)\odot\varepsilon$, where $\odot$ is the componentwise product, the Jacobian matrix of $g$ with respect to $\varepsilon$ is
 $$
-J_\varepsilon[g](\varepsilon, \varphi) = \mathrm{diag}(\sigma_{\varphi}(x))\eqsp.
+J_\varepsilon g(\varepsilon, \varphi;x) = \mathrm{diag}(\sigma_{\varphi}(x))\eqsp.
 $$
-Therefore, by standard change of variables, with $z=g(\varepsilon, \varphi)$,
+Therefore, by the change of variables formula, with $z=g(\varepsilon, \varphi;x)$,
 $$
-\log q_{\varphi}(g(\varepsilon, \varphi) | x) = \log p_\varepsilon(\varepsilon) - \sum_{i=1}^{d}\log \sigma_{\varphi,i}(x)\eqsp.
-$$  
+\log q_{\varphi}(g(\varepsilon, \varphi;x) | x) = \log p_\varepsilon(\varepsilon) - \sum_{i=1}^{d}\log \sigma_{\varphi,i}(x)\eqsp.
+$$
+The reparameterization trick applies more generally to location-scale families and to distributions which can be sampled by inverting their cumulative distribution function; it does not apply directly to discrete latent variables.
 \end{example}
 
-\subsection{Score Function Gradient}
-Alternatively, the score function gradient, also known as the Reinforce gradient \cite{glynn1990likelihood, williams1992simple,paisley2012variational}, can be used. Unlike the reparameterization trick, this method does not necessitate reparameterization and is applicable to a wider range of variational distributions. 
+\subsection{Score function gradient}
+lternatively, the score function gradient, also known as the REINFORCE gradient or likelihood ratio gradient \cite{glynn1990likelihood,williams1992simple,paisley2012variational}, can be used. Unlike the pathwise gradient, this method does not require a reparameterization nor the differentiability of $z\mapsto\log p_\theta(z,x)$, and is applicable to a wider range of variational distributions, including discrete ones.
 \begin{proposition}\label{prop:score_estimator}
-For all $\theta \in \Theta$, $\varphi \in \Phi$, we have:
+Under regularity conditions allowing to differentiate under the integral sign, for all $\theta \in \Theta$, $\varphi \in \Phi$, we have:
 $$
-\nabla^{}_{\varphi} \mathcal{L}(\theta, \varphi) = -\mathbb{E}_{\pi_{\mathrm{data}}}\left[ \mathbb{E}_{q_{\varphi}(\cdot|X)}\left[ \log \frac{p_{\theta}(X, Z)}{q_{\varphi}(Z | X)} \nabla_{\varphi} \log q_{\varphi}(Z | X) \right] \right]\eqsp.
+\nabla^{}_{\varphi} \mathcal{J}(\theta, \varphi) = -\mathbb{E}_{\pi_{\mathrm{data}}}\left[ \mathbb{E}_{q_{\varphi}(\cdot|X)}\left[ \log \frac{p_{\theta}(Z,X)}{q_{\varphi}(Z | X)} \nabla_{\varphi} \log q_{\varphi}(Z | X) \right] \right]\eqsp.
 $$
 \end{proposition}
 
-%\subsection*{Proof of Proposition \ref{prop:score_estimator}}
-
 \begin{proof}
-For all $x \in \Xset$, the score function gradient of the ELBO with respect to $\varphi$ is given by:
+For all $x \in \Xset$, the gradient of the ELBO with respect to $\varphi$ is given by:
 \begin{align*}
-\nabla_{\varphi} \mathcal{L}(\theta, \varphi; x) &= \nabla_{\varphi} \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \log p_{\theta}(x, Z) - \log q_{\varphi}(Z|x)\right] \\
-&= \nabla_{\varphi} \int (\log p_{\theta}(x, z) - \log q_{\varphi}(z|x)) q_{\varphi}(z|x) \, \rmd z  \\
-&= \int \nabla_{\varphi}\left[(\log p_{\theta}(x, z) - \log q_{\varphi}(z|x)) q_{\varphi}(z|x)\right] \, \rmd z  \\
-%&= \int \nabla_{\phi} q_{\phi}(z|x) (\log p_{\theta}(x, z) - \log q_{\phi}(z|x)) + q_{\phi}(z|x) \nabla_{\phi} (\log p_{\theta}(x, z) - \log q_{\phi}(z|x)) \, dz \quad  \\
-&= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \nabla_{\varphi} \log q_{\varphi}(Z|x) (\log p_{\theta}(x, Z) - \log q_{\varphi}(Z|x)) \right] - \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\nabla_{\varphi} \log q_{\varphi}(Z|x)\right]\eqsp.
+\nabla_{\varphi} \mathcal{L}(\theta, \varphi; x) &= \nabla_{\varphi} \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \log p_{\theta}(Z,x) - \log q_{\varphi}(Z|x)\right] \\
+&= \nabla_{\varphi} \int (\log p_{\theta}(z,x) - \log q_{\varphi}(z|x)) q_{\varphi}(z|x) \, \rmd z  \\
+&= \int \nabla_{\varphi}\left[(\log p_{\theta}(z,x) - \log q_{\varphi}(z|x)) q_{\varphi}(z|x)\right] \, \rmd z  \\
+&= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \nabla_{\varphi} \log q_{\varphi}(Z|x) (\log p_{\theta}(Z,x) - \log q_{\varphi}(Z|x)) \right] - \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\nabla_{\varphi} \log q_{\varphi}(Z|x)\right]\eqsp,
 \end{align*}
-Using the fact that $\mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\nabla_{\varphi} \log q_{\varphi}(Z|x)\right]=0$ under regularity conditions on $q_{\varphi}(z|x)$ yields
+where we used $\nabla_\varphi q_\varphi(z|x) = q_\varphi(z|x)\nabla_\varphi\log q_\varphi(z|x)$.
+Using the fact that $\mathbb{E}_{q_{\varphi}(\cdot|x)}\left[\nabla_{\varphi} \log q_{\varphi}(Z|x)\right]=\int\nabla_\varphi q_\varphi(z|x)\rmd z = \nabla_\varphi\int q_\varphi(z|x)\rmd z = 0$ under regularity conditions on $q_{\varphi}(z|x)$ yields
 \begin{align*}
-\nabla_{\varphi} \mathcal{L}(\theta, \phi; x) &= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \nabla_{\varphi} \log q_{\varphi}(Z|x) (\log p_{\theta}(x, Z) - \log q_{\varphi}(Z|x)) \right] \\
-&= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \log \frac{p_{\theta}(x, Z)}{q_{\varphi}(Z|x)} \nabla_{\varphi} \log q_{\varphi}(Z|x) \right]\eqsp.
+\nabla_{\varphi} \mathcal{L}(\theta, \varphi; x) &= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \nabla_{\varphi} \log q_{\varphi}(Z|x) (\log p_{\theta}(Z,x) - \log q_{\varphi}(Z|x)) \right] \\
+&= \mathbb{E}_{q_{\varphi}(\cdot|x)}\left[ \log \frac{p_{\theta}(Z,x)}{q_{\varphi}(Z|x)} \nabla_{\varphi} \log q_{\varphi}(Z|x) \right]\eqsp.
 \end{align*}
+The result follows by taking the expectation with respect to $X\sim\pi_{\mathrm{data}}$ and changing the sign.
 \end{proof}
-%\subsection{Score Function and Pathwise Gradient Estimator}
-The gradient estimator with respect to $\varphi$ of the ELBO can be estimated using samples from the dataset. Let  $(X_1,\ldots,X_B)_{1\leqslant i \leqslant B}$ be i.i.d. with distribution $\pi_{\mathrm{data}}$. Then, an estimator of $\nabla_{\varphi} \mathcal{L}(\theta, \varphi)$  can be computed as follows:
+The gradient with respect to $\varphi$ of the loss can be estimated using samples from the dataset. Let $(X_1,\ldots,X_B)$ be i.i.d. with distribution $\pi_{\mathrm{data}}$. Then, an estimator of $\nabla_{\varphi} \mathcal{J}(\theta, \varphi)$ can be computed as follows:
 \begin{align} \label{eq:grad_estimator_score_phi}
-S_{\varphi}(\theta, \varphi; \{X_i\}_{i=1}^B) = -\frac{1}{B} \sum_{i=1}^{B} \frac{1}{M} \sum_{j=1}^{M} \log \frac{p_{\theta}(X_i, Z_{i,j})}{q_{\varphi}(Z_{i,j} | X_i)} \nabla_{\varphi} \log \frac{p_{\theta}(X_i, Z_{i,j})}{q_{\varphi}(Z_{i,j} | X_i)}\eqsp,
+S_{\varphi}(\theta, \varphi; \{X_i\}_{i=1}^B) = -\frac{1}{B} \sum_{i=1}^{B} \frac{1}{M} \sum_{j=1}^{M} \log \frac{p_{\theta}(Z_{i,j},X_i)}{q_{\varphi}(Z_{i,j} | X_i)} \nabla_{\varphi} \log q_{\varphi}(Z_{i,j} | X_i)\eqsp,
 \end{align}
-where, for all $1 \leq i \leq B$,  $(Z_{i,1},\ldots, Z_{i,M})$ are independent samples from $q_{\varphi}(\cdot|X_i)$. 
+where, for all $1 \leq i \leq B$,  $Z_{i,1},\ldots, Z_{i,M}$ are independent samples from $q_{\varphi}(\cdot|X_i)$.
 
 %For the score function gradient estimator, the expression is given by:
 %\begin{align} \label{eq:grad_estimator_SF}
@@ -1630,6 +1790,7 @@ Several methods have been proposed to further reduce variance, such as the Rao-B
 
 
 \chapter{Sequential Monte Carlo Methods}
+\label{chap:smc}
 The use of Monte Carlo methods for non-linear filtering can be traced back to the pioneering work of  \cite{HandschinMayne1969}. These early approaches relied on sequential versions of importance sampling, where samples are generated from an instrumental (proposal) distribution and the target distribution is approximated by assigning appropriate importance weights to these samples. In the context of non-linear filtering, importance sampling can be implemented sequentially by carefully defining a sequence of proposal distributions. This makes it unnecessary to regenerate the entire set of samples whenever a new observation becomes available. This approach is known as Sequential Importance Sampling (SIS).
 
 Although SIS was already known in the early 1970s, its application to non-linear filtering problems remained limited for many years. This was partly due to insufficient computational power at the time, but also to a more fundamental issue that was not fully understood until later: weight degeneracy, also referred to as sample impoverishment. As the number of iterations increases, most samples tend to receive very small normalized importance weights and therefore contribute negligibly to the approximation of the target distribution.
