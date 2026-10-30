@@ -10,8 +10,8 @@ The course covers the basics of computational statistics and Monte Carlo simulat
 * Variants of Metropolis-Hastings algorithm (pseudo-marginal algorithm, Hamiltonian Monte Carlo)
 * Variational inference and Coordinate Ascent Variational Inference (CAVI)
 * Sequential Monte Carlo methods
-* Bonus: reminder on M-estimation, Z-estimation, maximum likelihood
-* Bonus: Latent data models and Expectation Maximization algorithm
+* (Bonus) reminder on M-estimation, Z-estimation, maximum likelihood
+* (Bonus) Latent data models and Expectation Maximization algorithm
 
 
 
