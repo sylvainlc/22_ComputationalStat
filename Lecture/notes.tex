@@ -1791,89 +1791,104 @@ Several methods have been proposed to further reduce variance, such as the Rao-B
 
 \chapter{Sequential Monte Carlo Methods}
 \label{chap:smc}
-The use of Monte Carlo methods for non-linear filtering can be traced back to the pioneering work of  \cite{HandschinMayne1969}. These early approaches relied on sequential versions of importance sampling, where samples are generated from an instrumental (proposal) distribution and the target distribution is approximated by assigning appropriate importance weights to these samples. In the context of non-linear filtering, importance sampling can be implemented sequentially by carefully defining a sequence of proposal distributions. This makes it unnecessary to regenerate the entire set of samples whenever a new observation becomes available. This approach is known as Sequential Importance Sampling (SIS).
+The use of Monte Carlo methods for non-linear filtering can be traced back to the pioneering work of \cite{HandschinMayne1969}. These early approaches relied on sequential versions of importance sampling, where samples are generated from an instrumental (proposal) distribution and the target distribution is approximated by assigning appropriate importance weights to these samples. In the context of non-linear filtering, importance sampling can be implemented sequentially by carefully defining a sequence of proposal distributions. This makes it unnecessary to regenerate the entire set of samples whenever a new observation becomes available. This approach is known as sequential importance sampling (SIS).
 
-Although SIS was already known in the early 1970s, its application to non-linear filtering problems remained limited for many years. This was partly due to insufficient computational power at the time, but also to a more fundamental issue that was not fully understood until later: weight degeneracy, also referred to as sample impoverishment. As the number of iterations increases, most samples tend to receive very small normalized importance weights and therefore contribute negligibly to the approximation of the target distribution.
+Although SIS was already known in the early 1970s, its application to non-linear filtering problems remained limited for many years. This was partly due to insufficient computational power at the time, but also to a more fundamental issue that was not fully understood until later: \emph{weight degeneracy}. As the number of iterations increases, most samples tend to receive very small normalized importance weights and therefore contribute negligibly to the approximation of the target distribution.
 
-A major breakthrough came with the work of   \cite{GordonSalmondSmith1993}, who proposed addressing this problem through resampling. Their approach rejuvenates the particle population by duplicating samples with high importance weights while eliminating those with low weights. This led to the development of the particle filter, which represented the first successful application of Sequential Monte Carlo (SMC) methods to non-linear filtering.
+A major breakthrough came with the work of \cite{GordonSalmondSmith1993}, who proposed addressing this problem through resampling. Their approach rejuvenates the particle population by duplicating samples with high importance weights while eliminating those with low weights. This led to the development of the particle filter, which represented the first successful application of sequential Monte Carlo (SMC) methods to non-linear filtering. Resampling introduces its own difficulty, the loss of diversity of the particle population (\emph{sample impoverishment}).
 
 Since then, SMC methods have been widely adopted across many fields, including computer vision, signal processing, control, econometrics, robotics, and statistics. The purpose of this chapter is to review the fundamental components required to implement sequential Monte Carlo methods.
 
-\section{Importance sampling}
 
+\section{Importance sampling}
+\label{sec:is}
 
 Throughout this section, $\mu$ will denote a probability measure of interest on a
 measurable space $(\mathsf{X}, \mathcal{X})$, which we shall refer to as the target
-distribution. The aim is to approximate integrals of the form
+distribution, and $\nu$ an instrumental probability measure (note that the roles of these letters differ from Chapter~\ref{chap:mcmc}). The aim is to approximate integrals of the form
 \[
 \mu(f) = \int_{\mathsf{X}} f(x)\,\mu(\mathrm{d}x)\eqsp,
 \]
 for real-valued measurable functions $f$. The Monte Carlo approach presented in the first part of the course consists in drawing an i.i.d. sample
 $(\xi_1, \ldots, \xi_N)$ from the probability measure $\mu$ and then evaluating the
-sample mean $\sum_{i=1}^N f(\xi_i)/N$.  Of course, this technique is applicable only when it is possible (and reasonably
+sample mean $\sum_{i=1}^N f(\xi_i)/N$. Of course, this technique is applicable only when it is possible (and reasonably
 simple) to sample from the target distribution~$\mu$.
 
-Importance sampling is based on the idea that it may be simpler or computationally cheaper to sample from an instrumental distribution $\nu$, and then to apply a change-of-measure. Assume that the target
+Importance sampling is based on the idea that it may be simpler or computationally cheaper to sample from an instrumental distribution $\nu$, and then to apply a change of measure. Assume that the target
 probability measure $\mu$ is absolutely continuous with respect to an instrumental
-probability measure $\nu$ from which sampling is easily feasible. Then, for any $\mu$-integrable function $f$,
+probability measure $\nu$ from which sampling is easily feasible, and write
+$$
+w = \frac{\mathrm{d}\mu}{\mathrm{d}\nu}
+$$
+for the \emph{importance weight function} (if $\mu$ and $\nu$ have densities, still denoted $\mu$ and $\nu$, with respect to a common measure, $w = \mu/\nu$). Then, for any $\mu$-integrable function $f$,
 \[
 \mu(f)
 = \int f(x)\,\mu(\mathrm{d}x)
-= \int f(x)\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(x)\,\nu(\mathrm{d}x)\eqsp.
+= \int f(x)\,w(x)\,\nu(\mathrm{d}x) = \nu(fw)\eqsp.
 \]
-In particular, if $(\xi_1, \ldots, \xi_N)$ is an i.i.d.\ sample from $\nu$, we can introduce the following estimator of $\mu(f)$:
+In particular, if $(\xi_1, \ldots, \xi_N)$ is an i.i.d.\ sample from $\nu$, we can introduce the following (unnormalized) importance sampling estimator of $\mu(f)$:
 \[
 \tilde{\mu}^{\mathrm{IS}}_{N}(f)
 = \frac{1}{N}\sum_{i=1}^N
-f(\xi_i)\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i).
+f(\xi_i)\,w(\xi_i)\eqsp,
 \]
+which is an unbiased estimator of $\mu(f)$.
 In many practical situations, the target probability measure $\mu$ is only known up to a normalizing
 constant. This situation arises in particular
 when applying importance sampling techniques to hidden Markov models and,
 more generally, in Bayesian statistics. In such cases, the Radon--Nikodym
-derivative $\mathrm{d}\mu/\mathrm{d}\nu$ is only available up to a multiplicative
-constant. Nevertheless, the importance sampling methodology can still be applied by
+derivative is only available up to a multiplicative
+constant: we can compute $\tilde w = c\, w$ for an unknown constant $c>0$. Nevertheless, the importance sampling methodology can still be applied by
 resorting to the self-normalized importance sampling estimator, defined as
 \[
 \hat{\mu}^{\mathrm{IS}}_{N}(f)
 =
 \frac{\sum_{i=1}^N f(\xi_i)\,
-\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}
+w(\xi_i)}
 {\sum_{i=1}^N
-\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}.
+w(\xi_i)} = \frac{\sum_{i=1}^N f(\xi_i)\,
+\tilde w(\xi_i)}
+{\sum_{i=1}^N
+\tilde w(\xi_i)}\eqsp,
 \]
+which does not depend on $c$. It is a weighted empirical mean with normalized weights $\tilde w(\xi_i)/\sum_{j}\tilde w(\xi_j)$, i.e. the integral of $f$ with respect to the weighted empirical measure $\sum_{i=1}^N \{\tilde w(\xi_i)/\sum_{j}\tilde w(\xi_j)\}\delta_{\xi_i}$. As a by-product, $N^{-1}\sum_{i=1}^N\tilde w(\xi_i)$ is an unbiased estimator of the unknown constant $c = \nu(\tilde w)$, which is the normalizing constant of the target when $\tilde w$ is computed from an unnormalized density.
+
+\begin{remark}
+Importance sampling has already appeared in this course: the independent Metropolis--Hastings sampler of Chapter~\ref{chap:mcmc} uses the same weight function $w=\pi/g$, the pseudo-marginal algorithm relies on unbiased importance sampling estimates of a marginal likelihood, and the importance weighted ELBO  is the expectation of the logarithm of $\tilde\mu^{\mathrm{IS}}_N(1)$ computed with $\tilde w = p_\theta(\cdot,x)/q_\varphi(\cdot|x)$.
+\end{remark}
+
+
 
 \subsection{Convergence guarantees for the IS estimator}
 Since the importance sampling estimator can be written as a sample mean of independent random
 variables, a wide range of theoretical results is available to quantify the
-accuracy of $\tilde{\mu}^{\mathrm{IS}}_{\nu,N}(f)$ as an estimator of $\mu(f)$.
+accuracy of $\tilde{\mu}^{\mathrm{IS}}_{N}(f)$ as an estimator of $\mu(f)$.
 Some of these results are asymptotic in nature, such as the law of large numbers
 (LLN) and the central limit theorem (CLT). It is also possible to derive
 non-asymptotic guarantees, including Berry--Esseen type bounds, bounds on the
-moments of the error $\mathbb{E}\!\left|\tilde{\mu}^{\mathrm{IS}}_{N}(f)-\mu(f)\right|^p$
+moments of the error $\mathbb{E}\!\left[\left|\tilde{\mu}^{\mathrm{IS}}_{N}(f)-\mu(f)\right|^p\right]$
 for $p>0$, or bounds on tail probabilities.
 
 
 \begin{theorem}\label{thm:IS-LLN-CLT}
-Let $f$ be a real-valued measurable function such that $\mu(|f|)<\infty$ and
-$|f|\mu \ll |f|\nu$, and let $(\xi_i)_{i\geq 1}$ be i.i.d. with distribution $\nu$. Then, 
+Assume that $\mu\ll\nu$, let $f$ be a real-valued measurable function such that $\mu(|f|)<\infty$, and let $(\xi_i)_{i\geq 1}$ be i.i.d. with distribution $\nu$. Then,
 \[
-\lim_{N\to\infty} \tilde{\mu}^{\mathrm{IS}}_{N}(f) = \mu(f),
+\lim_{N\to\infty} \tilde{\mu}^{\mathrm{IS}}_{N}(f) = \mu(f)\eqsp,
 \qquad \text{almost surely.}
 \]
 Assume in addition that
 \begin{equation}\label{eq:IS-second-moment}
-\int f^2(x)\left(\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(x)\right)^2 \nu(\mathrm{d}x)
+\nu(f^2w^2) = \int f^2(x)w^2(x) \nu(\mathrm{d}x) = \int f^2(x)w(x)\mu(\rmd x)
 < \infty.
 \end{equation}
-Then, 
+Then,
 \[
 \sqrt{N}\bigl(\tilde{\mu}^{\mathrm{IS}}_{N}(f)-\mu(f)\bigr)
 \;\xrightarrow{\mathcal{D}}\;
 \mathcal{N}\!\left(
 0,
 \operatorname{Var}_{\nu}\!\left(
-f\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu}
+fw
 \right)
 \right),
 \qquad \text{as } N\to\infty,
@@ -1881,25 +1896,52 @@ f\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu}
 where
 \[
 \operatorname{Var}_{\nu}\!\left(
-f\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu}
+fw
 \right)
 =
 \int \left(
-f(x)\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(x)-\mu(f)
-\right)^2 \nu(\mathrm{d}x).
+f(x)w(x)-\mu(f)
+\right)^2 \nu(\mathrm{d}x) = \nu(f^2w^2) - \mu(f)^2\eqsp.
 \]
 \end{theorem}
+\begin{proof}
+The random variables $f(\xi_i)w(\xi_i)$, $i\geq1$, are i.i.d. with $\nu(|f|w) = \mu(|f|)<\infty$ and mean $\nu(fw) = \mu(f)$. The two statements are the strong law of large numbers and the central limit theorem for these variables.
+\end{proof}
+It is enough to assume that $\mu$ is absolutely continuous with respect to $\nu$ on the set $\{f\neq0\}$, i.e. that $\nu$ puts mass wherever $f\mu$ does.
 Although the importance sampling estimator is generic, its
-efficiency  depends crucially on the interplay between
+efficiency depends crucially on the interplay between
 the target distribution $\mu$, the instrumental distribution $\nu$, and the
 function $f$. In particular, for a given function $f$, it is possible to
 define an instrumental distribution $\nu$ that leads to a significantly lower
 variance than that obtained with the standard Monte Carlo approach, corresponding
-to the choice $\nu=\mu$. 
+to the choice $\nu=\mu$.
+
+\begin{proposition}[Optimal instrumental distribution]
+\label{prop:IS-optimal}
+Let $f$ be such that $0<\mu(|f|)<\infty$ and define $\nu^\star(\rmd x) = |f(x)|\mu(\rmd x)/\mu(|f|)$. Then, for all instrumental distributions $\nu$ such that $\mu\ll\nu$,
+$$
+\operatorname{Var}_{\nu^\star}(fw^\star) = \mu(|f|)^2-\mu(f)^2\leq\operatorname{Var}_\nu(fw)\eqsp,
+$$
+where $w^\star = \rmd\mu/\rmd\nu^\star$ on $\{f\neq0\}$. 
+\end{proposition}
+\begin{proof}
+On $\{f\neq 0\}$, $f w^\star = \mathrm{sign}(f)\mu(|f|)$, so that $\nu^\star(f^2(w^\star)^2) = \mu(|f|)^2$. For any $\nu$, by the Cauchy--Schwarz inequality, $\mu(|f|)^2 = \nu(|f|w)^2\leq\nu(f^2w^2)$, and the result follows by subtracting $\mu(f)^2$ on both sides.
+\end{proof}
+The optimal distribution is not usable in practice ($\nu^\star$ involves the unknown quantity $\mu(|f|)$), but it provides a guideline: a good instrumental distribution should put mass where $|f|\mu$ is large, i.e. sample \emph{more often} in the important regions. In particular, importance sampling can be much more efficient than crude Monte Carlo for rare events.
+
+\begin{example}[Gaussian tail probability]
+\label{ex:IS-tail}
+Let $\mu = \gauss(0,1)$ and $f = \indi{(a,\infty)}$, so that $\mu(f) = \PP(X>a) = \bar\Phi(a)$, where $\bar\Phi$ is the Gaussian tail function. For $a=4$, $\bar\Phi(4)\approx3.17\cdot10^{-5}$: with crude Monte Carlo, the relative variance per sample is $(1-\bar\Phi(a))/\bar\Phi(a)\approx3.2\cdot10^4$, and about $10^7$ samples are needed to get a relative error of $5\%$. With $\nu = \gauss(a,1)$, $w(x) = \rme^{-ax+a^2/2}$ and
+$$
+\nu(f^2w^2) = \int_a^\infty \rme^{-ax+a^2/2}\varphi(x)\,\rmd x = \rme^{a^2}\bar\Phi(2a)\eqsp,
+$$
+where $\varphi$ is the standard Gaussian density, so that the relative variance per sample is $\rme^{a^2}\bar\Phi(2a)/\bar\Phi(a)^2-1\approx4.5$: importance sampling divides the number of samples needed by a factor of about $7\,000$. The instrumental distribution is centered at the boundary of the rare event, which mimics the shape of $\nu^\star\propto\indi{(a,\infty)}\varphi$.
+\end{example}
+
 
 
 We may also use  inequalities on the control of moments of sums of
-independent random variables to provide non asymptotic bound for the importance sampling estimator. 
+independent random variables to provide non-asymptotic bound for the importance sampling estimator. 
 \begin{theorem}[Marcinkiewicz--Zygmund inequality]\label{thm:MZ}
 Let $(X_1,\ldots,X_n)$ be independent random variables and let
 $p\geq 2$. Then,
@@ -1961,129 +2003,136 @@ moments and tail probabilities of importance sampling estimators.
 %\operatorname{osc}_\nu(f) \le b-a.
 %\]
 
+
 \begin{theorem}\label{thm:IS-oscillation}
-Let $p \ge 2$ and $N \ge 1$. Then,
+Let $p \ge 2$, $N \ge 1$, and let $f$ be such that $\nu(|fw|^p)<\infty$. Then,
 \[
 \mathbb{E}\,\left[\bigl|\tilde{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\bigr|^p\right]
-\;\le\; C_p\, N^{-p/2} \,, %\bigl\| f\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu} - \mu(f)
-%\bigr\|_{\nu,\infty}^p,
+\;\le\; C_p\, N^{-p/2}\,\nu\big(|fw-\mu(f)|^p\big) \eqsp,
 \]
-where $C_p<\infty$ depends only on $p$. Moreover, for any $t\ge 0$,
+where $C_p<\infty$ depends only on $p$. Moreover, if $\|fw\|_\infty<\infty$, for any $t\ge 0$,
 \[
 \mathbb{P}\Bigl(
 \bigl|\tilde{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\bigr| \ge t
 \Bigr)
 \;\le\; 2 \exp\Biggl(
--\frac{N t^2}{2 \|f\, \mathrm{d}\mu/\mathrm{d}\nu\|_{\infty}^2}
-\Biggr).
+-\frac{N t^2}{2 \|f w\|_{\infty}^2}
+\Biggr)\eqsp.
 \]
 \end{theorem}
+\begin{proof}
+Apply Theorem~\ref{thm:MZ} to $X_i = f(\xi_i)w(\xi_i)$, which are i.i.d. with mean $\mu(f)$: $\mathbb{E}[|\sum_{i=1}^N(X_i-\mu(f))|^p]\leq C_pN^{p/2}\nu(|fw-\mu(f)|^p)$, and divide by $N^p$. For the tail bound, apply Theorem~\ref{thm:Hoeffding} with $a_i = -\|fw\|_\infty$, $b_i = \|fw\|_\infty$ and $t$ replaced by $Nt$, to both deviations.
+\end{proof}
 
 
 \subsection{Convergence guarantees for the self-normalized IS estimator}
 
 
-
 \begin{theorem}\label{thm:self-normalized-IS}
 Let $f$ be a measurable function such that $\mu(|f|)<\infty$, and assume that
-$\mu \ll \nu$. Let $(\xi_i)_{i\geq 1}$ be  i.i.d. with 
+$\mu \ll \nu$. Let $(\xi_i)_{i\geq 1}$ be i.i.d. with
 distribution $\nu$. Then,
 \[
-\hat{\mu}^{\mathrm{IS}}_{N}(f) \;\xrightarrow{\text{a.s.}}\; \mu(f), 
+\hat{\mu}^{\mathrm{IS}}_{N}(f) \;\xrightarrow{\text{a.s.}}\; \mu(f),
 \qquad \text{as } N \to \infty.
 \]
 Assume in addition that
 \begin{equation}\label{eq:self-normalized-second-moment}
-\int \bigl[1 + f(x)^2\bigr] \left(\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(x)\right)^2
+\int \bigl[1 + f(x)^2\bigr] w(x)^2
 \nu(\mathrm{d}x) < \infty.
 \end{equation}
 Then,
 \[
 \sqrt{N}\,\Bigl(\hat{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\Bigr)
-\;\;\xrightarrow{\mathcal{D}}\;\; 
-\mathcal{N}\bigl(0, \sigma^2(\nu,f)\bigr), 
+\;\;\xrightarrow{\mathcal{D}}\;\;
+\mathcal{N}\bigl(0, \sigma^2(\nu,f)\bigr),
 \qquad \text{as } N\to\infty,
 \]
 where
 \begin{equation}\label{eq:self-normalized-variance}
-\sigma^2(\nu,f) = \int \left(\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(x)\right)^2
-\bigl(f(x) - \mu(f)\bigr)^2 \nu(\mathrm{d}x).
+\sigma^2(\nu,f) = \int w(x)^2
+\bigl(f(x) - \mu(f)\bigr)^2 \nu(\mathrm{d}x)\eqsp.
 \end{equation}
 \end{theorem}
 
 \begin{proof}
-Note that 
+Note that
 \[
 \hat{\mu}^{\mathrm{IS}}_{N}(f)
 =
-\frac{\sum_{i=1}^N f(\xi_i)\,
-\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}
-{\sum_{i=1}^N
-\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}=
 \frac{N^{-1}\sum_{i=1}^N f(\xi_i)\,
-\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}
+w(\xi_i)}
 {N^{-1}\sum_{i=1}^N
-\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}.
+w(\xi_i)}\eqsp.
 \]
-Therefore, the first result is a direct consequence of
+Therefore, the first result is a direct consequence of the strong law of large numbers:
 \[
-\frac{1}{N}\sum_{i=1}^N f(\xi_i)\,\frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)
-\;\xrightarrow{\text{a.s.}}\; \mu(f), 
+\frac{1}{N}\sum_{i=1}^N f(\xi_i)\,w(\xi_i)
+\;\xrightarrow{\text{a.s.}}\; \mu(f),
 \qquad
-\frac{1}{N}\sum_{i=1}^N \frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)
-\;\xrightarrow{\text{a.s.}}\; 1.
+\frac{1}{N}\sum_{i=1}^N w(\xi_i)
+\;\xrightarrow{\text{a.s.}}\; \nu(w) = 1\eqsp.
 \]
 For the central limit theorem, note that
 \[
 \sqrt{N}\,\bigl(\hat{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\bigr)
 =
-\frac{N^{-1/2}\sum_{i=1}^N \frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)
-\bigl(f(\xi_i)-\mu(f)\bigr)}{N^{-1}\sum_{i=1}^N \frac{\mathrm{d}\mu}{\mathrm{d}\nu}(\xi_i)}.
+\frac{N^{-1/2}\sum_{i=1}^N w(\xi_i)
+\bigl(f(\xi_i)-\mu(f)\bigr)}{N^{-1}\sum_{i=1}^N w(\xi_i)}\eqsp.
 \]
-By thecentral limit theorem, the numerator converges in distribution to
+The random variables $w(\xi_i)(f(\xi_i)-\mu(f))$ are i.i.d., centered (since $\nu(w(f-\mu(f))) = \mu(f)-\mu(f)=0$) and have variance $\sigma^2(\nu,f)<\infty$ by \eqref{eq:self-normalized-second-moment}. By the central limit theorem, the numerator converges in distribution to
 $\mathcal{N}(0,\sigma^2(\nu,f))$, while the denominator converges almost surely
-to $1$. The proof is then completed with Slutsky's Lemma.
+to $1$. The proof is then completed with Slutsky's lemma.
 \end{proof}
-
+Note that $\sigma^2(\nu,f)$ is the variance of the unnormalized estimator applied to the centered function $f-\mu(f)$: self-normalization removes the error due to the fluctuations of $N^{-1}\sum_i w(\xi_i)$ around $1$ only to first order. Unlike $\tilde\mu^{\mathrm{IS}}_N(f)$, $\hat\mu^{\mathrm{IS}}_N(f)$ is biased; a second-order expansion (delta method) shows that, under moment conditions, $\mathbb{E}[\hat\mu^{\mathrm{IS}}_N(f)]-\mu(f) = -N^{-1}\nu\big(w^2(f-\mu(f))\big) + o(N^{-1})$, which is negligible compared with the standard deviation of order $N^{-1/2}$.
 
 \begin{theorem}\label{thm:IS-non-asymptotic}
-Assume that $\|\mathrm{d}\mu/\mathrm{d}\nu\|_{L^p(\nu)}^p < \infty$ for some
-$p \ge 2$. Then, there exists a constant $C_p<\infty$ such that, for any $N \ge 1$
-and any measurable function $f$,
+Assume that $\nu(w^p) < \infty$ for some
+$p \ge 2$. Then, there exists a constant $C_p<\infty$ depending only on $p$ such that, for any $N \ge 1$
+and any bounded measurable function $f$,
 \begin{equation}\label{eq:IS-moment-bound}
-\mathbb{E}\,\bigl|\hat{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\bigr|^p
-\;\le\; C_p\, N^{-p/2}.
+\mathbb{E}\,\bigl[\bigl|\hat{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\bigr|^p\bigr]
+\;\le\; C_p\, \|f\|_\infty^p\,\nu(w^p)\,N^{-p/2}\eqsp.
 \end{equation}
-Moreover, there exist $c_1,c_2>0$ such that for all $t\ge 0$, 
+In particular, for $p=2$, $\mathbb{E}[|\hat{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)|^2]\leq 4\|f\|_\infty^2\nu(w^2)/N$. Moreover, if $\|w\|_\infty<\infty$, for all $t\ge 0$,
 \begin{equation}\label{eq:IS-tail-bound}
 \mathbb{P}\Bigl(
 \bigl|\hat{\mu}^{\mathrm{IS}}_{N}(f) - \mu(f)\bigr| \ge t
 \Bigr)
-\;\le\; c_1 \,\exp\Biggl(
--\frac{c_2 N t^2}{\|f\|_{\infty}^2}
-\Biggr).
+\;\le\; 4 \,\exp\Biggl(
+-\frac{N t^2}{8\|f\|_{\infty}^2\|w\|_\infty^2}
+\Biggr)\eqsp.
 \end{equation}
 \end{theorem}
-
+\begin{proof}
+Write $A_N = N^{-1}\sum_{i=1}^N f(\xi_i)w(\xi_i)$ and $B_N = N^{-1}\sum_{i=1}^N w(\xi_i)$, so that $\hat\mu^{\mathrm{IS}}_N(f) = A_N/B_N$ and $|A_N/B_N|\leq\|f\|_\infty$. Then
+$$
+\hat\mu^{\mathrm{IS}}_N(f)-\mu(f) = \frac{A_N}{B_N}(1-B_N) + (A_N-\mu(f))\eqsp,\quad\mbox{so that}\quad |\hat\mu^{\mathrm{IS}}_N(f)-\mu(f)|\leq\|f\|_\infty|B_N-1|+|A_N-\mu(f)|\eqsp.
+$$
+For $p=2$, $(a+b)^2\leq2a^2+2b^2$ yields $\mathbb{E}[|\hat\mu^{\mathrm{IS}}_N(f)-\mu(f)|^2]\leq 2\|f\|^2_\infty\mathrm{Var}_\nu(w)/N + 2\mathrm{Var}_\nu(fw)/N\leq4\|f\|_\infty^2\nu(w^2)/N$. For general $p$, the same decomposition, $(a+b)^p\leq2^{p-1}(a^p+b^p)$ and Theorem~\ref{thm:IS-oscillation} applied to $1$ and $f$ give the result, since $\nu(|w-1|^p)\leq 2^p\nu(w^p)$ and $\nu(|fw-\mu(f)|^p)\leq 2^p\|f\|_\infty^p\nu(w^p)$ (we used $\nu(w^p)\geq\nu(w)^p = 1$). For the tail bound, $\PP(|\hat\mu^{\mathrm{IS}}_N(f)-\mu(f)|\geq t)\leq\PP(|B_N-1|\geq t/(2\|f\|_\infty))+\PP(|A_N-\mu(f)|\geq t/2)$, and both terms are bounded with Hoeffding's inequality, since $w(\xi_i)\in[0,\|w\|_\infty]$ and $f(\xi_i)w(\xi_i)\in[-\|f\|_\infty\|w\|_\infty,\|f\|_\infty\|w\|_\infty]$.
+\end{proof}
 
 \section{Sequential importance sampling}
 
 \subsection{Hidden Markov models}
+\label{sec:hmm}
 
-A Hidden Markov model (HMM) is defined as a bivariate process
+A hidden Markov model (HMM) is defined as a bivariate process
 $\{(X_k,Y_k)\}_{k\ge 0}$ such that:
 \begin{itemize}
     \item $\{X_k\}_{k\ge 0}$ is a Markov chain with transition kernel $Q$ and
           initial distribution $\nu$;
-    \item Conditionally on the state process $\{X_k\}_{k\ge 0}$, the
+    \item conditionally on the state process $\{X_k\}_{k\ge 0}$, the
           observations $\{Y_k\}_{k\ge 0}$ are independent, and for each $n$,
           the conditional distribution of $Y_n$ depends only on $X_n$.
 \end{itemize}
-An alternative definition can be given as follows: a HMM is defined as a bivariate Markov
-chain that is only partially observed, whose transition kernel possesses a
+An alternative definition can be given as follows: an HMM is a bivariate Markov
+chain that is only partially observed, and whose transition kernel possesses a
 special structure: it is such that both the joint process
 $\{(X_k,Y_k)\}_{k\ge 0}$ and the marginal, hidden chain
-$\{X_k\}_{k\ge 0}$ are Markovian. A graphical representation of a HMM is given in Figure~\ref{fig:hmm}.
+$\{X_k\}_{k\ge 0}$ are Markovian. A graphical representation of an HMM is given in Figure~\ref{fig:hmm}.
+
+
 
 
 
@@ -2134,24 +2183,24 @@ $\{X_k\}_{k\ge 0}$ are Markovian. A graphical representation of a HMM is given i
 \begin{definition}[Hidden Markov Model]\label{def:HMM}
 Let $(\mathsf{X},\mathcal{X})$ and $(\mathsf{Y},\mathcal{Y})$ be two measurable
 spaces, and let $Q$ and $G$ denote, respectively, a Markov transition kernel on
-$(\mathsf{X},\mathcal{X})$ and a transition kernel from $(\mathsf{X},\mathcal{X})$
+$(\mathsf{X},\mathcal{X})$ and a Markov kernel from $(\mathsf{X},\mathcal{X})$
 to $(\mathsf{Y},\mathcal{Y})$. Define a Markov transition kernel $T$ on the
-product space $(\mathsf{X}\times \mathsf{Y}, \mathcal{X}\otimes \mathcal{Y})$ as follows: for all bounded  measurable functions $f$, and all $(x,y) \in \mathsf{X}\times \mathsf{Y}$,
+product space $(\mathsf{X}\times \mathsf{Y}, \mathcal{X}\otimes \mathcal{Y})$ as follows: for all bounded measurable functions $f$ on $\mathsf{X}\times \mathsf{Y}$, and all $(x,y) \in \mathsf{X}\times \mathsf{Y}$,
 \begin{equation}\label{eq:HMM-kernel}
-Tf(x,y) \;:=\; \int Q(x, \mathrm{d}x') \, G(x', \mathrm{d}y') f(x',y').
+Tf(x,y) \;:=\; \int Q(x, \mathrm{d}x') \, G(x', \mathrm{d}y') f(x',y')\eqsp.
 \end{equation}
-Then, a Markov chain $\{(X_k,Y_k)\}_{k\ge 0}$ with transition kernel $T$ is called a \emph{hidden Markov model}.
+Then, a Markov chain $\{(X_k,Y_k)\}_{k\ge 0}$ with transition kernel $T$ and initial distribution $\nu(\rmd x)G(x,\rmd y)$ is called a \emph{hidden Markov model}.
 \end{definition}
-We may assume that there exists a probability measure $\lambda$ on $(\mathsf{Y},\mathcal{Y})$ such
+Note that $Tf(x,y)$ does not depend on $y$: the next state only depends on the current state. We assume that there exists a $\sigma$-finite measure $\lambda$ on $(\mathsf{Y},\mathcal{Y})$ such
 that, for all $x \in \mathsf{X}$, $G(x, \cdot)$ is absolutely continuous with
-respect to $\lambda$, i.e., $G(x, \cdot) \ll \lambda(\cdot)$,  with transition density function $g(x, \cdot)$. We also assume that there exists a probability
-measure $\mu$ on $(\mathsf{X},\mathcal{X})$ such that 
+respect to $\lambda$, i.e., $G(x, \cdot) \ll \lambda(\cdot)$, with transition density function $g(x, \cdot)$. We also assume that there exists a $\sigma$-finite
+measure $\mu$ on $(\mathsf{X},\mathcal{X})$ such that
 for all $x \in \mathsf{X}$, $Q(x, \cdot) \ll \mu(\cdot)$ with transition
-density function $q(x, \cdot)$.  The joint Markov
+density function $q(x, \cdot)$ (the model is then said to be \emph{fully dominated}). The joint Markov
 transition kernel $T$ is then dominated by the product measure $\mu \otimes \lambda$
 and admits the transition density function
 \[
-t((x,y),(x',y')) \;:=\; q(x,x')\, g(x',y').
+t((x,y),(x',y')) \;:=\; q(x,x')\, g(x',y')\eqsp.
 \]
 \begin{proposition}\label{prop:conditional-independence-HMM}
 Let $\{(X_k,Y_k)\}_{k\ge 0}$ be a Markov chain on the product space
@@ -2160,39 +2209,39 @@ for any integer $p$, any ordered set of indices $k_1 < \cdots < k_p$, and any
 bounded measurable functions $f_1,\dots,f_p$,
 \begin{equation}\label{eq:HMM-cond-independence}
 \mathbb{E}\Biggl[
-\prod_{i=1}^{p} f_i(Y_{k_i}) \,\Big|\, X_{k_1}, \dots, X_{k_p} 
+\prod_{j=1}^{p} f_j(Y_{k_j}) \,\Big|\, X_{k_1}, \dots, X_{k_p}
 \Biggr]
-\;=\; \prod_{i=1}^{p} \int_{\mathsf{Y}} f_i(y) \, G(X_{k_i}, \mathrm{d}y).
+\;=\; \prod_{j=1}^{p} \int_{\mathsf{Y}} f_j(y) \, G(X_{k_j}, \mathrm{d}y)\eqsp.
 \end{equation}
 \end{proposition}
 
 \begin{proof}
-For all bounded measurable function $h$, we have
+For all bounded measurable functions $h$, writing $n = k_p$, we have, by Proposition~\ref{prop:fidi} of Chapter~\ref{chap:mcmc} applied to the chain $\{(X_k,Y_k)\}_{k\geq0}$,
 \begin{align*}
-\mathbb{E}\Biggl[ \prod_{i=1}^{p} f_i(Y_{k_i}) \, h(X_{k_1}, \dots, X_{k_p}) \Biggr]
+\mathbb{E}\Biggl[ \prod_{j=1}^{p} f_j(Y_{k_j}) \, h(X_{k_1}, \dots, X_{k_p}) \Biggr]
 &= \int \nu(\mathrm{d}x_0) G(x_0,\mathrm{d}y_0)
-\prod_{i=1}^{k_p} Q(x_{i-1}, \mathrm{d}x_i) G(x_i, \mathrm{d}y_i) \\
-&\quad \times \Biggl[ \prod_{i=1}^{p} f_i(y_{k_i}) \Biggr] \, h(x_{k_1},\dots,x_{k_p}) \\
-&= \int \nu(\mathrm{d}x_0) \prod_{i=1}^{k_p} Q(x_{i-1},\mathrm{d}x_i) \, h(x_{k_1},\dots,x_{k_p}) \\
-&\quad \times \prod_{i \notin \{k_1,\dots,k_p\}} \int_{\mathsf{Y}} G(x_i, \mathrm{d}y_i)
-\prod_{i \in \{k_1,\dots,k_p\}} \int_{\mathsf{Y}} f_i(y_i) G(x_i, \mathrm{d}y_i),
+\prod_{i=1}^{n} Q(x_{i-1}, \mathrm{d}x_i) G(x_i, \mathrm{d}y_i) \\
+&\quad \times \Biggl[ \prod_{j=1}^{p} f_j(y_{k_j}) \Biggr] \, h(x_{k_1},\dots,x_{k_p}) \\
+&= \int \nu(\mathrm{d}x_0) \prod_{i=1}^{n} Q(x_{i-1},\mathrm{d}x_i) \, h(x_{k_1},\dots,x_{k_p})
+\prod_{j=1}^p \int_{\mathsf{Y}} f_j(y) G(x_{k_j}, \mathrm{d}y)\\
+&= \mathbb{E}\Biggl[h(X_{k_1}, \dots, X_{k_p})\prod_{j=1}^p \int_{\mathsf{Y}} f_j(y) G(X_{k_j}, \mathrm{d}y)\Biggr]\eqsp,
 \end{align*}
-which completes the proof.
+where we integrated with respect to the $y_i$ (using $\int G(x_i,\rmd y_i) = 1$ for $i\notin\{k_1,\ldots,k_p\}$). Since the product in the last expectation is a measurable function of $(X_{k_1},\ldots,X_{k_p})$, this identity, valid for all $h$, characterizes the conditional expectation, which completes the proof.
 \end{proof}
 The joint probability of the unobservable states and the observations up to
 index $n$ is given as follows. For any bounded measurable function $f$,
 \begin{multline}\label{eq:joint-probability-HMM}
 \mathbb{E}\bigl[f(X_0, Y_0, \dots, X_n, Y_n)\bigr] =
-\int f(x_0, y_0, \dots, x_n, y_n) \, 
+\int f(x_0, y_0, \dots, x_n, y_n) \,
 \nu(\mathrm{d}x_0) g(x_0, y_0)
-\\ \times \prod_{k=1}^{n} Q(x_{k-1}, \mathrm{d}x_k) g(x_k, y_k) \, \lambda^{\otimes (n+1)}(\mathrm{d}y_0, \dots, \mathrm{d}y_n),
+\\ \times \prod_{k=1}^{n} Q(x_{k-1}, \mathrm{d}x_k) g(x_k, y_k) \, \lambda^{\otimes (n+1)}(\mathrm{d}y_0, \dots, \mathrm{d}y_n)\eqsp,
 \end{multline}
 where $\lambda^{\otimes (n+1)}$ denotes the $(n+1)$-fold product measure on $(\mathsf{Y}^{n+1},\mathcal{Y}^{\otimes (n+1)})$. Marginalizing over the unobservable states $X_0, \dots, X_n$ yields the
 distribution of the observations alone:
 \begin{equation}\label{eq:marginal-observations}
 \mathbb{E}\bigl[f(Y_0, \dots, Y_n)\bigr] =
- \int f(y_0, \dots, y_n) \, L_{n}(y_0, \dots, y_n) \, 
-\lambda^{\otimes (n+1)}(\mathrm{d}y_0, \dots, \mathrm{d}y_n),
+ \int f(y_0, \dots, y_n) \, L_{n}(y_0, \dots, y_n) \,
+\lambda^{\otimes (n+1)}(\mathrm{d}y_0, \dots, \mathrm{d}y_n)\eqsp,
 \end{equation}
 where $L_{n}$ is defined below and plays a central role in likelihood-based inference.
 \begin{definition}[Likelihood]\label{def:likelihood-HMM}
@@ -2200,83 +2249,134 @@ The \emph{likelihood} of the observations $(Y_0, \dots, Y_n)$ is the
 probability density function with respect to $\lambda^{\otimes (n+1)}$, given, for all $ (y_0, \dots, y_n) \in \mathsf{Y}^{n+1}$, by
 \begin{equation}\label{eq:likelihood-HMM}
 L_{n}(y_0, \dots, y_n) :=
-\int \nu(\mathrm{d}x_0) g(x_0, y_0) 
-\prod_{k=1}^{n} Q(x_{k-1}, \mathrm{d}x_k) g(x_k, y_k).
+\int \nu(\mathrm{d}x_0) g(x_0, y_0)
+\prod_{k=1}^{n} Q(x_{k-1}, \mathrm{d}x_k) g(x_k, y_k)\eqsp.
 \end{equation}
-The \emph{log-likelihood function} is defined, droping the dependency on $(y_0, \dots, y_n)$, as
+The \emph{log-likelihood function} is defined, dropping the dependency on $(y_0, \dots, y_n)$, as
 \begin{equation}\label{eq:log-likelihood-HMM}
-\ell_{n} \;:=\; \log L_{n}.
+\ell_{n} \;:=\; \log L_{n}\eqsp.
 \end{equation}
 \end{definition}
-The likelihood function given in Definition~\ref{def:likelihood-HMM} is not availbale in closed form. Therefore, in a setting where the law of the HMM depends on au unknown parameter $\theta\in\Theta$, and in the fully dominated case, the log-likelihood
+
+\begin{example}[Three classical HMMs]
+\label{ex:hmm}
+\begin{enumerate}[i)]
+\item \emph{Finite state space.} If $\mathsf{X} = \{1,\ldots,K\}$, the integral \eqref{eq:likelihood-HMM} is a sum over $K^{n+1}$ paths, but it can be computed exactly with $\mathcal{O}(nK^2)$ operations with the forward recursion below, where integrals become finite sums. This is the setting of speech recognition or of the segmentation of genomic sequences.
+\item \emph{Linear Gaussian state space model.} Let $\mathsf{X} = \mathsf{Y} = \rset$ and
+$$
+X_k = aX_{k-1}+\sigma_xU_k\eqsp,\qquad Y_k = X_k+\sigma_yV_k\eqsp,
+$$
+where $(U_k)_{k\geq1}$ and $(V_k)_{k\geq0}$ are independent i.i.d. $\gauss(0,1)$ sequences, independent of $X_0\sim\gauss(0,\sigma_x^2/(1-a^2))$, $|a|<1$. All the conditional distributions are Gaussian (we denote by $\varphi_{m,s^2}$ the Gaussian density with mean $m$ and variance $s^2$) and the filtering distributions $\phi_k = \gauss(m_k,P_k)$  are given by the \emph{Kalman filter}: with $m_{-1}^\star = 0$, $P^{\star}_{-1} = \sigma_x^2/(1-a^2)$ (prediction at time $0$) and, for $k\geq1$, $m^\star_{k-1} = am_{k-1}$, $P^\star_{k-1} = a^2P_{k-1}+\sigma_x^2$,
+$$
+K_k = \frac{P^\star_{k-1}}{P^\star_{k-1}+\sigma_y^2}\eqsp,\qquad m_k = m^\star_{k-1}+K_k(Y_k-m^\star_{k-1})\eqsp,\qquad P_k = (1-K_k)P^\star_{k-1}\eqsp.
+$$
+Moreover, the predictive distribution of $Y_k$ given $Y_{0:k-1}$ is $\gauss(m^\star_{k-1},P^\star_{k-1}+\sigma_y^2)$, so that the likelihood is explicit: $\ell_n = \sum_{k=0}^n\log\varphi_{m^\star_{k-1},P^\star_{k-1}+\sigma_y^2}(Y_k)$. This model is used below as a benchmark for particle methods.
+\end{enumerate}
+\end{example}
+
+The likelihood function given in Definition~\ref{def:likelihood-HMM} is not available in closed form in general. Therefore, in a setting where the law of the HMM depends on an unknown parameter $\theta\in\Theta$, and in the fully dominated case, the log-likelihood
 $$
 \ell_{n}(\theta) := \log
-\int \nu_\theta(x_0) g_\theta(x_0, y_0) 
-\prod_{k=1}^{n} Q_\theta(x_{k-1}, x_k) g_\theta(x_k, y_k) \mu^{\otimes (n+1)}(\rmd x_{0:n})
+\int \nu_\theta(x_0) g_\theta(x_0, y_0)
+\prod_{k=1}^{n} q_\theta(x_{k-1}, x_k) g_\theta(x_k, y_k) \mu^{\otimes (n+1)}(\rmd x_{0:n})\eqsp,
 $$
-cannot be optimized easily. A natural solution is to estimate $\theta$ using the EM algorithm. Therefore, at iteration $p\geq 0$ with a current parameter estimate $\widehat \theta_p$ it is required to compute:
+where $\nu_\theta$ also denotes the density of the initial distribution with respect to $\mu$, cannot be optimized easily. A natural solution is to estimate $\theta$ using the EM algorithm. Therefore, at iteration $p\geq 0$ with a current parameter estimate $\widehat \theta_p$, it is required to compute the intermediate quantity:
 \begin{align*}
-Q(\theta,\widehat \theta_p) &= \mathbb{E}_{\widehat \theta_p}\left[\log p_\theta(X_{0:n},Y_{0:n})\middle| Y_{0:n}\right]\\
-&=  \mathbb{E}_{\widehat \theta_p}\left[\log \nu_\theta(X_{0})g_\theta(X_0,Y_0)\middle| Y_{0:n}\right] + \sum_{k=1}^n \mathbb{E}_{\widehat \theta_p}\left[\log q_\theta(X_{k-1},X_k)g_\theta(X_k,Y_k)\middle| Y_{0:n}\right].
+\mathcal{Q}(\theta,\widehat \theta_p) &= \mathbb{E}_{\widehat \theta_p}\left[\log p_\theta(X_{0:n},Y_{0:n})\middle| Y_{0:n}\right]\\
+&=  \mathbb{E}_{\widehat \theta_p}\left[\log \{\nu_\theta(X_{0})g_\theta(X_0,Y_0)\}\middle| Y_{0:n}\right] + \sum_{k=1}^n \mathbb{E}_{\widehat \theta_p}\left[\log \{q_\theta(X_{k-1},X_k)g_\theta(X_k,Y_k)\}\middle| Y_{0:n}\right]\eqsp,
 \end{align*}
-This means that we need to sample (at least approximately) from the conditional distributions of $(X_{k-1},X_k)$ given $Y_{0:n}$ for a given parameter value $\widehat \theta_p$. This is in general not possible exactly and an appealing solution is to use Sequential Monte Carlo methods. In the next subsection we present these sequential methods, omitting the dependency on $\widehat \theta_p$ for simplicity.
+where $p_\theta$ denotes the joint density of $(X_{0:n},Y_{0:n})$ (we write $\mathcal{Q}$ to avoid any confusion with the kernel $Q$).
+This means that we need to sample (at least approximately) from the conditional distributions of $(X_{k-1},X_k)$ given $Y_{0:n}$ for a given parameter value $\widehat \theta_p$. This is in general not possible exactly and an appealing solution is to use sequential Monte Carlo methods. In the next subsection we present these sequential methods, omitting the dependency on $\widehat \theta_p$ for simplicity.
+
 
 \subsection{Sequential Monte Carlo methods for HMMs}
+\label{sec:smc:hmm}
 We now specialize the sampling techniques introduced above to hidden Markov
-models (HMMs). As in previous chapters, we consider the HMM  where $Q$ denotes the Markov transition kernel of the hidden
+models. As in the previous section, we consider the HMM where $Q$ denotes the Markov transition kernel of the hidden
 chain, $\nu$ is the distribution of the initial state $X_0$, and $g(x,y)$, for
 $x\in \mathsf{X}$ and $y \in \mathsf{Y}$, denotes the conditional density of the
 observation given the state, with respect to the measure $\lambda$ on
-$(\mathsf{Y},\mathcal{Y})$.  To simplify the notation, we will also use the shorthand
+$(\mathsf{Y},\mathcal{Y})$. The observations $Y_{0:n}$ are fixed, and, to simplify the notation, we will also use the shorthand
 \[
-g_k(\cdot) := g(\cdot, Y_k).
-\] 
-In the following we consider the following distributions.
+g_k(\cdot) := g(\cdot, Y_k)\eqsp.
+\]
+In the following, we consider the following distributions.
 \begin{itemize}
 \item For all $0\leq k \leq n$, $\phi_k$ is the conditional distribution of $X_k$ given $Y_{0:k}$, and is referred to as the filtering distribution at time $k$.
-\item For all $0\leq k \leq \ell \leq n$, $\phi_{k:\ell|n}$ is the conditional distribution of $X_{k:\ell}$ given $Y_{0:n}$, and is referred to as the joint smoothing  distribution of $X_{k:\ell}$ given $Y_{0:n}$.
-\item  For all $0\leq k \leq n$, $\phi_{k|n} = \phi_{k:k|n}$, is the marginal smoothing distribution at time $k$.
+\item For all $0\leq k \leq \ell \leq n$, $\phi_{k:\ell|n}$ is the conditional distribution of $X_{k:\ell}$ given $Y_{0:n}$, and is referred to as the joint smoothing distribution of $X_{k:\ell}$ given $Y_{0:n}$.
+\item  For all $0\leq k \leq n$, $\phi_{k|n} = \phi_{k:k|n}$ is the marginal smoothing distribution at time $k$.
 \end{itemize}
+With a slight abuse of notation, we use the same letters for these distributions and for their densities with respect to $\mu$ or $\mu^{\otimes(\ell-k+1)}$; $\nu$ also denotes the density of the initial distribution with respect to $\mu$.
 Note that for all bounded measurable functions $f$,
 \[
 \phi_0(f) = \frac{\int f(x_0)\, g_0(x_0)\, \nu(\mathrm{d}x_0)}
-{\int g_0(x_0)\, \nu(\mathrm{d}x_0)}.
+{\int g_0(x_0)\, \nu(\mathrm{d}x_0)}\eqsp.
 \]
-Therefore, $\phi_0(f)$ can be estimated using self-normalized importance sampling. Sample $(\xi_0^1,\ldots,\xi_0^N)$ i.i.d. with probability density $\chi$ and associate each $\xi_0^i$ with $\omega_0^i = g_0(\xi^i_0)/\chi(\xi_0^i)$ and compute
+Therefore, $\phi_0(f)$ can be estimated using self-normalized importance sampling. Sample $(\xi_0^1,\ldots,\xi_0^N)$ i.i.d. with probability density $\chi$ with respect to $\mu$, associate each $\xi_0^i$ with the importance weight $\omega_0^i = \nu(\xi_0^i)g_0(\xi^i_0)/\chi(\xi_0^i)$ and compute
 $$
-\phi^N_0(f) = \sum_{i=1}^N\frac{\omega_0^i}{\sum_{j=1}^N\omega_0^j}f(\xi_0^i).
+\phi^N_0(f) = \sum_{i=1}^N\frac{\omega_0^i}{\sum_{j=1}^N\omega_0^j}f(\xi_0^i)\eqsp.
 $$
+If $\chi = \nu$, the weights are simply $\omega_0^i = g_0(\xi_0^i)$.
 In addition, for all $n\geq 0$ and all bounded measurable functions $f$,
 $$
-\phi_{0:n|n}(f) =  \frac{\int \nu(x_0) g_0(x_0) 
-\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)f(x_{0:n})\mu^{\otimes (n+1)}(\mathrm{d}x_{0:n})}{\int \nu(x_0) g_0(x_0) 
-\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)\mu^{\otimes (n+1)}(\mathrm{d}x_{0:n})}.
+\phi_{0:n|n}(f) =  \frac{\int \nu(x_0) g_0(x_0)
+\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)f(x_{0:n})\mu^{\otimes (n+1)}(\mathrm{d}x_{0:n})}{\int \nu(x_0) g_0(x_0)
+\prod_{k=1}^{n} q(x_{k-1}, x_k) g_k(x_k)\mu^{\otimes (n+1)}(\mathrm{d}x_{0:n})}\eqsp.
 $$
-Therefore, it is straightforward to note that for all $0\leq k \leq n-1$,
+Note that the denominator is the likelihood $L_n(Y_{0:n})$. Therefore, it is straightforward to note that for all $0\leq k \leq n-1$,
 \begin{align*}
-\phi_{0:k+1|k+1}(x_{0:k+1}) \propto \phi_{0:k|k}(x_{0:k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})
+\phi_{0:k+1|k+1}(x_{0:k+1}) \propto \phi_{0:k|k}(x_{0:k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})\eqsp.
 \end{align*}
-Therefore,  for all bounded measurable functions $f$,
-$$
-\phi_{k+1}(f) = \frac{\int \varphi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})f(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}{\int \phi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}.
-$$
-As these integrals are intractable, if at time $k$ we have access to a weighted sample $\{(\omega_k^i,\xi_k^i) \}_{1\leq i \leq N}$ we may estimate $\varphi_{k+1}$  by
+Integrating with respect to $x_{0:k-1}$, and since $\phi_k$ is the marginal of $\phi_{0:k|k}$ at time $k$, for all bounded measurable functions $f$,
+\begin{equation}
+\label{eq:filtering:recursion}
+\phi_{k+1}(f) = \frac{\int \phi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})f(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}{\int \phi_{k}(x_{k})q(x_{k}, x_{k+1})g_{k+1}(x_{k+1})\mu(\rmd x_{k})\mu(\rmd x_{k+1})}\eqsp.
+\end{equation}
+This is the \emph{filtering recursion}: a prediction step $\phi_k\mapsto\phi_kQ$ (the distribution of $X_{k+1}$ given $Y_{0:k}$), followed by a correction (Bayes) step which multiplies by the likelihood $g_{k+1}$ of the new observation and normalizes. In a finite state space, it can be computed exactly; for the linear Gaussian model, it yields the Kalman filter of Example~\ref{ex:hmm}.
+As these integrals are intractable in general, if at time $k$ we have access to a weighted sample $\{(\omega_k^i,\xi_k^i) \}_{1\leq i \leq N}$ targeting $\phi_k$, we may estimate $\phi_{k+1}$ by
 \begin{align*}
-\tilde\phi^N_{k+1}(x_{k+1}) \propto \sum_{i=1}^N\omega_k^iq(\xi^i_{k}, x_{k+1})g_{k+1}(x_{k+1}).
+\tilde\phi^N_{k+1}(x_{k+1}) \propto \sum_{i=1}^N\omega_k^iq(\xi^i_{k}, x_{k+1})g_{k+1}(x_{k+1})\eqsp.
 \end{align*}
-This approximation suggests that an importance sampling estimator of $\phi_{k+1}(f) $ can be obtained as follows.
+This approximation is a mixture distribution, which suggests that an importance sampling estimator of $\phi_{k+1}(f)$ can be obtained as follows.
 \begin{itemize}
-\item For all $1\leq i \leq N$ sample $I_{k+1}^i$ in $\{1,\ldots, N\}$ with probabilities proportional to $\{\omega_k^i\}_{1\leq i \leq N}$.
-\item For all $1\leq i \leq N$ sample $\xi_{k+1}^i \sim P(\xi_k^{I_{k+1}^i},\cdot)$ where $P$ is a proposal kernel.
+\item For all $1\leq i \leq N$, sample $I_{k+1}^i$ in $\{1,\ldots, N\}$ with probabilities proportional to $\{\omega_k^j\}_{1\leq j \leq N}$.
+\item For all $1\leq i \leq N$, sample $\xi_{k+1}^i \sim P(\xi_k^{I_{k+1}^i},\cdot)$ where $P$ is a proposal kernel with density $p$ with respect to $\mu$.
 \item For all $1\leq i \leq N$, compute
 $$
-\omega_{k+1}^i = \frac{q(\xi_k^{I_{k+1}^i}, \xi^i_{k+1})g_{k+1}(\xi^i_{k+1})}{p(\xi_k^{I_{k+1}^i},\xi_k^i)}.
+\omega_{k+1}^i = \frac{q(\xi_k^{I_{k+1}^i}, \xi^i_{k+1})g_{k+1}(\xi^i_{k+1})}{p(\xi_k^{I_{k+1}^i},\xi_{k+1}^i)}\eqsp.
 $$
 \end{itemize}
-Then, $\varphi_{k+1}(f) $ is estimated by
+Then, $\phi_{k+1}(f) $ is estimated by
 $$
-\phi^N_{k+1}(f) = \sum_{i=1}^N\frac{\omega_{k+1}^i}{\sum_{j=1}^N\omega_{k+1}^j}f(\xi_{k+1}^i).
+\phi^N_{k+1}(f) = \sum_{i=1}^N\frac{\omega_{k+1}^i}{\sum_{j=1}^N\omega_{k+1}^j}f(\xi_{k+1}^i)\eqsp.
 $$
+The first step is a \emph{resampling} (or selection) step, the second one a \emph{mutation} (or propagation) step and the third one a \emph{weighting} step. The variables $I^i_{k+1}$ are the indices of the \emph{ancestors} of the particles at time $k+1$. This algorithm is known as sequential importance sampling with resampling (SISR), or particle filter; when $P = Q$, the weights reduce to $\omega^i_{k+1} = g_{k+1}(\xi^i_{k+1})$ and we obtain the \emph{bootstrap filter} of \cite{GordonSalmondSmith1993}.
+
+%%%% NEW v2 %%%%
+\begin{algorithm}[H]
+    \KwData{Observations $Y_{0:n}$, number of particles $N$, initial instrumental density $\chi$, proposal kernel $P$ with density $p$.}
+    \KwResult{Weighted samples $\{(\omega_k^i,\xi_k^i)\}_{1\leq i\leq N}$ targeting $\phi_k$, $0\leq k\leq n$, and an estimate $\widehat L_n$ of the likelihood.}
+    For $1\leq i\leq N$, draw $\xi_0^i\sim\chi$ and set $\omega_0^i = \nu(\xi_0^i)g_0(\xi_0^i)/\chi(\xi_0^i)$\;
+    Set $\widehat L_0 = N^{-1}\sum_{i=1}^N\omega_0^i$\;
+    \For {$k = 0 \to n-1$}{
+        \emph{Resampling:} for $1\leq i\leq N$, draw $I_{k+1}^i$ with $\PP(I_{k+1}^i = j) = \omega_k^j/\sum_{\ell=1}^N\omega_k^\ell$\;
+        \emph{Mutation:} for $1\leq i\leq N$, draw $\xi_{k+1}^i\sim P(\xi_k^{I^i_{k+1}},\cdot)$\;
+        \emph{Weighting:} for $1\leq i\leq N$, set $\omega_{k+1}^i = q(\xi_k^{I_{k+1}^i}, \xi^i_{k+1})g_{k+1}(\xi^i_{k+1})/p(\xi_k^{I_{k+1}^i},\xi_{k+1}^i)$\;
+        Set $\widehat L_{k+1} = \widehat L_k\times N^{-1}\sum_{i=1}^N\omega_{k+1}^i$\;
+}
+\caption{Particle filter (sequential importance sampling with resampling).}
+\label{alg:pf}
+\end{algorithm}
+
+
+Without the resampling step, i.e. setting $I^i_{k+1} = i$ and multiplying the weights, $\omega^i_{k+1} = \omega^i_k\, q(\xi_k^i,\xi^i_{k+1})g_{k+1}(\xi^i_{k+1})/p(\xi_k^i,\xi_{k+1}^i)$, the algorithm is plain importance sampling on the path space $\mathsf{X}^{n+1}$ targeting $\phi_{0:n|n}$, with instrumental density $\chi(x_0)\prod_{k=1}^n p(x_{k-1},x_k)$: this is \emph{sequential importance sampling} (SIS). The weights of the paths are products of $n+1$ factors, and their variance typically grows exponentially with $n$: after a few iterations, one particle carries almost all the weight. Figure~\ref{fig:pf:lgssm} illustrates this phenomenon on the linear Gaussian model of Example~\ref{ex:hmm}: the ESS of SIS drops to $1$ within $20$ time steps and its estimate of the filtering mean departs from the exact Kalman filter, whereas the ESS of the bootstrap filter remains of the order of $N$. Resampling discards the particles with negligible weights and duplicates the promising ones, so that the computational effort is focused on the relevant regions of the state space at each time step.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{pf_lgssm}
+\caption{Linear Gaussian state space model of Example~\ref{ex:hmm} with $a=0.9$, $\sigma_x=\sigma_y=1$. Top: hidden states, observations, exact filtering mean $\pm 2$ standard deviations (Kalman filter), and estimates of the filtering mean by the bootstrap filter and by SIS with $N=500$ particles. Bottom: effective sample size along time (log scale).}
+\label{fig:pf:lgssm}
+\end{figure}
 
 
 
